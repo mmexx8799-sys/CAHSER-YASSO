@@ -1,0 +1,507 @@
+
+import {
+    collection,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+    query,
+    where,
+    orderBy,
+    writeBatch,
+    getDoc,
+    Timestamp,
+    serverTimestamp,
+    setDoc,
+    onSnapshot,
+    getDocs,
+    limit,
+    startAfter,
+    runTransaction
+} from "firebase/firestore";
+import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
+import { getDB, firebaseConfig, getPerformanceInstance } from './firebase';
+import { initializeApp, deleteApp } from "firebase/app";
+import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, Category, CartItem, Return, BackupData, User, AppSettings, UserRole } from '../types';
+import { toast } from 'react-hot-toast';
+import {
+    createUserWithEmailAndPassword,
+    getAuth
+} from "firebase/auth";
+import { trace } from 'firebase/performance';
+
+
+const db = getDB();
+
+// --- App Settings API ---
+const APP_SETTINGS_ID = 'main';
+
+export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+    try {
+        const docRef = doc(db, 'appSettings', APP_SETTINGS_ID);
+        await setDoc(docRef, settings, { merge: true });
+        toast.success('تم تحديث إعدادات التطبيق.');
+    } catch (error) {
+        console.error("Error updating app settings:", error);
+        toast.error('فشل تحديث الإعدادات.');
+    }
+};
+
+// --- User Management ---
+export const checkIfUsersExist = async (): Promise<boolean> => {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, limit(1));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+};
+
+// FIX: Implement addUser to create a new user account and associated user document in firestore.
+export const addUser = async (email: string, password: string, role: UserRole): Promise<void> => {
+    // A secondary app is used to create a user without signing out the current admin user.
+    const tempApp = initializeApp(firebaseConfig, `secondary-auth-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        const user = userCredential.user;
+
+        await setDoc(doc(db, 'users', user.uid), {
+            email: user.email,
+            role: role,
+        });
+        toast.success("تم إضافة المستخدم بنجاح");
+    } catch (error: any) {
+        let message = "فشل في إضافة المستخدم.";
+        if (error.code === 'auth/email-already-in-use') {
+            message = 'هذا البريد الإلكتروني مستخدم بالفعل.';
+        } else if (error.code === 'auth/weak-password') {
+            message = 'كلمة المرور ضعيفة جداً. يجب أن تتكون من 6 أحرف على الأقل.';
+        }
+        toast.error(message);
+        throw error;
+    } finally {
+        await deleteApp(tempApp);
+    }
+};
+
+// FIX: Implement deleteUser to remove a user's role document from firestore.
+export const deleteUser = async (uid: string) => {
+    try {
+        await deleteDocument('users', uid);
+        toast.success("تم حذف دور المستخدم بنجاح.");
+    } catch (error) {
+        toast.error("فشل حذف دور المستخدم.");
+        throw error;
+    }
+};
+
+export const setUserDisabled = async (uid: string, disabled: boolean) => {
+    try {
+        await updateDocument('users', uid, { disabled });
+        toast.success(disabled ? "تم تعطيل المستخدم بنجاح." : "تم تفعيل المستخدم بنجاح.");
+    } catch (error) {
+        toast.error("فشل تحديث حالة المستخدم.");
+        throw error;
+    }
+};
+
+
+// -----------------------
+
+const normalizeArabic = (str: string): string => {
+    if (!str) return '';
+    return str
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ة/g, 'ه')
+        .toLowerCase();
+};
+
+// Generic function to add a document
+export const addDocument = async <T,>(collectionPath: string, data: Omit<T, 'id' | 'createdAt'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(collection(db, collectionPath), {
+            ...data,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (e) {
+        console.error("Error adding document: ", e);
+        throw new Error("Failed to add document");
+    }
+};
+
+// Generic function to update a document
+export const updateDocument = async (collectionPath: string, id: string, data: any) => {
+    try {
+        const docRef = doc(db, collectionPath, id);
+        await updateDoc(docRef, data);
+    } catch (e) {
+        console.error("Error updating document: ", e);
+        throw new Error("Failed to update document");
+    }
+};
+
+// Generic function to delete a document
+export const deleteDocument = async (collectionPath: string, id: string) => {
+    try {
+        await deleteDoc(doc(db, collectionPath, id));
+    } catch (e) {
+        console.error("Error deleting document: ", e);
+        throw new Error("Failed to delete document");
+    }
+};
+
+
+// Products API - Paginated
+const PRODUCTS_PAGE_SIZE = 30;
+export const getProductsPaginated = async (
+    filters: { searchQuery?: string; categoryId?: string },
+    lastVisible: QueryDocumentSnapshot | null
+): Promise<{ products: Product[], lastDoc: QueryDocumentSnapshot | null }> => {
+    const perf = getPerformanceInstance();
+    const t = trace(perf, "get_products_paginated");
+    t.start();
+    try {
+        const constraints: QueryConstraint[] = [];
+        const hasSearch = filters.searchQuery && filters.searchQuery.trim() !== '';
+
+        if (hasSearch) {
+            const normalizedQuery = normalizeArabic(filters.searchQuery!);
+            constraints.push(where('searchableIndex', 'array-contains', normalizedQuery));
+        }
+
+        constraints.push(orderBy('name'));
+        constraints.push(limit(PRODUCTS_PAGE_SIZE));
+
+        if (lastVisible) {
+            constraints.push(startAfter(lastVisible));
+        }
+
+        const q = query(collection(db, 'products'), ...constraints);
+        const documentSnapshots = await getDocs(q);
+
+        let products = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+
+        if (filters.categoryId) {
+            products = products.filter(p => p.categoryId === filters.categoryId);
+        }
+
+        const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
+
+        return { products, lastDoc };
+    } catch (error) {
+        console.error("Error fetching paginated products: ", error);
+        toast.error("حدث خطأ أثناء تحميل المنتجات.");
+        return { products: [], lastDoc: null };
+    } finally {
+        t.stop();
+    }
+};
+
+
+// Add payment to customer's balance
+export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
+    try {
+        const paymentRef = doc(collection(db, "customerPayments"));
+        const batch = writeBatch(db);
+        batch.set(paymentRef, { ...payment, date: serverTimestamp() });
+
+        const customerRef = doc(db, "customers", payment.customerId);
+        const customerDoc = await getDoc(customerRef);
+        if (!customerDoc.exists()) {
+            throw new Error("Customer not found");
+        }
+
+        await runTransaction(db, async (transaction) => {
+            const freshCustomerDoc = await transaction.get(customerRef);
+            if (!freshCustomerDoc.exists()) {
+                throw new Error("Customer not found");
+            }
+            const currentBalance = freshCustomerDoc.data().balance;
+            const newBalance = currentBalance - payment.amount;
+            transaction.update(customerRef, { balance: newBalance });
+        });
+
+        await batch.commit();
+        toast.success('تم تسجيل الدفعة بنجاح!');
+    } catch (error: any) {
+        console.error("Error adding customer payment:", error);
+        toast.error("حدث خطأ أثناء تسجيل الدفعة.");
+        throw error;
+    }
+};
+
+
+// Invoices API
+export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
+    const perf = getPerformanceInstance();
+    const t = trace(perf, "process_sale");
+    t.start();
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const invoiceRef = doc(collection(db, 'invoices'));
+            let customerName: string | undefined = undefined;
+
+            if (invoiceData.paymentMethod === 'آجل' && invoiceData.customerId) {
+                const customerRef = doc(db, 'customers', invoiceData.customerId);
+                const customerDoc = await transaction.get(customerRef);
+                if (customerDoc.exists()) {
+                    const customerData = customerDoc.data();
+                    customerName = customerData.name;
+                    const currentBalance = customerData.balance;
+                    transaction.update(customerRef, { balance: currentBalance + invoiceData.total });
+                }
+            }
+
+            const newInvoice = {
+                ...invoiceData,
+                ...(customerName && { customerName }),
+                invoiceNumber: `INV-${Date.now()}`,
+                createdAt: serverTimestamp()
+            };
+            transaction.set(invoiceRef, newInvoice);
+
+            const archiveRef = doc(db, 'dailyArchives', invoiceData.dailyArchiveId);
+            const archiveDoc = await transaction.get(archiveRef);
+            if (archiveDoc.exists()) {
+                const data = archiveDoc.data();
+                const updates: Partial<DailyArchive> = { totalSales: (data.totalSales || 0) + invoiceData.total };
+                switch (invoiceData.paymentMethod) {
+                    case 'نقدا': updates.totalCash = (data.totalCash || 0) + invoiceData.total; break;
+                    case 'آجل': updates.totalCredit = (data.totalCredit || 0) + invoiceData.total; break;
+                    case 'فودافون كاش': updates.totalVodafoneCash = (data.totalVodafoneCash || 0) + invoiceData.total; break;
+                    case 'انستا باي': updates.totalInstapay = (data.totalInstapay || 0) + invoiceData.total; break;
+                }
+                transaction.update(archiveRef, updates);
+            }
+
+            for (const item of invoiceData.items) {
+                const productRef = doc(db, 'products', item.id);
+                const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    const currentQuantity = productDoc.data().quantity || 0;
+                    if (currentQuantity < item.buyQuantity) {
+                        throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
+                    }
+                    const newQuantity = currentQuantity - item.buyQuantity;
+                    transaction.update(productRef, { quantity: newQuantity });
+                }
+            }
+
+            return invoiceRef.id;
+        });
+        toast.success('تمت عملية البيع بنجاح!');
+    } catch (error: any) {
+        console.error("Error processing sale:", error);
+        if (error.message.includes('quantity') || error.message.includes('الكمية')) {
+            toast.error(error.message);
+        } else {
+            toast.error('حدث خطأ أثناء عملية البيع.');
+        }
+        throw error;
+    } finally {
+        t.stop();
+    }
+};
+
+// Returns API
+export const processReturn = async (items: CartItem[], dailyArchiveId: string) => {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const returnRef = doc(collection(db, 'returns'));
+            const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+
+            const newReturn: Omit<Return, 'id'> = {
+                items,
+                total: totalReturnAmount,
+                createdAt: serverTimestamp() as unknown as number,
+                dailyArchiveId,
+            };
+            transaction.set(returnRef, newReturn);
+
+            for (const item of items) {
+                const productRef = doc(db, 'products', item.id);
+                const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    const currentQuantity = productDoc.data().quantity || 0;
+                    const newQuantity = currentQuantity + item.buyQuantity;
+                    transaction.update(productRef, { quantity: newQuantity });
+                }
+            }
+
+            const archiveRef = doc(db, 'dailyArchives', dailyArchiveId);
+            const archiveDoc = await transaction.get(archiveRef);
+            if (archiveDoc.exists()) {
+                const currentReturns = archiveDoc.data().totalReturns || 0;
+                transaction.update(archiveRef, { totalReturns: currentReturns + totalReturnAmount });
+            } else {
+                throw new Error("لم يتم العثور على اليومية المفتوحة.");
+            }
+        });
+        toast.success('تمت عملية الإرجاع بنجاح!');
+    } catch (error: any) {
+        console.error("Error processing return:", error);
+        toast.error('حدث خطأ أثناء عملية الإرجاع.');
+        throw error;
+    }
+};
+
+
+// Daily Archive API
+export const getOpenDailyArchive = async (): Promise<DailyArchive | null> => {
+    const q = query(collection(db, 'dailyArchives'), where('status', '==', 'open'), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+
+    const docSnap = querySnapshot.docs[0];
+    const data = docSnap.data();
+    const startTime = data.startTime instanceof Timestamp ? data.startTime.toMillis() : Date.now();
+    return { id: docSnap.id, ...data, startTime } as DailyArchive;
+};
+
+export const startNewDailyArchive = async (): Promise<DailyArchive> => {
+    const openArchive = await getOpenDailyArchive();
+    if (openArchive) {
+        throw new Error(`لا يمكن بدء يومية جديدة. اليومية ${openArchive.id} ما زالت مفتوحة.`);
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const archiveRef = doc(db, 'dailyArchives', today);
+    const docSnap = await getDoc(archiveRef);
+
+    if (docSnap.exists()) {
+        throw new Error(`يومية ${today} موجودة ومغلقة بالفعل. لا يمكن إعادة فتحها.`);
+    }
+
+    const newArchiveForClient: Omit<DailyArchive, 'id' | 'endTime'> = {
+        startTime: Date.now(),
+        status: 'open',
+        totalSales: 0,
+        totalReturns: 0,
+        totalCash: 0,
+        totalCredit: 0,
+        totalVodafoneCash: 0,
+        totalInstapay: 0,
+    };
+    // FIX: Destructure to avoid type conflict between client-side number and Firestore FieldValue
+    const { startTime, ...rest } = newArchiveForClient;
+    const newArchiveForFirestore = {
+        ...rest,
+        startTime: serverTimestamp(),
+    };
+
+    await setDoc(archiveRef, newArchiveForFirestore);
+    return { id: today, ...newArchiveForClient };
+};
+
+export const closeDailyArchive = async (id: string) => {
+    const archiveRef = doc(db, 'dailyArchives', id);
+    await updateDoc(archiveRef, {
+        status: 'closed',
+        endTime: serverTimestamp(),
+    });
+};
+
+
+// --- Data Management API ---
+
+// Define collections strictly related to business transactions and data.
+// Excluding 'users' and 'appSettings' to prevent session loss or configuration reset during bulk operations.
+const BUSINESS_DATA_COLLECTIONS = [
+    'categories',
+    'customers',
+    'products',
+    'dailyArchives',
+    'invoices',
+    'returns',
+    'customerPayments'
+];
+
+const convertTimestampsToMillis = (data: any): any => {
+    for (const key in data) {
+        if (data[key] instanceof Timestamp) {
+            data[key] = data[key].toMillis();
+        }
+    }
+    return data;
+}
+
+const convertMillisToTimestamps = (data: any): any => {
+    const dateFields = ['createdAt', 'date', 'startTime', 'endTime'];
+    for (const key in data) {
+        if (dateFields.includes(key) && typeof data[key] === 'number') {
+            data[key] = Timestamp.fromMillis(data[key]);
+        }
+    }
+    return data;
+}
+
+
+export const backupData = async (): Promise<BackupData> => {
+    const backup: Partial<BackupData> = {};
+
+    // Only backup business data
+    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+        const querySnapshot = await getDocs(collection(db, collectionName));
+        // @ts-ignore
+        backup[collectionName] = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...convertTimestampsToMillis(data) };
+        });
+    }
+    return backup as BackupData;
+};
+
+const deleteCollection = async (collectionPath: string) => {
+    const querySnapshot = await getDocs(collection(db, collectionPath));
+    if (querySnapshot.empty) return;
+
+    const CHUNK_SIZE = 450;
+    const docs = querySnapshot.docs;
+
+    for (let i = 0; i < docs.length; i += CHUNK_SIZE) {
+        const chunk = docs.slice(i, i + CHUNK_SIZE);
+        const batch = writeBatch(db);
+        chunk.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    }
+};
+
+
+export const factoryReset = async () => {
+    // Only reset business data
+    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+        await deleteCollection(collectionName);
+    }
+};
+
+export const restoreData = async (backupData: BackupData) => {
+    // 1. Clean existing business data
+    await factoryReset();
+
+    // 2. Restore business data from backup
+    const CHUNK_SIZE = 450;
+    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+        // @ts-ignore
+        const dataToRestore = backupData[collectionName];
+        if (dataToRestore && dataToRestore.length > 0) {
+            for (let i = 0; i < dataToRestore.length; i += CHUNK_SIZE) {
+                const chunk = dataToRestore.slice(i, i + CHUNK_SIZE);
+                const batch = writeBatch(db);
+                chunk.forEach((item: any) => {
+                    const { id, ...data } = item;
+                    const dataWithTimestamps = convertMillisToTimestamps(data);
+                    const docRef = doc(db, collectionName, id);
+                    batch.set(docRef, dataWithTimestamps);
+                });
+                await batch.commit();
+            }
+        }
+    }
+};

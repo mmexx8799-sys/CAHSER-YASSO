@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isActiveUser() {
+      return isAuthenticated() && getUserData().disabled != true;
+    }
+
+    function isAdmin() {
+      return isActiveUser() && getUserData().role == 'admin';
+    }
+    
+    match /users/{userId} {
+      allow read: if isActiveUser();
+      // Only admins can change role or disabled fields. A user can update their own non-sensitive fields.
+      allow update: if isAdmin() || (request.auth.uid == userId
+                       && !('role' in request.resource.data.diff(resource.data).affectedKeys())
+                       && !('disabled' in request.resource.data.diff(resource.data).affectedKeys()));
+      allow create, delete: if isAdmin();
+    }
+    
+    match /appSettings/{settingsId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+    
+    match /categories/{docId} {
+      allow read: if isActiveUser();
+      allow write: if isAdmin();
+    }
+    
+    match /products/{docId} {
+      allow read: if isActiveUser();
+      allow write: if isActiveUser(); // Cashier needs to update quantity during sales
+      allow delete: if isAdmin();
+    }
+    
+    match /customers/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+    
+    match /invoices/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+    
+    match /returns/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+    
+    match /customerPayments/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+    
+    match /dailyArchives/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+  }
+}

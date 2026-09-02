@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">نقطة بيع للملابس</string>
+    <string name="title_activity_main">نقطة بيع للملابس</string>
+    <string name="package_name">com.casher.yasoo</string>
+    <string name="custom_url_scheme">com.casher.yasoo</string>
+</resources>
