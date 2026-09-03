@@ -291,7 +291,18 @@ export default function ProductsPage() {
     const nameTokens = normalizeArabic(productData.name).split(' ').filter(Boolean);
     const codeToken = normalizeArabic(productData.code);
 
-    const searchableIndex = [...new Set([...nameTokens, codeToken])];
+    const generatePrefixes = (word: string): string[] => {
+      const prefixes: string[] = [];
+      for (let i = 2; i <= word.length; i++) {
+        prefixes.push(word.slice(0, i));
+      }
+      return prefixes;
+    };
+
+    const searchableIndex = [...new Set([
+      ...nameTokens.flatMap(t => generatePrefixes(t)),
+      ...generatePrefixes(codeToken)
+    ])];
     const dataToSave = { ...productData, searchableIndex };
 
     setIsModalOpen(false);

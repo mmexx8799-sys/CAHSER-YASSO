@@ -199,18 +199,49 @@ export const getProductsPaginated = async (
 };
 
 
+// Customers API - Paginated
+const CUSTOMERS_PAGE_SIZE = 50;
+export const getCustomersPaginated = async (
+    searchTerm: string | null,
+    lastVisible: QueryDocumentSnapshot | null
+): Promise<{ customers: Customer[], lastDoc: QueryDocumentSnapshot | null }> => {
+    try {
+        const constraints: QueryConstraint[] = [];
+        const hasSearch = searchTerm && searchTerm.trim() !== '';
+
+        if (hasSearch) {
+            const normalizedQuery = searchTerm!.trim();
+            constraints.push(where('name', '>=', normalizedQuery));
+            constraints.push(where('name', '<=', normalizedQuery + '\uf8ff'));
+        }
+
+        constraints.push(orderBy('name'));
+        constraints.push(limit(CUSTOMERS_PAGE_SIZE));
+
+        if (lastVisible) {
+            constraints.push(startAfter(lastVisible));
+        }
+
+        const q = query(collection(db, 'customers'), ...constraints);
+        const documentSnapshots = await getDocs(q);
+
+        const customers = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+        const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
+
+        return { customers, lastDoc };
+    } catch (error) {
+        console.error("Error fetching paginated customers: ", error);
+        toast.error("حدث خطأ أثناء تحميل العملاء.");
+        return { customers: [], lastDoc: null };
+    }
+};
+
+
 // Add payment to customer's balance
 export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
     try {
-        const paymentRef = doc(collection(db, "customerPayments"));
-        const batch = writeBatch(db);
-        batch.set(paymentRef, { ...payment, date: serverTimestamp() });
-
         const customerRef = doc(db, "customers", payment.customerId);
-        const customerDoc = await getDoc(customerRef);
-        if (!customerDoc.exists()) {
-            throw new Error("Customer not found");
-        }
+        const paymentRef = doc(collection(db, "customerPayments"));
 
         await runTransaction(db, async (transaction) => {
             const freshCustomerDoc = await transaction.get(customerRef);
@@ -220,9 +251,9 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
             const currentBalance = freshCustomerDoc.data().balance;
             const newBalance = currentBalance - payment.amount;
             transaction.update(customerRef, { balance: newBalance });
+            transaction.set(paymentRef, { ...payment, date: serverTimestamp() });
         });
 
-        await batch.commit();
         toast.success('تم تسجيل الدفعة بنجاح!');
     } catch (error: any) {
         console.error("Error adding customer payment:", error);

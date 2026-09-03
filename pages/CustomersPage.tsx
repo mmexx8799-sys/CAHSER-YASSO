@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Plus, Edit, Trash2, Search, DollarSign, X } from 'lucide-react';
 import type { Customer, CustomerPayment } from '../types';
-import { addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
+import { getCustomersPaginated, addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
-import type { QueryConstraint } from 'firebase/firestore';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import { useDebounce } from '../hooks/useDebounce';
 
 const CustomerFormModal: React.FC<{
   isOpen: boolean;
@@ -46,12 +47,21 @@ const CustomerFormModal: React.FC<{
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
         <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">{customer ? 'تعديل عميل' : 'إضافة عميل جديد'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="text" name="name" placeholder="الاسم" value={formData.name} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required />
-          <input type="tel" name="phone" placeholder="الهاتف" value={formData.phone} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
-          <input type="text" name="address" placeholder="العنوان" value={formData.address} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">الرصيد الافتتاحي (مديونية)</label>
-            <input type="number" name="balance" value={formData.balance} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" disabled={!!customer} />
+            <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">الاسم</label>
+            <input id="customerName" type="text" name="name" placeholder="الاسم" value={formData.name} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required />
+          </div>
+          <div>
+            <label htmlFor="customerPhone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">الهاتف</label>
+            <input id="customerPhone" type="tel" name="phone" placeholder="الهاتف" value={formData.phone} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
+          </div>
+          <div>
+            <label htmlFor="customerAddress" className="block text-sm font-medium text-gray-700 dark:text-gray-300">العنوان</label>
+            <input id="customerAddress" type="text" name="address" placeholder="العنوان" value={formData.address} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
+          </div>
+          <div>
+            <label htmlFor="customerBalance" className="block text-sm font-medium text-gray-700 dark:text-gray-300">الرصيد الافتتاحي (مديونية)</label>
+            <input id="customerBalance" type="number" name="balance" value={formData.balance} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" disabled={!!customer} />
           </div>
           <div className="flex justify-end space-x-2 space-x-reverse">
             <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">إلغاء</button>
@@ -86,7 +96,7 @@ const AddPaymentModal: React.FC<{
     }
     return () => {
       if (unsubscribe) unsubscribe();
-      setPayments([]); // Clear payments on close
+      setPayments([]);
     }
   }, [isOpen, customer]);
 
@@ -137,8 +147,14 @@ const AddPaymentModal: React.FC<{
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
           <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">إضافة دفعة جديدة</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input type="number" placeholder="المبلغ" value={amount} onChange={e => setAmount(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required min="0.01" step="0.01" />
-            <input type="text" placeholder="ملاحظات (اختياري)" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
+            <div>
+              <label htmlFor="paymentAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">المبلغ</label>
+              <input id="paymentAmount" type="number" placeholder="المبلغ" value={amount} onChange={e => setAmount(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required min="0.01" step="0.01" />
+            </div>
+            <div>
+              <label htmlFor="paymentNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ملاحظات (اختياري)</label>
+              <input id="paymentNotes" type="text" placeholder="ملاحظات (اختياري)" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
+            </div>
             <button type="submit" className="w-full py-2 px-4 bg-primary-600 text-white rounded">حفظ الدفعة</button>
           </form>
         </div>
@@ -181,24 +197,32 @@ const CustomersList = memo(({
   customers,
   onEdit,
   onDelete,
-  onAddPayment
+  onAddPayment,
+  lastCustomerRef
 }: {
   customers: Customer[],
   onEdit: (c: Customer) => void,
   onDelete: (c: Customer) => void,
-  onAddPayment: (c: Customer) => void
+  onAddPayment: (c: Customer) => void,
+  lastCustomerRef?: (node: HTMLDivElement | null) => void
 }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {customers.map(customer => (
-        <MemoizedCustomerCard
-          key={customer.id}
-          customer={customer}
-          onAddPayment={onAddPayment}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      ))}
+      {customers.map((customer, index) => {
+        const card = (
+          <MemoizedCustomerCard
+            key={customer.id}
+            customer={customer}
+            onAddPayment={onAddPayment}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        );
+        if (lastCustomerRef && customers.length === index + 1) {
+          return <div key={customer.id} ref={lastCustomerRef}>{card}</div>;
+        }
+        return <div key={customer.id}>{card}</div>;
+      })}
     </div>
   );
 });
@@ -206,25 +230,61 @@ const CustomersList = memo(({
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const lastDocRef = useRef<QueryDocumentSnapshot | null>(null);
   const { confirm } = useConfirmation();
+  const observer = useRef<IntersectionObserver | null>(null);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const loadCustomers = useCallback(async (isNewSearch = false) => {
+    const lastVisible = isNewSearch ? null : lastDocRef.current;
+    if (isNewSearch) {
+      setIsLoading(true);
+      setCustomers([]);
+      lastDocRef.current = null;
+      setHasMore(true);
+    } else {
+      setIsLoadingMore(true);
+    }
+
+    const { customers: newCustomers, lastDoc: newLastDoc } = await getCustomersPaginated(
+      debouncedSearchQuery || null,
+      lastVisible
+    );
+
+    setHasMore(newCustomers.length === 50);
+    setCustomers(prev => isNewSearch ? newCustomers : [...prev, ...newCustomers]);
+    lastDocRef.current = newLastDoc;
+
+    setIsLoading(false);
+    setIsLoadingMore(false);
+  }, [debouncedSearchQuery]);
+
+  const loadMoreCustomers = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      loadCustomers(false);
+    }
+  }, [isLoadingMore, hasMore, loadCustomers]);
+
+  const lastCustomerElementRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoading || isLoadingMore) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMoreCustomers();
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [isLoading, isLoadingMore, hasMore, loadMoreCustomers]);
 
   useEffect(() => {
-    setIsLoading(true);
-    const constraints: QueryConstraint[] = [orderBy('name')];
-    if (searchQuery) {
-      constraints.push(where('name', '>=', searchQuery));
-      constraints.push(where('name', '<=', searchQuery + '\uf8ff'));
-    }
-    const unsubscribe = subscribeToCollection<Customer>('customers', (customersData) => {
-      setCustomers(customersData);
-      setIsLoading(false);
-    }, constraints);
-    return () => unsubscribe();
-  }, [searchQuery]);
+    loadCustomers(true);
+  }, [debouncedSearchQuery]);
 
   const handleSaveCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'createdAt'> | Customer) => {
     setIsFormModalOpen(false);
@@ -232,14 +292,16 @@ export default function CustomersPage() {
       if ('id' in customerData) {
         await updateDocument('customers', customerData.id, customerData);
         toast.success('تم تحديث العميل');
+        loadCustomers(true);
       } else {
         await addDocument('customers', customerData);
         toast.success('تمت إضافة العميل');
+        loadCustomers(true);
       }
     } catch (e) {
       toast.error('فشلت عملية الحفظ');
     }
-  }, []);
+  }, [loadCustomers]);
 
   const handleDeleteCustomer = useCallback(async (customer: Customer) => {
     if (customer.balance !== 0) {
@@ -255,11 +317,12 @@ export default function CustomersPage() {
       try {
         await deleteDocument('customers', customer.id);
         toast.success('تم حذف العميل');
+        loadCustomers(true);
       } catch (e) {
         toast.error('فشل حذف العميل');
       }
     }
-  }, [confirm]);
+  }, [confirm, loadCustomers]);
 
   const handleAddPayment = useCallback((customer: Customer) => {
     setSelectedCustomer(customer);
@@ -297,12 +360,18 @@ export default function CustomersPage() {
           <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-500"></div>
         </div>
       ) : (
-        <CustomersList
-          customers={customers}
-          onEdit={handleEdit}
-          onDelete={handleDeleteCustomer}
-          onAddPayment={handleAddPayment}
-        />
+        <>
+          <CustomersList
+            customers={customers}
+            onEdit={handleEdit}
+            onDelete={handleDeleteCustomer}
+            onAddPayment={handleAddPayment}
+            lastCustomerRef={lastCustomerElementRef}
+          />
+          {isLoadingMore && <div className="text-center p-4 font-semibold text-gray-500">جاري تحميل المزيد...</div>}
+          {!hasMore && customers.length > 0 && <div className="text-center p-4 text-gray-500 font-semibold">لا يوجد المزيد من العملاء.</div>}
+          {!isLoading && customers.length === 0 && <div className="text-center p-10 text-gray-500 dark:text-gray-400">لم يتم العثور على عملاء.</div>}
+        </>
       )}
       <CustomerFormModal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} onSave={handleSaveCustomer} customer={selectedCustomer} />
       {selectedCustomer && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} customer={selectedCustomer} />}

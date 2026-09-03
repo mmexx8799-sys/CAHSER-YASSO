@@ -28,3 +28,6 @@ dist-ssr
 keystore.properties
 android/app/release.keystore
 android/casher-yasoo-release.keystore
+
+# Bundled archives (avoid bloating repo, may contain stale keystore)
+*.zip
