@@ -122,7 +122,8 @@ const CartModal: React.FC<{
     customers: Customer[];
     dailyArchive: DailyArchive | null;
     categories: Category[];
-}> = ({ customers, dailyArchive, categories }) => {
+    onSaleComplete: () => void;
+}> = ({ customers, dailyArchive, categories, onSaleComplete }) => {
     const { confirm } = useConfirmation();
     const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -159,6 +160,7 @@ const CartModal: React.FC<{
                 dailyArchiveId: dailyArchive.id
             });
             clearCart();
+            onSaleComplete();
         } catch (error) {
             toast.error("حدث خطأ أثناء إتمام البيع.");
             console.error(error);
@@ -502,6 +504,7 @@ export default function POSPage() {
                 customers={customers}
                 dailyArchive={dailyArchive}
                 categories={categories}
+                onSaleComplete={() => loadProducts(true)}
             />
         </div>
     );
