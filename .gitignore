@@ -31,3 +31,6 @@ android/casher-yasoo-release.keystore
 
 # Bundled archives (avoid bloating repo, may contain stale keystore)
 *.zip
+
+# Firebase CLI local cache (hosting deploy metadata)
+.firebase/
