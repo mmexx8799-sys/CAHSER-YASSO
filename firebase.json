@@ -1,5 +1,9 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
+    "site": "casher-yasoo",
     "public": "dist",
     "ignore": [
       "firebase.json",
