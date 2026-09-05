@@ -28,7 +28,7 @@ const DailyOpsSection = memo(({
         return (
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
                 <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">عمليات اليومية</h2>
-                <p className="text-center text-gray-500 dark:text-gray-400">جاري تحميل حالة اليومية...</p>
+                <p className="text-center text-gray-600 dark:text-gray-300">جاري تحميل حالة اليومية...</p>
             </div>
         );
     }
@@ -40,12 +40,12 @@ const DailyOpsSection = memo(({
                 <div className="space-y-2">
                     <p className="text-base text-gray-600 dark:text-gray-300">
                         الحالة الحالية:
-                        <span className="font-bold text-green-600">
+                        <span className="font-bold text-green-700 dark:text-green-300">
                             {` يومية ${dailyArchive.id} مفتوحة`}
                         </span>
                     </p>
                     <div className="flex pt-2">
-                        <button onClick={onEndDay} className="flex items-center space-x-2 bg-red-500 text-white py-2 px-4 rounded-lg shadow hover:bg-red-600 transition-colors">
+                        <button onClick={onEndDay} className="flex items-center space-x-2 bg-red-700 text-white py-2 px-4 rounded-lg shadow hover:bg-red-800 transition-colors">
                             <Sunset size={20} />
                             <span className="font-semibold">إغلاق اليومية</span>
                         </button>
@@ -60,7 +60,7 @@ const DailyOpsSection = memo(({
                         </span>
                     </p>
                     <div className="flex pt-2">
-                        <button onClick={onStartDay} className="flex items-center space-x-2 bg-green-500 text-white py-2 px-4 rounded-lg shadow hover:bg-green-600 transition-colors">
+                        <button onClick={onStartDay} className="flex items-center space-x-2 bg-green-700 text-white py-2 px-4 rounded-lg shadow hover:bg-green-800 transition-colors">
                             <Sunrise size={20} />
                             <span className="font-semibold">بدء يومية جديدة</span>
                         </button>
@@ -95,6 +95,7 @@ const AppSettingsSection = memo(({ initialAppName }: { initialAppName: string })
                 <div className="flex space-x-2 space-x-reverse">
                     <input
                         id="appName"
+                        name="appName"
                         type="text"
                         value={currentAppName}
                         onChange={(e) => setCurrentAppName(e.target.value)}
@@ -147,12 +148,12 @@ const SecuritySection = memo(() => {
             <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">تغيير كلمة المرور</h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
                 <div>
-                    <label className="block text-base font-medium text-gray-700 dark:text-gray-300">كلمة المرور الجديدة</label>
-                    <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required />
+                    <label htmlFor="newPassword" className="block text-base font-medium text-gray-700 dark:text-gray-300">كلمة المرور الجديدة</label>
+                    <input id="newPassword" name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required autoComplete="new-password" />
                 </div>
                 <div>
-                    <label className="block text-base font-medium text-gray-700 dark:text-gray-300">تأكيد كلمة المرور الجديدة</label>
-                    <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required />
+                    <label htmlFor="confirmPassword" className="block text-base font-medium text-gray-700 dark:text-gray-300">تأكيد كلمة المرور الجديدة</label>
+                    <input id="confirmPassword" name="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required autoComplete="new-password" />
                 </div>
                 <div className="flex justify-end">
                     <button

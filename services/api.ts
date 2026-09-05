@@ -20,7 +20,7 @@ import {
     runTransaction
 } from "firebase/firestore";
 import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
-import { getDB, firebaseConfig, getPerformanceInstance } from './firebase';
+import { getDB, firebaseConfig } from './firebase';
 import { initializeApp, deleteApp } from "firebase/app";
 import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, Category, CartItem, Return, BackupData, User, AppSettings, UserRole } from '../types';
 import { toast } from 'react-hot-toast';
@@ -28,7 +28,6 @@ import {
     createUserWithEmailAndPassword,
     getAuth
 } from "firebase/auth";
-import { trace } from 'firebase/performance';
 
 
 const db = getDB();
@@ -158,9 +157,6 @@ export const getProductsPaginated = async (
     filters: { searchQuery?: string; categoryId?: string },
     lastVisible: QueryDocumentSnapshot | null
 ): Promise<{ products: Product[], lastDoc: QueryDocumentSnapshot | null }> => {
-    const perf = getPerformanceInstance();
-    const t = trace(perf, "get_products_paginated");
-    t.start();
     try {
         const constraints: QueryConstraint[] = [];
         const hasSearch = filters.searchQuery && filters.searchQuery.trim() !== '';
@@ -193,8 +189,6 @@ export const getProductsPaginated = async (
         console.error("Error fetching paginated products: ", error);
         toast.error("حدث خطأ أثناء تحميل المنتجات.");
         return { products: [], lastDoc: null };
-    } finally {
-        t.stop();
     }
 };
 
@@ -265,24 +259,40 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
 
 // Invoices API
 export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
-    const perf = getPerformanceInstance();
-    const t = trace(perf, "process_sale");
-    t.start();
-
     try {
         await runTransaction(db, async (transaction) => {
             const invoiceRef = doc(collection(db, 'invoices'));
-            let customerName: string | undefined = undefined;
 
-            if (invoiceData.paymentMethod === 'آجل' && invoiceData.customerId) {
-                const customerRef = doc(db, 'customers', invoiceData.customerId);
-                const customerDoc = await transaction.get(customerRef);
-                if (customerDoc.exists()) {
-                    const customerData = customerDoc.data();
-                    customerName = customerData.name;
-                    const currentBalance = customerData.balance;
-                    transaction.update(customerRef, { balance: currentBalance + invoiceData.total });
+            // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
+            const customerRef = (invoiceData.paymentMethod === 'آجل' && invoiceData.customerId)
+                ? doc(db, 'customers', invoiceData.customerId)
+                : null;
+            const customerDoc = customerRef ? await transaction.get(customerRef) : null;
+
+            const archiveRef = doc(db, 'dailyArchives', invoiceData.dailyArchiveId);
+            const archiveDoc = await transaction.get(archiveRef);
+
+            const productRefs = invoiceData.items.map(item => doc(db, 'products', item.id));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            // --- VALIDATION (still before any writes) ---
+            invoiceData.items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (productDoc.exists()) {
+                    const currentQuantity = productDoc.data().quantity || 0;
+                    if (currentQuantity < item.buyQuantity) {
+                        throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
+                    }
                 }
+            });
+
+            // --- PHASE 2: ALL WRITES ---
+            let customerName: string | undefined = undefined;
+            if (customerRef && customerDoc && customerDoc.exists()) {
+                const customerData = customerDoc.data();
+                customerName = customerData.name;
+                const currentBalance = customerData.balance;
+                transaction.update(customerRef, { balance: currentBalance + invoiceData.total });
             }
 
             const newInvoice = {
@@ -293,8 +303,6 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             };
             transaction.set(invoiceRef, newInvoice);
 
-            const archiveRef = doc(db, 'dailyArchives', invoiceData.dailyArchiveId);
-            const archiveDoc = await transaction.get(archiveRef);
             if (archiveDoc.exists()) {
                 const data = archiveDoc.data();
                 const updates: Partial<DailyArchive> = { totalSales: (data.totalSales || 0) + invoiceData.total };
@@ -307,18 +315,14 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
                 transaction.update(archiveRef, updates);
             }
 
-            for (const item of invoiceData.items) {
-                const productRef = doc(db, 'products', item.id);
-                const productDoc = await transaction.get(productRef);
+            invoiceData.items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
                 if (productDoc.exists()) {
                     const currentQuantity = productDoc.data().quantity || 0;
-                    if (currentQuantity < item.buyQuantity) {
-                        throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
-                    }
                     const newQuantity = currentQuantity - item.buyQuantity;
-                    transaction.update(productRef, { quantity: newQuantity });
+                    transaction.update(productRefs[idx], { quantity: newQuantity });
                 }
-            }
+            });
 
             return invoiceRef.id;
         });
@@ -331,49 +335,73 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             toast.error('حدث خطأ أثناء عملية البيع.');
         }
         throw error;
-    } finally {
-        t.stop();
     }
 };
 
 // Returns API
-export const processReturn = async (items: CartItem[], dailyArchiveId: string) => {
+export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }) => {
     try {
         await runTransaction(db, async (transaction) => {
             const returnRef = doc(collection(db, 'returns'));
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
 
+            // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
+            const archiveRef = doc(db, 'dailyArchives', dailyArchiveId);
+            const archiveDoc = await transaction.get(archiveRef);
+            if (!archiveDoc.exists()) {
+                throw new Error("لم يتم العثور على اليومية المفتوحة.");
+            }
+
+            const productRefs = items.map(item => doc(db, 'products', item.id));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            let customerDoc: any = null;
+            let customerRef: any = null;
+            if (customer) {
+                customerRef = doc(db, 'customers', customer.id);
+                customerDoc = await transaction.get(customerRef);
+                if (!customerDoc.exists()) {
+                    throw new Error("العميل المحدد لم يعد موجودًا");
+                }
+            }
+
+            // --- PHASE 2: ALL WRITES ---
             const newReturn: Omit<Return, 'id'> = {
                 items,
                 total: totalReturnAmount,
                 createdAt: serverTimestamp() as unknown as number,
                 dailyArchiveId,
+                ...(customer && { customerId: customer.id, customerName: customer.name }),
             };
             transaction.set(returnRef, newReturn);
 
-            for (const item of items) {
-                const productRef = doc(db, 'products', item.id);
-                const productDoc = await transaction.get(productRef);
+            items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
                 if (productDoc.exists()) {
                     const currentQuantity = productDoc.data().quantity || 0;
                     const newQuantity = currentQuantity + item.buyQuantity;
-                    transaction.update(productRef, { quantity: newQuantity });
+                    transaction.update(productRefs[idx], { quantity: newQuantity });
                 }
+            });
+
+            if (customer && customerRef && customerDoc) {
+                const currentBalance = customerDoc.data().balance || 0;
+                transaction.update(customerRef, { balance: currentBalance - totalReturnAmount });
             }
 
-            const archiveRef = doc(db, 'dailyArchives', dailyArchiveId);
-            const archiveDoc = await transaction.get(archiveRef);
-            if (archiveDoc.exists()) {
-                const currentReturns = archiveDoc.data().totalReturns || 0;
-                transaction.update(archiveRef, { totalReturns: currentReturns + totalReturnAmount });
+            const currentReturns = archiveDoc.data().totalReturns || 0;
+            const updates: any = { totalReturns: currentReturns + totalReturnAmount };
+            if (customer) {
+                updates.totalReturnsOnAccount = (archiveDoc.data().totalReturnsOnAccount || 0) + totalReturnAmount;
             } else {
-                throw new Error("لم يتم العثور على اليومية المفتوحة.");
+                updates.totalReturnsCash = (archiveDoc.data().totalReturnsCash || 0) + totalReturnAmount;
             }
+            transaction.update(archiveRef, updates);
         });
         toast.success('تمت عملية الإرجاع بنجاح!');
     } catch (error: any) {
         console.error("Error processing return:", error);
-        toast.error('حدث خطأ أثناء عملية الإرجاع.');
+        toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
         throw error;
     }
 };
@@ -417,6 +445,8 @@ export const startNewDailyArchive = async (): Promise<DailyArchive> => {
         totalCredit: 0,
         totalVodafoneCash: 0,
         totalInstapay: 0,
+        totalReturnsCash: 0,
+        totalReturnsOnAccount: 0,
     };
     // FIX: Destructure to avoid type conflict between client-side number and Firestore FieldValue
     const { startTime, ...rest } = newArchiveForClient;

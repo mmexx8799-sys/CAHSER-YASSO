@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap');
+/* Font is preloaded from index.html — no @import here (avoids render-blocking chain) */
 
 @tailwind base;
 @tailwind components;

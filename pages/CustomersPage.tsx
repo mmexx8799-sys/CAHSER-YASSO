@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Plus, Edit, Trash2, Search, DollarSign, X } from 'lucide-react';
-import type { Customer, CustomerPayment } from '../types';
+import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { getCustomersPaginated, addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { toast } from 'react-hot-toast';
@@ -81,6 +81,8 @@ const AddPaymentModal: React.FC<{
   const [amount, setAmount] = useState<number | string>('');
   const [notes, setNotes] = useState('');
   const [payments, setPayments] = useState<CustomerPayment[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [returns, setReturns] = useState<Return[]>([]);
 
   useEffect(() => {
     let unsubscribe: () => void;
@@ -98,6 +100,23 @@ const AddPaymentModal: React.FC<{
       if (unsubscribe) unsubscribe();
       setPayments([]);
     }
+  }, [isOpen, customer]);
+
+  useEffect(() => {
+    let unsubInv: () => void; let unsubRet: () => void;
+    if (isOpen && customer) {
+      const invConstraints = [where('customerId', '==', customer.id), orderBy('createdAt', 'desc')];
+      unsubInv = subscribeToCollection<Omit<Invoice,'createdAt'> & { createdAt: Timestamp }>('invoices', (data) => {
+        const mapped = data.map(d => ({ ...d, createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : d.createdAt } as Invoice)).sort((a,b)=>b.createdAt-a.createdAt);
+        setInvoices(mapped);
+      }, invConstraints);
+      const retConstraints = [where('customerId', '==', customer.id), orderBy('createdAt', 'desc')];
+      unsubRet = subscribeToCollection<Omit<Return,'createdAt'> & { createdAt: Timestamp }>('returns', (data) => {
+        const mapped = data.map(d => ({ ...d, createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : d.createdAt } as Return)).sort((a,b)=>b.createdAt-a.createdAt);
+        setReturns(mapped);
+      }, retConstraints);
+    }
+    return () => { if(unsubInv) unsubInv(); if(unsubRet) unsubRet(); setInvoices([]); setReturns([]); };
   }, [isOpen, customer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -124,24 +143,58 @@ const AddPaymentModal: React.FC<{
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col h-[75vh]">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">إدارة مدفوعات {customer.name}</h2>
-          <button onClick={onClose} className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X /></button>
+          <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X /></button>
         </div>
         <p className='mb-4 text-gray-600 dark:text-gray-300'>الرصيد الحالي: {(customer.balance || 0).toFixed(2)} ج.م</p>
 
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 flex-1 overflow-y-auto">
-          <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">سجل المدفوعات</h3>
-          {payments.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">لا توجد دفعات سابقة.</p>
-          ) : (
-            <div className="space-y-2">
-              {payments.map(p => (
-                <div key={p.id} className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded">
-                  <span className="font-bold text-green-600 dark:text-green-400">{p.amount.toFixed(2)} ج.م</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{new Date(p.date).toLocaleString('ar-EG')}</span>
-                </div>
-              ))}
-            </div>
-          )}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 flex-1 overflow-y-auto space-y-4">
+          <div>
+            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">سجل المدفوعات</h3>
+            {payments.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد دفعات سابقة.</p>
+            ) : (
+              <div className="space-y-2">
+                {payments.map(p => (
+                  <div key={p.id} className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded">
+                    <span className="font-bold text-green-700 dark:text-green-300">{p.amount.toFixed(2)} ج.م</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300">{new Date(p.date).toLocaleString('ar-EG')}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">الفواتير</h3>
+            {invoices.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد فواتير.</p>
+            ) : (
+              <div className="space-y-2">
+                {invoices.map(inv => (
+                  <div key={inv.id} className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
+                    <div className="flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-gray-100">{inv.invoiceNumber}</span><span className="font-bold text-blue-800 dark:text-blue-300">{inv.total.toFixed(2)} ج.م</span></div>
+                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(inv.createdAt).toLocaleString('ar-EG')} — {inv.paymentMethod}</p>
+                    <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">{inv.items.map((it,i)=>(<div key={i} className="flex justify-between"><span>{it.name} ×{it.buyQuantity}</span><span>{(it.price*it.buyQuantity).toFixed(2)}</span></div>))}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">المرتجعات</h3>
+            {returns.length === 0 ? (
+              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد مرتجعات.</p>
+            ) : (
+              <div className="space-y-2">
+                {returns.map(ret => (
+                  <div key={ret.id} className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-800">
+                    <div className="flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-gray-100">مرتجع</span><span className="font-bold text-red-800 dark:text-red-300">-{ret.total.toFixed(2)} ج.م</span></div>
+                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleString('ar-EG')}</p>
+                    <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">{ret.items.map((it,i)=>(<div key={i} className="flex justify-between"><span>{it.name} ×{it.buyQuantity}</span><span>{(it.price*it.buyQuantity).toFixed(2)}</span></div>))}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
@@ -170,24 +223,23 @@ const CustomerCard: React.FC<{
   onAddPayment: (customer: Customer) => void;
 }> = ({ customer, onEdit, onDelete, onAddPayment }) => {
   const balance = customer.balance || 0;
-  const balanceColor = balance > 0 ? 'text-red-600 dark:text-red-400' : balance < 0 ? 'text-green-600 dark:text-green-400' : 'text-gray-800 dark:text-gray-100';
+  const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
   const balanceText = balance > 0 ? 'عليه مديونية' : balance < 0 ? 'له رصيد' : 'رصيد صفري';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg">
       <div>
-        <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{customer.name}</h3>
-        {customer.phone && <p className="text-sm text-gray-500 dark:text-gray-400">{customer.phone}</p>}
+        <h2 className="font-bold text-lg text-gray-800 dark:text-gray-100">{customer.name}</h2>
+        {customer.phone && <p className="text-sm text-gray-600 dark:text-gray-300">{customer.phone}</p>}
       </div>
       <div className="border-t border-gray-200 dark:border-gray-700 my-3 pt-3">
         <p className="text-sm text-gray-600 dark:text-gray-300">{balanceText}</p>
         <p className={`font-bold text-xl ${balanceColor}`}>{Math.abs(balance).toFixed(2)} ج.م</p>
       </div>
       <div className="flex justify-end space-x-2 space-x-reverse mt-2">
-        <button onClick={() => onAddPayment(customer)} title="إضافة دفعة" className="p-2 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>
-        <button onClick={() => onEdit(customer)} title="تعديل" className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>
-        <button onClick={() => onDelete(customer)} title="حذف" className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>
-      </div>
+        <button onClick={() => onAddPayment(customer)} title="إضافة دفعة" aria-label={`إضافة دفعة لـ ${customer.name}`} className="p-2 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>
+        <button onClick={() => onEdit(customer)} title="تعديل" aria-label={`تعديل ${customer.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>
+        <button onClick={() => onDelete(customer)} title="حذف" aria-label={`حذف ${customer.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>      </div>
     </div>
   );
 }
@@ -346,6 +398,8 @@ export default function CustomersPage() {
       <div className="mb-4">
         <div className="relative mb-6">
           <input
+            id="customerSearch"
+            name="customerSearch"
             type="text"
             placeholder="ابحث بالاسم..."
             value={searchQuery}
@@ -368,9 +422,9 @@ export default function CustomersPage() {
             onAddPayment={handleAddPayment}
             lastCustomerRef={lastCustomerElementRef}
           />
-          {isLoadingMore && <div className="text-center p-4 font-semibold text-gray-500">جاري تحميل المزيد...</div>}
-          {!hasMore && customers.length > 0 && <div className="text-center p-4 text-gray-500 font-semibold">لا يوجد المزيد من العملاء.</div>}
-          {!isLoading && customers.length === 0 && <div className="text-center p-10 text-gray-500 dark:text-gray-400">لم يتم العثور على عملاء.</div>}
+          {isLoadingMore && <div className="text-center p-4 font-semibold text-gray-600 dark:text-gray-300">جاري تحميل المزيد...</div>}
+          {!hasMore && customers.length > 0 && <div className="text-center p-4 text-gray-700 dark:text-gray-300 font-semibold">لا يوجد المزيد من العملاء.</div>}
+          {!isLoading && customers.length === 0 && <div className="text-center p-10 text-gray-600 dark:text-gray-300">لم يتم العثور على عملاء.</div>}
         </>
       )}
       <CustomerFormModal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} onSave={handleSaveCustomer} customer={selectedCustomer} />

@@ -82,6 +82,8 @@ export interface Return {
     total: number;
     createdAt: number; // serverTimestamp
     dailyArchiveId: string;
+    customerId?: string;
+    customerName?: string;
 }
 
 
@@ -96,6 +98,8 @@ export interface DailyArchive {
   totalCredit: number;
   totalVodafoneCash: number;
   totalInstapay: number;
+  totalReturnsCash: number;
+  totalReturnsOnAccount: number;
 }
 
 export interface BackupData {

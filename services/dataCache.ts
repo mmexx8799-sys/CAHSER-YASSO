@@ -30,6 +30,23 @@ const generateCacheKey = (path: string, constraints: QueryConstraint[]): string 
 type Unsubscribe = () => void;
 
 /**
+ * Delays the actual Firestore unsubscribe call to a microtask, so it never
+ * races with an in-flight remote event being processed by the SyncEngine
+ * (workaround for SDK 10.14.1 "INTERNAL ASSERTION FAILED: Unexpected state"
+ * thrown when teardown happens mid-watch-processing).
+ */
+const safeUnsubscribe = (unsub: () => void) => {
+    queueMicrotask(() => {
+        try {
+            unsub();
+        } catch (e) {
+            // Swallow post-teardown SDK assertion errors — listener is gone anyway.
+            console.warn('Firestore unsubscribe swallowed an internal error:', e);
+        }
+    });
+};
+
+/**
  * Subscribes to a Firestore collection with caching and automatic listener management.
  * @param path The collection path.
  * @param callback The function to call with the data.
@@ -78,7 +95,7 @@ export const subscribeToCollection = <T extends DocumentData>(
         } else {
             const entry = cache.get(cacheKey);
             if (entry && entry.unsubscribe) {
-                entry.unsubscribe();
+                safeUnsubscribe(entry.unsubscribe);
             }
             activeSubscriptions.delete(cacheKey);
         }
@@ -132,7 +149,7 @@ export const subscribeToDocument = <T extends DocumentData>(
         } else {
             const entry = cache.get(cacheKey);
             if (entry && entry.unsubscribe) {
-                entry.unsubscribe();
+                safeUnsubscribe(entry.unsubscribe);
             }
             activeSubscriptions.delete(cacheKey);
         }

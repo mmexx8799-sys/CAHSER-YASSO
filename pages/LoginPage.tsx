@@ -101,11 +101,11 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 transition-colors duration-200">
+        <main className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 transition-colors duration-200">
             <div className="w-full max-w-sm p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-colors duration-200">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{appName}</h1>
-                    <p className="mt-2 text-gray-500 dark:text-gray-400">
+                    <p className="mt-2 text-gray-600 dark:text-gray-300">
                         {isCreateMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}
                     </p>
                 </div>
@@ -173,21 +173,21 @@ export default function LoginPage() {
                 )}
 
                 {showCreateAccountButton && !isCreateMode && (
-                    <div className="text-sm text-center text-gray-500 dark:text-gray-400">
-                        <button onClick={() => setIsCreateMode(true)} className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                    <div className="text-sm text-center text-gray-600 dark:text-gray-300">
+                        <button onClick={() => setIsCreateMode(true)} className="font-medium text-primary-600 dark:text-primary-300 hover:text-primary-500">
                             إنشاء حساب جديد
                         </button>
                     </div>
                 )}
 
                 {isCreateMode && (
-                    <div className="text-sm text-center text-gray-500 dark:text-gray-400">
-                        <button onClick={() => setIsCreateMode(false)} className="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                    <div className="text-sm text-center text-gray-600 dark:text-gray-300">
+                        <button onClick={() => setIsCreateMode(false)} className="font-medium text-primary-600 dark:text-primary-300 hover:text-primary-500">
                             العودة لتسجيل الدخول
                         </button>
                     </div>
                 )}
             </div>
-        </div>
+        </main>
     );
 }

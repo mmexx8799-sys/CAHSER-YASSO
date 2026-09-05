@@ -7,7 +7,6 @@ import {
   Firestore 
 } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
-import { getPerformance, FirebasePerformance } from "firebase/performance";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDkP4sNYxHkVffXADVdunXU0iDxlXAWuDE",
@@ -25,7 +24,6 @@ export const firebaseConfig = {
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
-let performance: FirebasePerformance;
 
 try {
   app = initializeApp(firebaseConfig);
@@ -39,7 +37,6 @@ try {
   });
 
   auth = getAuth(app);
-  performance = getPerformance(app);
 
 } catch (error) {
     console.error("Firebase initialization failed:", error);
@@ -60,12 +57,4 @@ export const getDB = (): Firestore => {
  */
 export const getAuthInstance = (): Auth => {
     return auth;
-}
-
-/**
- * Gets the singleton Firebase Performance instance.
- * @returns {FirebasePerformance} The Firebase Performance instance.
- */
-export const getPerformanceInstance = (): FirebasePerformance => {
-    return performance;
 }

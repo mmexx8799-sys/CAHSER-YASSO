@@ -53,19 +53,19 @@ const ProductCard: React.FC<{ product: Product; categoryName: string; onAddToCar
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-primary-600 text-white border border-primary-700 shadow-sm tracking-wide">
                 {categoryName}
             </span>
-            <span className={`flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full text-xs font-bold border ${product.quantity > 5 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'}`}>
+            <span className={`flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full text-xs font-bold border ${product.quantity > 5 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'}`}>
                 {product.quantity}
             </span>
         </div>
 
-        <h3 className="font-bold text-gray-800 dark:text-gray-100 text-base leading-snug mb-3 line-clamp-2 group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors min-h-[2.5rem]" title={product.name}>
+        <h2 className="font-bold text-gray-800 dark:text-gray-100 text-base leading-snug mb-3 line-clamp-2 group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors min-h-[2.5rem]" title={product.name}>
             {product.name}
-        </h3>
+        </h2>
 
         <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 w-full flex justify-between items-end">
-            <span className="text-[10px] text-gray-400 font-medium mb-1">السعر</span>
-            <p className="text-primary-700 dark:text-primary-400 font-bold text-xl">
-                {product.price.toFixed(2)} <span className="text-[10px] font-normal text-gray-500 dark:text-gray-400">ج.م</span>
+            <span className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-1">السعر</span>
+            <p className="text-primary-700 dark:text-primary-300 font-bold text-xl">
+                {product.price.toFixed(2)} <span className="text-xs font-normal text-gray-600 dark:text-gray-300">ج.م</span>
             </p>
         </div>
     </div>
@@ -111,8 +111,8 @@ const ProductGrid = memo(({
                 })}
             </div>
             {isLoadingMore && <div className="text-center p-4 font-semibold">جاري تحميل المزيد...</div>}
-            {!hasMore && products.length > 0 && <div className="text-center p-4 text-gray-500 font-semibold">لا يوجد المزيد من المنتجات.</div>}
-            {!isLoading && products.length === 0 && <div className="text-center p-16 text-gray-500"><p className="text-xl">لم يتم العثور على منتجات.</p></div>}
+            {!hasMore && products.length > 0 && <div className="text-center p-4 text-gray-700 dark:text-gray-300 font-semibold">لا يوجد المزيد من المنتجات.</div>}
+            {!isLoading && products.length === 0 && <div className="text-center p-16 text-gray-700 dark:text-gray-300"><p className="text-xl">لم يتم العثور على منتجات.</p></div>}
         </>
     );
 });
@@ -174,15 +174,15 @@ const CartModal: React.FC<{
                     <div className="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-3">
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">السلة</h2>
                         <div className='flex items-center gap-4'>
-                            <button onClick={handleClearCart} className="text-red-500 hover:text-red-700 flex items-center gap-1 text-base font-semibold">
+                            <button onClick={handleClearCart} aria-label="إفراغ السلة" className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1 text-base font-semibold">
                                 <Trash2 size={18} />
                                 إفراغ السلة
                             </button>
-                            <button onClick={() => setCartModalOpen(false)} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+                            <button onClick={() => setCartModalOpen(false)} aria-label="إغلاق السلة" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"><X size={24} /></button>
                         </div>
                     </div>
                     {cart.length === 0 ? (
-                        <div className="flex-1 flex flex-col justify-center items-center text-gray-500 dark:text-gray-400">
+                        <div className="flex-1 flex flex-col justify-center items-center text-gray-600 dark:text-gray-300">
                             <ShoppingCart size={64} className="mb-4" />
                             <p className="text-xl">السلة فارغة</p>
                         </div>
@@ -192,29 +192,37 @@ const CartModal: React.FC<{
                                 <div key={item.id} className="grid grid-cols-6 items-center py-4 border-b dark:border-gray-700 gap-2">
                                     <div className="col-span-2 pr-2">
                                         <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">{getCategoryName(item.categoryId)}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
                                     </div>
                                     <div className="col-span-1 flex items-center">
+                                        <label htmlFor={`qty-${item.id}`} className="sr-only">الكمية</label>
                                         <input
+                                            id={`qty-${item.id}`}
+                                            name={`qty-${item.id}`}
                                             type="number"
                                             value={item.buyQuantity}
                                             onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1, item.price)}
+                                            autoComplete="off"
                                             className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
                                             min="1"
                                             max={item.quantity}
                                         />
                                     </div>
                                     <div className="col-span-1 flex items-center">
+                                        <label htmlFor={`price-${item.id}`} className="sr-only">السعر</label>
                                         <input
+                                            id={`price-${item.id}`}
+                                            name={`price-${item.id}`}
                                             type="number"
                                             value={item.price}
                                             onChange={(e) => updateItem(item.id, item.buyQuantity, parseFloat(e.target.value) || 0)}
+                                            autoComplete="off"
                                             className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
                                             step="0.01"
                                         />
                                     </div>
                                     <p className="col-span-1 text-center font-bold text-base text-gray-900 dark:text-gray-100">{(item.price * item.buyQuantity).toFixed(2)}</p>
-                                    <button onClick={() => removeItem(item.id)} className="col-span-1 text-red-500 hover:text-red-700 justify-self-end p-2">
+                                    <button onClick={() => removeItem(item.id)} aria-label={`حذف ${item.name}`} className="col-span-1 text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 justify-self-end p-2">
                                         <Trash2 size={20} />
                                     </button>
                                 </div>
@@ -224,7 +232,7 @@ const CartModal: React.FC<{
                     <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t dark:border-gray-700 mt-auto -mx-4">
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-xl font-semibold text-gray-900 dark:text-gray-100">الإجمالي</span>
-                            <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">{subtotal.toFixed(2)} ج.م</span>
+                            <span className="text-3xl font-bold text-primary-600 dark:text-primary-300">{subtotal.toFixed(2)} ج.م</span>
                         </div>
                         <button
                             onClick={() => setIsPaymentModalOpen(true)}
@@ -287,7 +295,7 @@ const PaymentModal: React.FC<{
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm transition-colors duration-200">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إتمام البيع</h2>
-                    <button onClick={onClose} className="text-gray-500 dark:text-gray-400"><X size={24} /></button>
+                    <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"><X size={24} /></button>
                 </div>
                 <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-lg text-gray-600 dark:text-gray-300">
@@ -296,22 +304,26 @@ const PaymentModal: React.FC<{
                     </div>
                     <div className="flex justify-between items-center">
                         <label htmlFor="discount" className="text-lg text-gray-600 dark:text-gray-300">خصم</label>
-                        <input
+                            <input
                             id="discount"
+                            name="discount"
                             type="number"
                             value={discount}
                             onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                            autoComplete="off"
                             className="w-2/5 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-left direction-ltr text-lg"
                         />
                     </div>
-                    <div className="flex justify-between text-3xl font-extrabold text-primary-600 dark:text-primary-400 border-t dark:border-gray-700 pt-3 mt-3">
+                    <div className="flex justify-between text-3xl font-extrabold text-primary-600 dark:text-primary-300 border-t dark:border-gray-700 pt-3 mt-3">
                         <span>المبلغ النهائي</span>
                         <span>{total.toFixed(2)}</span>
                     </div>
                 </div>
                 <div className="space-y-4">
-                    <label className="block text-base font-medium text-gray-700 dark:text-gray-300">طريقة الدفع</label>
+                    <label htmlFor="paymentMethod" className="block text-base font-medium text-gray-700 dark:text-gray-300">طريقة الدفع</label>
                     <select
+                        id="paymentMethod"
+                        name="paymentMethod"
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                         className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
@@ -321,8 +333,10 @@ const PaymentModal: React.FC<{
 
                     {paymentMethod === PaymentMethod.Credit && (
                         <div>
-                            <label className="block text-base font-medium text-gray-700 dark:text-gray-300">اختيار العميل</label>
+                            <label htmlFor="selectedCustomer" className="block text-base font-medium text-gray-700 dark:text-gray-300">اختيار العميل</label>
                             <select
+                                id="selectedCustomer"
+                                name="selectedCustomer"
                                 value={selectedCustomer}
                                 onChange={(e) => setSelectedCustomer(e.target.value)}
                                 className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"

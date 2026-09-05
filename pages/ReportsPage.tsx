@@ -11,13 +11,15 @@ import type { QueryConstraint } from 'firebase/firestore';
 const FinancialSummary: React.FC<{ archive: DailyArchive | null }> = ({ archive }) => {
     if (!archive) return null;
 
+    const hasNewReturnFields = (archive as any).totalReturnsCash !== undefined || (archive as any).totalReturnsOnAccount !== undefined;
     const summaryItems = [
-        { label: 'إجمالي المبيعات', value: archive.totalSales || 0, color: 'text-green-600' },
-        { label: 'إجمالي المرتجعات', value: archive.totalReturns || 0, color: 'text-red-600' },
-        { label: 'صافي النقدية بالدرج', value: (archive.totalCash || 0) - (archive.totalReturns || 0), color: 'text-blue-600' },
-        { label: 'إجمالي الآجل', value: archive.totalCredit || 0, color: 'text-orange-500' },
-        { label: 'إجمالي فودافون كاش', value: archive.totalVodafoneCash || 0, color: 'text-purple-600' },
-        { label: 'إجمالي انستا باي', value: archive.totalInstapay || 0, color: 'text-teal-500' },
+        { label: 'إجمالي المبيعات', value: archive.totalSales || 0, color: 'text-green-700 dark:text-green-300' },
+        { label: 'إجمالي المرتجعات', value: archive.totalReturns || 0, color: 'text-red-700 dark:text-red-300' },
+        { label: 'مرتجعات على حساب العملاء', value: (archive as any).totalReturnsOnAccount || 0, color: 'text-orange-700 dark:text-orange-300' },
+        { label: 'صافي النقدية بالدرج', value: (archive.totalCash || 0) - (hasNewReturnFields ? ((archive as any).totalReturnsCash || 0) : (archive.totalReturns || 0)), color: 'text-blue-700 dark:text-blue-300' },
+        { label: 'إجمالي الآجل', value: archive.totalCredit || 0, color: 'text-orange-700 dark:text-orange-300' },
+        { label: 'إجمالي فودافون كاش', value: archive.totalVodafoneCash || 0, color: 'text-purple-700 dark:text-purple-300' },
+        { label: 'إجمالي انستا باي', value: archive.totalInstapay || 0, color: 'text-teal-700 dark:text-teal-300' },
     ];
 
 
@@ -27,7 +29,7 @@ const FinancialSummary: React.FC<{ archive: DailyArchive | null }> = ({ archive 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                 {summaryItems.map(item => (
                     <div key={item.label}>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{item.label}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{item.label}</p>
                         <p className={`text-xl font-bold ${item.color}`}>{item.value.toFixed(2)} ج.م</p>
                     </div>
                 ))}
@@ -52,7 +54,7 @@ const TransactionDetailModal: React.FC<{
                     <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">كاشير ياسو للملابس</h2>
                     <p>{new Date(transaction.createdAt).toLocaleDateString('ar-EG')}</p>
                     <p>{new Date(transaction.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
-                    <button onClick={onClose} className="absolute top-0 right-0 text-gray-500 hover:text-gray-800">
+                    <button onClick={onClose} aria-label="إغلاق" className="absolute top-0 right-0 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">
                         <X size={20} />
                     </button>
                 </div>
@@ -95,7 +97,7 @@ const TransactionDetailModal: React.FC<{
                             {(invoice.discount || 0) > 0 && (
                                 <div className="flex justify-between">
                                     <span>الخصم:</span>
-                                    <span className="text-red-600">- {(invoice.discount || 0).toFixed(2)} ج.م</span>
+                                    <span className="text-red-700 dark:text-red-300">- {(invoice.discount || 0).toFixed(2)} ج.م</span>
                                 </div>
                             )}
                         </>
@@ -120,7 +122,7 @@ const TransactionDetailModal: React.FC<{
                         </>
                     )}
                 </div>
-                <div className="text-center mt-4 text-xs text-gray-500">
+                <div className="text-center mt-4 text-xs text-gray-600 dark:text-gray-300">
                     <p>شكراً لزيارتكم</p>
                 </div>
             </div>
@@ -217,18 +219,18 @@ export default function ReportsPage() {
         if (items.length === 0) return null;
         return (
             <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
-                <h3 className={`font-bold mb-2 ${isReturn ? 'text-red-700 dark:text-red-400' : 'text-gray-800 dark:text-gray-100'}`}>{title}</h3>
+                <h2 className={`font-bold mb-2 ${isReturn ? 'text-red-700 dark:text-red-300' : 'text-gray-800 dark:text-gray-100'}`}>{title}</h2>
                 <div className="space-y-2">
                     {items.map(item => (
                         <button key={item.id} onClick={() => setSelectedTransaction(item)} className="w-full text-right p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                             <div className="flex items-center space-x-3 space-x-reverse">
-                                {isReturn ? <Undo2 className="text-red-500" size={18} /> : <FileText className="text-blue-500" size={18} />}
+                                {isReturn ? <Undo2 className="text-red-500" size={18} aria-hidden="true" /> : <FileText className="text-blue-500" size={18} aria-hidden="true" />}
                                 <div>
                                     <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">#{item.id.slice(0, 6).toUpperCase()}</span>
-                                    {'customerName' in item && <span className="text-xs text-gray-500 dark:text-gray-400 block">العميل: {item.customerName}</span>}
+                                    {'customerName' in item && <span className="text-xs text-gray-600 dark:text-gray-300 block">العميل: {item.customerName}</span>}
                                 </div>
                             </div>
-                            <span className={`font-bold ${isReturn ? 'text-red-600' : 'text-green-600'}`}>
+                            <span className={`font-bold ${isReturn ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
                                 {isReturn ? '-' : ''}{(item.total || 0).toFixed(2)} ج.م
                             </span>
                         </button>
@@ -242,7 +244,10 @@ export default function ReportsPage() {
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">التقارير التفصيلية</h1>
             <div className="mb-4">
+                <label htmlFor="archiveSelect" className="sr-only">اختر اليومية</label>
                 <select
+                    id="archiveSelect"
+                    name="archiveSelect"
                     value={selectedArchiveId}
                     onChange={(e) => setSelectedArchiveId(e.target.value)}
                     className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm"

@@ -55,10 +55,13 @@ const CategoryManagerModal: React.FC<{
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إدارة التصنيفات</h2>
-          <button onClick={onClose} className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X size={24} /></button>
+          <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X size={24} /></button>
         </div>
         <div className="flex space-x-2 space-x-reverse mb-4">
+          <label htmlFor="newCategoryName" className="sr-only">اسم التصنيف</label>
           <input
+            id="newCategoryName"
+            name="newCategoryName"
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
@@ -71,11 +74,11 @@ const CategoryManagerModal: React.FC<{
           {categories.length > 0 ? categories.map(cat => (
             <div key={cat.id} className="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-md">
               <span className="text-lg text-gray-900 dark:text-gray-100">{cat.name}</span>
-              <button onClick={() => handleDeleteCategory(cat.id)} className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+              <button onClick={() => handleDeleteCategory(cat.id)} aria-label={`حذف تصنيف ${cat.name}`} className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300">
                 <Trash2 size={20} />
               </button>
             </div>
-          )) : <p className="text-center text-gray-500 dark:text-gray-400 p-4">لا توجد تصنيفات.</p>}
+          )) : <p className="text-center text-gray-600 dark:text-gray-300 p-4">لا توجد تصنيفات.</p>}
         </div>
       </div>
     </div>
@@ -141,28 +144,28 @@ const ProductFormModal: React.FC<{
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{product ? 'تعديل منتج' : 'إضافة منتج جديد'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">اسم المنتج</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required />
+            <label htmlFor="prodName" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">اسم المنتج</label>
+            <input id="prodName" name="name" type="text" value={formData.name} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required />
           </div>
           <div>
-            <label className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">كود المنتج</label>
-            <input type="text" name="code" value={formData.code} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required />
+            <label htmlFor="prodCode" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">كود المنتج</label>
+            <input id="prodCode" name="code" type="text" value={formData.code} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required />
           </div>
           <div>
-            <label className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">التصنيف</label>
-            <select name="categoryId" value={formData.categoryId} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required>
+            <label htmlFor="prodCategory" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">التصنيف</label>
+            <select id="prodCategory" name="categoryId" value={formData.categoryId} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required>
               <option value="">-- اختر تصنيف --</option>
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">السعر</label>
-              <input type="number" name="price" value={formData.price} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
+              <label htmlFor="prodPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">السعر</label>
+              <input id="prodPrice" name="price" type="number" value={formData.price} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
             </div>
             <div>
-              <label className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الكمية</label>
-              <input type="number" name="quantity" value={formData.quantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
+              <label htmlFor="prodQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الكمية</label>
+              <input id="prodQuantity" name="quantity" type="number" value={formData.quantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
             </div>
           </div>
           <div className="flex justify-end space-x-2 space-x-reverse pt-4">
@@ -184,27 +187,27 @@ const ProductCard: React.FC<{
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg">
     <div>
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-bold text-gray-800 dark:text-gray-100 text-xl">{product.name}</h3>
+        <h2 className="font-bold text-gray-800 dark:text-gray-100 text-xl">{product.name}</h2>
         <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 font-semibold px-2 py-1 rounded-full">{categoryName}</span>
       </div>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">الكود: {product.code}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">الكود: {product.code}</p>
     </div>
     <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3 space-y-2">
       <div className="flex justify-between text-base">
         <span className="text-gray-600 dark:text-gray-300">السعر:</span>
-        <span className="font-bold text-green-600 dark:text-green-400">{product.price.toFixed(2)} ج.م</span>
+        <span className="font-bold text-green-700 dark:text-green-300">{product.price.toFixed(2)} ج.م</span>
       </div>
       <div className="flex justify-between text-base">
         <span className="text-gray-600 dark:text-gray-300">الرصيد:</span>
-        <span className={`font-bold text-lg ${product.quantity > 5 ? 'text-gray-800 dark:text-gray-100' : 'text-red-600 dark:text-red-400'}`}>{product.quantity}</span>
+        <span className={`font-bold text-lg ${product.quantity > 5 ? 'text-gray-800 dark:text-gray-100' : 'text-red-700 dark:text-red-300'}`}>{product.quantity}</span>
       </div>
     </div>
     <div className="flex justify-end space-x-2 space-x-reverse mt-4">
-      <button onClick={() => onEdit(product)} className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors">
-        <Edit size={22} />
+      <button onClick={() => onEdit(product)} aria-label={`تعديل ${product.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors">
+        <Edit size={22} aria-hidden="true" />
       </button>
-      <button onClick={() => onDelete(product.id)} className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors">
-        <Trash2 size={22} />
+      <button onClick={() => onDelete(product.id)} aria-label={`حذف ${product.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors">
+        <Trash2 size={22} aria-hidden="true" />
       </button>
     </div>
   </div>
@@ -352,27 +355,34 @@ export default function ProductsPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إدارة المنتجات</h1>
           <div className="flex space-x-2 space-x-reverse">
-            <button onClick={() => { setEditingProduct(null); setIsModalOpen(true); }} className="flex items-center space-x-2 space-x-reverse bg-primary-600 text-white py-2 px-4 rounded-lg shadow hover:bg-primary-700">
-              <Plus size={20} />
+            <button onClick={() => { setEditingProduct(null); setIsModalOpen(true); }} aria-label="منتج جديد" className="flex items-center space-x-2 space-x-reverse bg-primary-600 text-white py-2 px-4 rounded-lg shadow hover:bg-primary-700">
+              <Plus size={20} aria-hidden="true" />
               <span className="hidden sm:inline">منتج جديد</span>
             </button>
-            <button onClick={() => setIsCategoryModalOpen(true)} className="flex items-center space-x-2 space-x-reverse bg-gray-600 dark:bg-gray-700 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-700 dark:hover:bg-gray-600">
-              <FolderCog size={20} />
+            <button onClick={() => setIsCategoryModalOpen(true)} aria-label="إدارة التصنيفات" className="flex items-center space-x-2 space-x-reverse bg-gray-600 dark:bg-gray-700 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-700 dark:hover:bg-gray-600">
+              <FolderCog size={20} aria-hidden="true" />
               <span className="hidden sm:inline">إدارة التصنيفات</span>
             </button>
           </div>
         </div>
         <div className="relative">
+          <label htmlFor="productSearch" className="sr-only">ابحث عن منتج</label>
           <input
+            id="productSearch"
+            name="productSearch"
             type="text"
             placeholder="ابحث بالاسم أو الكود..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            autoComplete="off"
             className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 rounded-full shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
           />
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={22} />
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={22} aria-hidden="true" />
         </div>
+        <label htmlFor="productCategoryFilter" className="sr-only">فلترة بالتصنيف</label>
         <select
+          id="productCategoryFilter"
+          name="productCategoryFilter"
           onChange={(e) => setSelectedCategory(e.target.value)}
           value={selectedCategory}
           className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
@@ -410,8 +420,8 @@ export default function ProductsPage() {
               })}
             </div>
             {isLoadingMore && <div className="text-center p-4 font-semibold">جاري تحميل المزيد...</div>}
-            {!hasMore && products.length > 0 && <div className="text-center p-4 text-gray-500 font-semibold">لا يوجد المزيد من المنتجات.</div>}
-            {!isLoading && products.length === 0 && <div className="text-center p-10 text-gray-500 dark:text-gray-400">لم يتم العثور على منتجات.</div>}
+            {!hasMore && products.length > 0 && <div className="text-center p-4 text-gray-700 dark:text-gray-300 font-semibold">لا يوجد المزيد من المنتجات.</div>}
+            {!isLoading && products.length === 0 && <div className="text-center p-10 text-gray-700 dark:text-gray-300">لم يتم العثور على منتجات.</div>}
           </>
         )}
       </div>

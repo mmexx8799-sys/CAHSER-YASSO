@@ -39,7 +39,7 @@ service cloud.firestore {
     
     match /products/{docId} {
       allow read: if isActiveUser();
-      allow write: if isActiveUser(); // Cashier needs to update quantity during sales
+      allow create, update: if isActiveUser() && request.resource.data.quantity >= 0;
       allow delete: if isAdmin();
     }
     
