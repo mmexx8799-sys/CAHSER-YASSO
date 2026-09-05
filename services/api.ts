@@ -67,6 +67,7 @@ export const addUser = async (email: string, password: string, role: UserRole): 
         await setDoc(doc(db, 'users', user.uid), {
             email: user.email,
             role: role,
+            disabled: false,
         });
         toast.success("تم إضافة المستخدم بنجاح");
     } catch (error: any) {

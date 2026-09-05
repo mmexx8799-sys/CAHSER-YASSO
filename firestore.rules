@@ -11,7 +11,7 @@ service cloud.firestore {
     }
 
     function isActiveUser() {
-      return isAuthenticated() && getUserData().disabled != true;
+      return isAuthenticated() && (!('disabled' in getUserData()) || getUserData().disabled != true);
     }
 
     function isAdmin() {
