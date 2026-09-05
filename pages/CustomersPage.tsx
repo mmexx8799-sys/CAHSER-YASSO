@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Plus, Edit, Trash2, Search, DollarSign, X } from 'lucide-react';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { getCustomersPaginated, addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
-import { subscribeToCollection } from '../services/dataCache';
+import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -77,12 +77,14 @@ const AddPaymentModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   customer: Customer;
-}> = ({ isOpen, onClose, customer }) => {
+  onPaymentAdded: () => void;
+}> = ({ isOpen, onClose, customer, onPaymentAdded }) => {
   const [amount, setAmount] = useState<number | string>('');
   const [notes, setNotes] = useState('');
   const [payments, setPayments] = useState<CustomerPayment[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [returns, setReturns] = useState<Return[]>([]);
+  const [liveBalance, setLiveBalance] = useState<number>(customer.balance || 0);
 
   useEffect(() => {
     let unsubscribe: () => void;
@@ -100,6 +102,21 @@ const AddPaymentModal: React.FC<{
       if (unsubscribe) unsubscribe();
       setPayments([]);
     }
+  }, [isOpen, customer]);
+
+  useEffect(() => {
+    let unsubDoc: (() => void) | undefined;
+    if (isOpen && customer) {
+      setLiveBalance(customer.balance || 0);
+      unsubDoc = subscribeToDocument<Customer>('customers', customer.id, (data) => {
+        if (data) {
+          setLiveBalance(data.balance || 0);
+        }
+      });
+    }
+    return () => {
+      if (unsubDoc) unsubDoc();
+    };
   }, [isOpen, customer]);
 
   useEffect(() => {
@@ -131,6 +148,7 @@ const AddPaymentModal: React.FC<{
       toast.success("تمت إضافة الدفعة بنجاح");
       setAmount('');
       setNotes('');
+      onPaymentAdded();
     } catch (error) {
       toast.error("فشلت إضافة الدفعة");
     }
@@ -145,7 +163,7 @@ const AddPaymentModal: React.FC<{
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">إدارة مدفوعات {customer.name}</h2>
           <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X /></button>
         </div>
-        <p className='mb-4 text-gray-600 dark:text-gray-300'>الرصيد الحالي: {(customer.balance || 0).toFixed(2)} ج.م</p>
+        <p className='mb-4 text-gray-600 dark:text-gray-300'>الرصيد الحالي: {liveBalance.toFixed(2)} ج.م</p>
 
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 flex-1 overflow-y-auto space-y-4">
           <div>
@@ -428,7 +446,7 @@ export default function CustomersPage() {
         </>
       )}
       <CustomerFormModal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} onSave={handleSaveCustomer} customer={selectedCustomer} />
-      {selectedCustomer && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} customer={selectedCustomer} />}
+      {selectedCustomer && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} customer={selectedCustomer} onPaymentAdded={() => loadCustomers(true)} />}
     </div>
   );
 }
