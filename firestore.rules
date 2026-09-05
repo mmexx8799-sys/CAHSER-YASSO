@@ -19,7 +19,7 @@ service cloud.firestore {
     }
     
     match /users/{userId} {
-      allow read: if isActiveUser();
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
       // Only admins can change role or disabled fields. A user can update their own non-sensitive fields.
       allow update: if isAdmin() || (request.auth.uid == userId
                        && !('role' in request.resource.data.diff(resource.data).affectedKeys())
