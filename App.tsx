@@ -141,9 +141,11 @@ const AppLayout = React.memo(() => {
             <Header />
             {/* CHANGED: Padding Top accounts for 4rem header + safe area */}
             <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
+                <div className="max-w-screen-2xl w-full mx-auto">
                 <Suspense fallback={<PageLoader />}>
                     <Outlet />
                 </Suspense>
+                </div>
             </main>
             <BottomNav />
         </div>
