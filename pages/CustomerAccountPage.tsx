@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
+import { addCustomerPayment } from '../services/api';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 
@@ -29,6 +31,31 @@ export default function CustomerAccountPage() {
     const [returns, setReturns] = useState<Return[]>([]);
 
     const [activeTab, setActiveTab] = useState<TabId>('overview');
+    const [amount, setAmount] = useState<number | string>('');
+    const [notes, setNotes] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // handleSubmit — transferred verbatim from AddPaymentModal (api layer untouched)
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!customer) return;
+        const numAmount = Number(amount);
+        if (numAmount <= 0) {
+            toast.error("المبلغ يجب أن يكون أكبر من صفر");
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await addCustomerPayment({ customerId: customer.id, amount: numAmount, notes });
+            toast.success("تمت إضافة الدفعة بنجاح");
+            setAmount('');
+            setNotes('');
+        } catch (error) {
+            toast.error("فشلت إضافة الدفعة");
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [customer, amount, notes]);
 
     // --- Live customer document subscription (modal useEffect #2, verbatim) ---
     useEffect(() => {
@@ -108,45 +135,48 @@ export default function CustomerAccountPage() {
     }
 
     return (
-        <div className="p-4 pb-24">
+        <div className="flex flex-col min-h-full">
             {/* Header (C1-01): name + phone + live balance */}
-            <div className="mb-4">
+            <div className="px-4 pt-4 pb-3 bg-white dark:bg-gray-800 shadow-sm rounded-b-lg">
                 <button
                     onClick={handleBack}
                     aria-label="العودة لصفحة العملاء"
-                    className="mb-3 flex items-center gap-1 text-sm text-primary-700 dark:text-primary-300 hover:underline"
+                    className="mb-2 flex items-center gap-1 text-sm text-primary-700 dark:text-primary-300 hover:underline"
                 >
                     <ArrowRight size={18} />
                     <span>العملاء</span>
                 </button>
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-                    <div className="flex flex-col gap-2">
-                        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{customer.name}</h1>
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{customer.name}</h1>
                         {customer.phone && (
-                            <p className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300">
+                            <p className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 mt-0.5">
                                 <Phone size={14} />
                                 <span dir="ltr">{customer.phone}</span>
                             </p>
                         )}
-                        <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                            الرصيد الحالي: <span className={(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : ''}>{liveBalance.toFixed(2)} ج.م</span>
+                    </div>
+                    <div className="text-left shrink-0">
+                        <p className="text-xs text-gray-600 dark:text-gray-300">الرصيد الحالي</p>
+                        <p className={`text-lg font-bold ${(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                            {liveBalance.toFixed(2)} ج.م
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* Tabs bar (C1-03): raw data, no final styling yet */}
-            <div className="mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto" role="tablist">
-                <div className="flex gap-1">
+            {/* Tabs bar (C2-02): horizontal, scrollable on 375px, sticky at top of main scroll area */}
+            <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" role="tablist">
+                <div className="flex overflow-x-auto scrollbar-none">
                     {TABS.map(tab => (
                         <button
                             key={tab.id}
                             role="tab"
                             aria-selected={activeTab === tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`whitespace-nowrap px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
+                            className={`flex-1 min-w-max whitespace-nowrap px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
                                 activeTab === tab.id
-                                    ? 'border-primary-600 text-primary-700 dark:text-primary-300'
+                                    ? 'border-primary-600 text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20'
                                     : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-primary-600'
                             }`}
                         >
@@ -156,24 +186,40 @@ export default function CustomerAccountPage() {
                 </div>
             </div>
 
-            {/* Tab panels (C1-03): raw data only */}
-            <div>
+            {/* Tab content — single scroll (main), no nested scroll */}
+            <div className="flex-1 px-4 py-3 pb-4">
                 {activeTab === 'overview' && (
                     <div className="space-y-2 text-sm text-gray-800 dark:text-gray-200">
-                        <p>عدد المدفوعات: {payments.length}</p>
-                        <p>عدد الفواتير: {invoices.length}</p>
-                        <p>عدد المرتجعات: {returns.length}</p>
-                        <p>{customer.address ? `العنوان: ${customer.address}` : 'لا يوجد عنوان مسجل'}</p>
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+                                <p className="text-xl font-bold text-green-700 dark:text-green-300">{payments.length}</p>
+                                <p className="text-xs mt-1">مدفوعات</p>
+                            </div>
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+                                <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{invoices.length}</p>
+                                <p className="text-xs mt-1">فواتير</p>
+                            </div>
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center">
+                                <p className="text-xl font-bold text-red-700 dark:text-red-300">{returns.length}</p>
+                                <p className="text-xs mt-1">مرتجعات</p>
+                            </div>
+                        </div>
+                        {customer.address && (
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-2">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">العنوان</p>
+                                <p className="mt-0.5">{customer.address}</p>
+                            </div>
+                        )}
                     </div>
                 )}
                 {activeTab === 'payments' && (
                     <div className="space-y-2">
                         {payments.length === 0 ? (
-                            <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد دفعات سابقة.</p>
+                            <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد دفعات سابقة.</p>
                         ) : payments.map(p => (
-                            <div key={p.id} className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded">
+                            <div key={p.id} className="flex justify-between items-center p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                                 <span className="font-bold text-green-700 dark:text-green-300">{p.amount.toFixed(2)} ج.م</span>
-                                <span className="text-xs text-gray-600 dark:text-gray-300">{new Date(p.date).toLocaleString('ar-EG')}</span>
+                                <span className="text-xs text-gray-600 dark:text-gray-300 text-left" dir="ltr">{new Date(p.date).toLocaleString('ar-EG')}</span>
                             </div>
                         ))}
                     </div>
@@ -181,19 +227,19 @@ export default function CustomerAccountPage() {
                 {activeTab === 'invoices' && (
                     <div className="space-y-2">
                         {invoices.length === 0 ? (
-                            <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد فواتير.</p>
+                            <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد فواتير.</p>
                         ) : invoices.map(inv => (
-                            <div key={inv.id} className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-gray-900 dark:text-gray-100">{inv.invoiceNumber}</span>
+                            <div key={inv.id} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                                <div className="flex justify-between items-start gap-2">
+                                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{inv.invoiceNumber}</span>
                                     <span className="font-bold text-blue-800 dark:text-blue-300">{inv.total.toFixed(2)} ج.م</span>
                                 </div>
-                                <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(inv.createdAt).toLocaleString('ar-EG')} — {inv.paymentMethod}</p>
-                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">
+                                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{new Date(inv.createdAt).toLocaleString('ar-EG')} — {inv.paymentMethod}</p>
+                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-2 space-y-1">
                                     {inv.items.map((it, i) => (
-                                        <div key={i} className="flex justify-between">
-                                            <span>{it.name} ×{it.buyQuantity}</span>
-                                            <span>{(it.price * it.buyQuantity).toFixed(2)}</span>
+                                        <div key={i} className="flex justify-between gap-2">
+                                            <span className="min-w-0 truncate">{it.name} ×{it.buyQuantity}</span>
+                                            <span className="shrink-0">{(it.price * it.buyQuantity).toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -204,19 +250,19 @@ export default function CustomerAccountPage() {
                 {activeTab === 'returns' && (
                     <div className="space-y-2">
                         {returns.length === 0 ? (
-                            <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد مرتجعات.</p>
+                            <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد مرتجعات.</p>
                         ) : returns.map(ret => (
-                            <div key={ret.id} className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-800">
-                                <div className="flex justify-between text-sm">
-                                    <span className="font-bold text-gray-900 dark:text-gray-100">مرتجع</span>
+                            <div key={ret.id} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+                                <div className="flex justify-between items-start gap-2">
+                                    <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">مرتجع</span>
                                     <span className="font-bold text-red-800 dark:text-red-300">-{ret.total.toFixed(2)} ج.م</span>
                                 </div>
-                                <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleString('ar-EG')}</p>
-                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">
+                                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{new Date(ret.createdAt).toLocaleString('ar-EG')}</p>
+                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-2 space-y-1">
                                     {ret.items.map((it, i) => (
-                                        <div key={i} className="flex justify-between">
-                                            <span>{it.name} ×{it.buyQuantity}</span>
-                                            <span>{(it.price * it.buyQuantity).toFixed(2)}</span>
+                                        <div key={i} className="flex justify-between gap-2">
+                                            <span className="min-w-0 truncate">{it.name} ×{it.buyQuantity}</span>
+                                            <span className="shrink-0">{(it.price * it.buyQuantity).toFixed(2)}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -224,6 +270,45 @@ export default function CustomerAccountPage() {
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* Add payment form — sticky bottom inside main scroll, sits above BottomNav (C2-01) */}
+            <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                    <div className="flex-1 min-w-0">
+                        <label htmlFor="paymentAmount" className="sr-only">المبلغ</label>
+                        <input
+                            id="paymentAmount"
+                            type="number"
+                            inputMode="decimal"
+                            placeholder="مبلغ الدفعة"
+                            value={amount}
+                            onChange={e => setAmount(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                            required
+                            min="0.01"
+                            step="0.01"
+                        />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <label htmlFor="paymentNotes" className="sr-only">ملاحظات (اختياري)</label>
+                        <input
+                            id="paymentNotes"
+                            type="text"
+                            placeholder="ملاحظات (اختياري)"
+                            value={notes}
+                            onChange={e => setNotes(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="shrink-0 px-5 py-2.5 bg-primary-600 text-white rounded-lg font-semibold text-sm disabled:opacity-50"
+                    >
+                        {isSubmitting ? '...' : 'حفظ'}
+                    </button>
+                </form>
             </div>
         </div>
     );
