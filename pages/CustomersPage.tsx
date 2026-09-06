@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign, X } from 'lucide-react';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { getCustomersPaginated, addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
@@ -394,10 +395,11 @@ export default function CustomersPage() {
     }
   }, [confirm, loadCustomers]);
 
+  const navigate = useNavigate();
+
   const handleAddPayment = useCallback((customer: Customer) => {
-    setSelectedCustomer(customer);
-    setIsPaymentModalOpen(true);
-  }, []);
+    navigate(`/customers/${customer.id}`);
+  }, [navigate]);
 
   const handleEdit = useCallback((customer: Customer) => {
     setSelectedCustomer(customer);
