@@ -101,16 +101,16 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 transition-colors duration-200">
-            <div className="w-full max-w-sm p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-colors duration-200">
+        <main className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4 sm:p-6 lg:p-8 transition-colors duration-200">
+            <div className="w-full max-w-sm sm:max-w-md p-6 sm:p-8 lg:p-10 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg transition-colors duration-200">
                 <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">{appName}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100">{appName}</h1>
                     <p className="mt-2 text-gray-600 dark:text-gray-300">
                         {isCreateMode ? "إنشاء حساب جديد" : "تسجيل الدخول"}
                     </p>
                 </div>
 
-                <form className="space-y-6" onSubmit={isCreateMode ? handleCreateAccount : handleLogin}>
+                <form className="space-y-5 sm:space-y-6" onSubmit={isCreateMode ? handleCreateAccount : handleLogin}>
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">البريد الإلكتروني</label>
                         <input
