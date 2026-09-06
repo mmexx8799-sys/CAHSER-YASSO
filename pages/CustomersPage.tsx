@@ -1,13 +1,11 @@
 
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, Search, DollarSign, X } from 'lucide-react';
-import type { Customer, CustomerPayment, Invoice, Return } from '../types';
-import { getCustomersPaginated, addDocument, updateDocument, deleteDocument, addCustomerPayment } from '../services/api';
-import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
+import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
+import type { Customer } from '../types';
+import { getCustomersPaginated, addDocument, updateDocument, deleteDocument } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
-import { where, orderBy, Timestamp } from 'firebase/firestore';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { useDebounce } from '../hooks/useDebounce';
 
@@ -74,166 +72,6 @@ const CustomerFormModal: React.FC<{
   );
 };
 
-const AddPaymentModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  customer: Customer;
-  onPaymentAdded: () => void;
-}> = ({ isOpen, onClose, customer, onPaymentAdded }) => {
-  const [amount, setAmount] = useState<number | string>('');
-  const [notes, setNotes] = useState('');
-  const [payments, setPayments] = useState<CustomerPayment[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [returns, setReturns] = useState<Return[]>([]);
-  const [liveBalance, setLiveBalance] = useState<number>(customer.balance || 0);
-
-  useEffect(() => {
-    let unsubscribe: () => void;
-    if (isOpen && customer) {
-      const constraints = [where('customerId', '==', customer.id)];
-      unsubscribe = subscribeToCollection<Omit<CustomerPayment, 'date'> & { date: Timestamp }>('customerPayments', (paymentsData) => {
-        const mappedPayments = paymentsData.map(p => ({
-          ...p,
-          date: p.date instanceof Timestamp ? p.date.toMillis() : (p.date || 0)
-        })).sort((a, b) => b.date - a.date);
-        setPayments(mappedPayments);
-      }, constraints);
-    }
-    return () => {
-      if (unsubscribe) unsubscribe();
-      setPayments([]);
-    }
-  }, [isOpen, customer]);
-
-  useEffect(() => {
-    let unsubDoc: (() => void) | undefined;
-    if (isOpen && customer) {
-      setLiveBalance(customer.balance || 0);
-      unsubDoc = subscribeToDocument<Customer>('customers', customer.id, (data) => {
-        if (data) {
-          setLiveBalance(data.balance || 0);
-        }
-      });
-    }
-    return () => {
-      if (unsubDoc) unsubDoc();
-    };
-  }, [isOpen, customer]);
-
-  useEffect(() => {
-    let unsubInv: () => void; let unsubRet: () => void;
-    if (isOpen && customer) {
-      const invConstraints = [where('customerId', '==', customer.id), orderBy('createdAt', 'desc')];
-      unsubInv = subscribeToCollection<Omit<Invoice,'createdAt'> & { createdAt: Timestamp }>('invoices', (data) => {
-        const mapped = data.map(d => ({ ...d, createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : d.createdAt } as Invoice)).sort((a,b)=>b.createdAt-a.createdAt);
-        setInvoices(mapped);
-      }, invConstraints);
-      const retConstraints = [where('customerId', '==', customer.id), orderBy('createdAt', 'desc')];
-      unsubRet = subscribeToCollection<Omit<Return,'createdAt'> & { createdAt: Timestamp }>('returns', (data) => {
-        const mapped = data.map(d => ({ ...d, createdAt: d.createdAt instanceof Timestamp ? d.createdAt.toMillis() : d.createdAt } as Return)).sort((a,b)=>b.createdAt-a.createdAt);
-        setReturns(mapped);
-      }, retConstraints);
-    }
-    return () => { if(unsubInv) unsubInv(); if(unsubRet) unsubRet(); setInvoices([]); setReturns([]); };
-  }, [isOpen, customer]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const numAmount = Number(amount);
-    if (numAmount <= 0) {
-      toast.error("المبلغ يجب أن يكون أكبر من صفر");
-      return;
-    }
-    try {
-      await addCustomerPayment({ customerId: customer.id, amount: numAmount, notes });
-      toast.success("تمت إضافة الدفعة بنجاح");
-      setAmount('');
-      setNotes('');
-      onPaymentAdded();
-    } catch (error) {
-      toast.error("فشلت إضافة الدفعة");
-    }
-  }
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md flex flex-col h-[75vh]">
-        <div className="flex justify-between items-center mb-2">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">إدارة مدفوعات {customer.name}</h2>
-          <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"><X /></button>
-        </div>
-        <p className='mb-4 text-gray-600 dark:text-gray-300'>الرصيد الحالي: {liveBalance.toFixed(2)} ج.م</p>
-
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4 flex-1 overflow-y-auto space-y-4">
-          <div>
-            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">سجل المدفوعات</h3>
-            {payments.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد دفعات سابقة.</p>
-            ) : (
-              <div className="space-y-2">
-                {payments.map(p => (
-                  <div key={p.id} className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-700 rounded">
-                    <span className="font-bold text-green-700 dark:text-green-300">{p.amount.toFixed(2)} ج.م</span>
-                    <span className="text-xs text-gray-600 dark:text-gray-300">{new Date(p.date).toLocaleString('ar-EG')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">الفواتير</h3>
-            {invoices.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد فواتير.</p>
-            ) : (
-              <div className="space-y-2">
-                {invoices.map(inv => (
-                  <div key={inv.id} className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-800">
-                    <div className="flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-gray-100">{inv.invoiceNumber}</span><span className="font-bold text-blue-800 dark:text-blue-300">{inv.total.toFixed(2)} ج.م</span></div>
-                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(inv.createdAt).toLocaleString('ar-EG')} — {inv.paymentMethod}</p>
-                    <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">{inv.items.map((it,i)=>(<div key={i} className="flex justify-between"><span>{it.name} ×{it.buyQuantity}</span><span>{(it.price*it.buyQuantity).toFixed(2)}</span></div>))}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">المرتجعات</h3>
-            {returns.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-300 text-center py-2 text-sm">لا توجد مرتجعات.</p>
-            ) : (
-              <div className="space-y-2">
-                {returns.map(ret => (
-                  <div key={ret.id} className="p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-100 dark:border-red-800">
-                    <div className="flex justify-between text-sm"><span className="font-bold text-gray-900 dark:text-gray-100">مرتجع</span><span className="font-bold text-red-800 dark:text-red-300">-{ret.total.toFixed(2)} ج.م</span></div>
-                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleString('ar-EG')}</p>
-                    <div className="text-xs text-gray-700 dark:text-gray-200 mt-1 space-y-1">{ret.items.map((it,i)=>(<div key={i} className="flex justify-between"><span>{it.name} ×{it.buyQuantity}</span><span>{(it.price*it.buyQuantity).toFixed(2)}</span></div>))}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
-          <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">إضافة دفعة جديدة</h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="paymentAmount" className="block text-sm font-medium text-gray-700 dark:text-gray-300">المبلغ</label>
-              <input id="paymentAmount" type="number" placeholder="المبلغ" value={amount} onChange={e => setAmount(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required min="0.01" step="0.01" />
-            </div>
-            <div>
-              <label htmlFor="paymentNotes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ملاحظات (اختياري)</label>
-              <input id="paymentNotes" type="text" placeholder="ملاحظات (اختياري)" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" />
-            </div>
-            <button type="submit" className="w-full py-2 px-4 bg-primary-600 text-white rounded">حفظ الدفعة</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const CustomerCard: React.FC<{
   customer: Customer;
@@ -303,7 +141,6 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasMore, setHasMore] = useState(true);
@@ -448,7 +285,6 @@ export default function CustomersPage() {
         </>
       )}
       <CustomerFormModal isOpen={isFormModalOpen} onClose={() => setIsFormModalOpen(false)} onSave={handleSaveCustomer} customer={selectedCustomer} />
-      {selectedCustomer && <AddPaymentModal isOpen={isPaymentModalOpen} onClose={() => setIsPaymentModalOpen(false)} customer={selectedCustomer} onPaymentAdded={() => loadCustomers(true)} />}
     </div>
   );
 }
