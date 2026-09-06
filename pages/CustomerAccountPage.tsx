@@ -135,7 +135,7 @@ export default function CustomerAccountPage() {
     }
 
     return (
-        <div className="flex flex-col min-h-full">
+        <div className="flex flex-col min-h-full pb-[calc(7rem+env(safe-area-inset-bottom))]">
             {/* Header (C1-01): name + phone + live balance */}
             <div className="px-4 pt-4 pb-3 bg-white dark:bg-gray-800 shadow-sm rounded-b-lg">
                 <button
@@ -272,8 +272,8 @@ export default function CustomerAccountPage() {
                 )}
             </div>
 
-            {/* Add payment form — sticky bottom inside main scroll, sits above BottomNav (C2-01) */}
-            <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
+            {/* Add payment form — fixed above BottomNav, same positioning pattern as BottomNav itself (C2-01 fix) */}
+            <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
                 <form onSubmit={handleSubmit} className="flex gap-2">
                     <div className="flex-1 min-w-0">
                         <label htmlFor="paymentAmount" className="sr-only">المبلغ</label>
