@@ -20,6 +20,7 @@ import { UserRole } from './types';
 const POSPage = React.lazy(() => import('./pages/POSPage'));
 const ProductsPage = React.lazy(() => import('./pages/ProductsPage'));
 const CustomersPage = React.lazy(() => import('./pages/CustomersPage'));
+const CustomerAccountPage = React.lazy(() => import('./pages/CustomerAccountPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const ArchivePage = React.lazy(() => import('./pages/ArchivePage'));
@@ -218,6 +219,7 @@ const AppRoutes: React.FC = () => {
                 <Route element={<AppLayout />}>
                     <Route path="/" element={<POSPage />} />
                     <Route path="/customers" element={<CustomersPage />} />
+                    <Route path="/customers/:id" element={<CustomerAccountPage />} />
                     <Route path="/returns" element={<ReturnsPage />} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
