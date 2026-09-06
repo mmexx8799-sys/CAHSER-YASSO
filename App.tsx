@@ -70,10 +70,11 @@ const Header = React.memo(() => {
     );
 });
 
-const BottomNav = React.memo(() => {
+// Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
+const useNavItems = () => {
     const { currentUser } = useAuth();
     const isAdmin = currentUser?.role === UserRole.Admin && currentUser?.disabled !== true;
-    const navItems = useMemo(() => {
+    return useMemo(() => {
         const items = [
             { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
             { to: "/customers", icon: Users, label: "العملاء" },
@@ -88,10 +89,14 @@ const BottomNav = React.memo(() => {
         }
         return items;
     }, [isAdmin]);
+};
 
-    // CHANGED: Added pb-[env(safe-area-inset-bottom)] for modern phones
+const BottomNav = React.memo(() => {
+    const navItems = useNavItems();
+
+    // CHANGED: Added pb-[env(safe-area-inset-bottom)] for modern phones. lg:hidden — replaced by Sidebar on lg+.
     return (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
+        <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
             <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
                 {navItems.map(item => (
                     <NavLink
@@ -104,6 +109,33 @@ const BottomNav = React.memo(() => {
                     >
                         <item.icon className="w-7 h-7" strokeWidth={2} />
                         <span className="text-[10px] font-medium">{item.label}</span>
+                    </NavLink>
+                ))}
+            </div>
+        </nav>
+    );
+});
+
+// Sidebar — desktop navigation (lg+). Same navItems, same active-state styling as BottomNav.
+// Built fixed from the start (lesson R2-01: sticky unreliable on iOS Safari — never use it here).
+const Sidebar = React.memo(() => {
+    const navItems = useNavItems();
+    return (
+        <nav aria-label="التنقل الرئيسي" className="hidden lg:flex fixed top-[calc(4rem+env(safe-area-inset-top))] bottom-0 right-0 w-64 flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 overflow-y-auto transition-colors duration-200">
+            <div className="flex flex-col gap-1 p-3">
+                {navItems.map(item => (
+                    <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={({ isActive }) =>
+                            `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors duration-200 ${isActive
+                                ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-300 font-bold'
+                                : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-500 dark:hover:text-primary-300'
+                            }`
+                        }
+                    >
+                        <item.icon className="w-6 h-6 shrink-0" strokeWidth={2} />
+                        <span className="font-medium">{item.label}</span>
                     </NavLink>
                 ))}
             </div>
@@ -139,8 +171,8 @@ const AppLayout = React.memo(() => {
     return (
         <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Header />
-            {/* CHANGED: Padding Top accounts for 4rem header + safe area */}
-            <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))]">
+            {/* Mobile: pb clears BottomNav. lg+: BottomNav hidden — only small breathing pb remains (no dead 5rem space) */}
+            <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6 lg:pr-64">
                 <div className="max-w-screen-2xl w-full mx-auto">
                 <Suspense fallback={<PageLoader />}>
                     <Outlet />
@@ -148,6 +180,7 @@ const AppLayout = React.memo(() => {
                 </div>
             </main>
             <BottomNav />
+            <Sidebar />
         </div>
     );
 });
