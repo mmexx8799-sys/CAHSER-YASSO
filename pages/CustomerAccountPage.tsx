@@ -165,8 +165,8 @@ export default function CustomerAccountPage() {
                 </div>
             </div>
 
-            {/* Tabs bar (C2-02): horizontal, scrollable on 375px, sticky at top of main scroll area */}
-            <div className="sticky top-[calc(4rem+env(safe-area-inset-top))] z-20 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" role="tablist">
+            {/* Tabs bar (C2-02): fixed under Header, same proven pattern as Header/BottomNav/form */}
+            <div className="fixed top-[calc(4rem+env(safe-area-inset-top))] left-0 right-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" role="tablist">
                 <div className="flex overflow-x-auto scrollbar-none">
                     {TABS.map(tab => (
                         <button
@@ -186,8 +186,8 @@ export default function CustomerAccountPage() {
                 </div>
             </div>
 
-            {/* Tab content — single scroll (main), no nested scroll */}
-            <div className="flex-1 px-4 py-3 pb-4">
+            {/* Tab content — single scroll (main), no nested scroll. pt clears fixed tabs bar (~2.6rem) */}
+            <div className="flex-1 px-4 pt-[calc(2.6rem+0.75rem)] pb-4">
                 {activeTab === 'overview' && (
                     <div className="space-y-2 text-sm text-gray-800 dark:text-gray-200">
                         <div className="grid grid-cols-3 gap-2">
