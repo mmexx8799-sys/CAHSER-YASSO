@@ -145,14 +145,14 @@ export default function UsersPage() {
     };
 
     return (
-        <div className="p-4">
+        <div className="p-4 lg:p-6">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4 text-sm">
                 <p className="text-yellow-800 dark:text-yellow-200">
                     <strong>ملاحظة أمنية:</strong> عند تعطيل مستخدم، لن يتمكن من الوصول لأي بيانات جديدة (تُفرض هذه القاعدة فورًا من الخادم). لكن قد تبقى بياناته محملة مسبقًا على أجهزته حتى تحديث الصفحة. للحذف النهائي للصلاحيات يحتاج المشروع ترقية خطة Firebase.
                 </p>
             </div>
             <div className="flex justify-between items-center mb-4">
-                <h1 className="text-2xl font-bold">إدارة المستخدمين</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold">إدارة المستخدمين</h1>
                 <button onClick={() => setIsModalOpen(true)} className="flex items-center space-x-2 bg-primary-600 text-white py-2 px-4 rounded-lg shadow hover:bg-primary-700">
                     <Plus size={20} />
                     <span>مستخدم جديد</span>
@@ -162,9 +162,9 @@ export default function UsersPage() {
                 <div className="text-center p-10">جاري تحميل المستخدمين...</div>
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="divide-y divide-gray-200 dark:divide-gray-700 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
                         {users.map(user => (
-                            <div key={user.uid} className={`p-4 flex justify-between items-center ${user.disabled ? 'bg-gray-50 dark:bg-gray-900 opacity-60' : ''}`}>
+                            <div key={user.uid} className={`p-4 flex justify-between items-center lg:border-b lg:border-gray-200 lg:dark:border-gray-700 ${user.disabled ? 'bg-gray-50 dark:bg-gray-900 opacity-60' : ''}`}>
                                 <div>
                                     <p className="font-semibold text-gray-900 dark:text-gray-100">{user.email}</p>
                                     <p className={`text-sm font-semibold ${user.role === 'admin' ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
