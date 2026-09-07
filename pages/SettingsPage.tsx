@@ -184,7 +184,7 @@ const DataManagementSection = memo(({
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">إدارة البيانات</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
                     onClick={onBackup}
                     disabled={isBusy}
@@ -372,26 +372,29 @@ export default function SettingsPage() {
     }, [confirm, clearPosCart, clearReturnCart, navigate]);
 
     return (
-        <div className="p-4 space-y-8">
-            <h1 className="text-3xl font-bold">الإعدادات</h1>
+        <div className="p-4 lg:p-6 space-y-8">
+            <h1 className="text-2xl sm:text-3xl font-bold">الإعدادات</h1>
 
-            <DailyOpsSection
-                dailyArchive={dailyArchive}
-                isLoading={isDailyOpsLoading}
-                onStartDay={handleStartDay}
-                onEndDay={handleEndDay}
-            />
-
-            <AppSettingsSection initialAppName={appName} />
-
-            <SecuritySection />
-
-            <DataManagementSection
-                onBackup={handleBackup}
-                onRestore={handleRestore}
-                onFactoryReset={handleFactoryReset}
-                isBusy={isDataBusy}
-            />
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-8 lg:space-y-0 space-y-8">
+                <div className="space-y-8">
+                    <DailyOpsSection
+                        dailyArchive={dailyArchive}
+                        isLoading={isDailyOpsLoading}
+                        onStartDay={handleStartDay}
+                        onEndDay={handleEndDay}
+                    />
+                    <SecuritySection />
+                </div>
+                <div className="space-y-8">
+                    <AppSettingsSection initialAppName={appName} />
+                    <DataManagementSection
+                        onBackup={handleBackup}
+                        onRestore={handleRestore}
+                        onFactoryReset={handleFactoryReset}
+                        isBusy={isDataBusy}
+                    />
+                </div>
+            </div>
         </div>
     );
 }
