@@ -26,7 +26,7 @@ const FinancialSummary: React.FC<{ archive: DailyArchive | null }> = ({ archive 
     return (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
             <h2 className="font-bold text-lg mb-4 text-gray-900 dark:text-gray-100">ملخص يوم {archive.id}</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-center">
                 {summaryItems.map(item => (
                     <div key={item.label}>
                         <p className="text-sm text-gray-600 dark:text-gray-300">{item.label}</p>
@@ -241,8 +241,8 @@ export default function ReportsPage() {
     }
 
     return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">التقارير التفصيلية</h1>
+        <div className="p-4 lg:p-6">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4">التقارير التفصيلية</h1>
             <div className="mb-4">
                 <label htmlFor="archiveSelect" className="sr-only">اختر اليومية</label>
                 <select
@@ -250,7 +250,7 @@ export default function ReportsPage() {
                     name="archiveSelect"
                     value={selectedArchiveId}
                     onChange={(e) => setSelectedArchiveId(e.target.value)}
-                    className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm"
+                    className="w-full lg:max-w-md p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm"
                 >
                     {archives.map(a => <option key={a.id} value={a.id}>يومية {a.id} ({a.status === 'closed' ? 'مغلقة' : 'مفتوحة'})</option>)}
                 </select>
@@ -258,11 +258,13 @@ export default function ReportsPage() {
 
             <FinancialSummary archive={selectedArchive || null} />
 
-            {Object.entries(groupedInvoices).map(([method, invoiceList]) => (
-                <TransactionList key={method} title={`فواتير البيع (${method})`} items={invoiceList} />
-            ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-4">
+                {Object.entries(groupedInvoices).map(([method, invoiceList]) => (
+                    <TransactionList key={method} title={`فواتير البيع (${method})`} items={invoiceList} />
+                ))}
 
-            <TransactionList title="المرتجعات" items={returns} isReturn />
+                <TransactionList title="المرتجعات" items={returns} isReturn />
+            </div>
 
             <TransactionDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
         </div>
