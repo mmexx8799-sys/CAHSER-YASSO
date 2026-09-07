@@ -161,10 +161,15 @@ export const getProductsPaginated = async (
     try {
         const constraints: QueryConstraint[] = [];
         const hasSearch = filters.searchQuery && filters.searchQuery.trim() !== '';
+        const hasCategory = !!filters.categoryId;
 
         if (hasSearch) {
             const normalizedQuery = normalizeArabic(filters.searchQuery!);
             constraints.push(where('searchableIndex', 'array-contains', normalizedQuery));
+        }
+
+        if (hasCategory) {
+            constraints.push(where('categoryId', '==', filters.categoryId));
         }
 
         constraints.push(orderBy('name'));
@@ -177,11 +182,7 @@ export const getProductsPaginated = async (
         const q = query(collection(db, 'products'), ...constraints);
         const documentSnapshots = await getDocs(q);
 
-        let products = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-
-        if (filters.categoryId) {
-            products = products.filter(p => p.categoryId === filters.categoryId);
-        }
+        const products = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
 
         const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
 
