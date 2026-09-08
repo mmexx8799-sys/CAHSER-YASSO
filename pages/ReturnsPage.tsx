@@ -50,7 +50,7 @@ const ProductCard: React.FC<{ product: Product; categoryName: string; onAddToRet
             <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-primary-600 text-white border border-primary-700 shadow-sm tracking-wide">
                 {categoryName}
             </span>
-            <span className={`flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full text-xs font-bold border ${product.quantity > 5 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+            <span className={`flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full text-xs font-bold border ${product.quantity > 5 ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'}`}>
                 {product.quantity}
             </span>
         </div>
@@ -59,7 +59,7 @@ const ProductCard: React.FC<{ product: Product; categoryName: string; onAddToRet
             {product.name}
         </h2>
 
-        <div className="mt-auto pt-2 border-t border-gray-100 w-full flex justify-between items-end">
+        <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700 w-full flex justify-between items-end">
             <span className="text-xs text-gray-600 dark:text-gray-300 font-medium mb-1">السعر</span>
             <p className="text-primary-700 dark:text-primary-300 font-bold text-xl">
                 {product.price.toFixed(2)} <span className="text-xs font-normal text-gray-600 dark:text-gray-300">ج.م</span>
