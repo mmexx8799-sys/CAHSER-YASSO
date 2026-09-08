@@ -423,7 +423,7 @@ export default function ReturnsPage() {
 
     return (
         <div className="p-4 pb-24">
-            <div className="sticky top-0 sm:top-[4rem] z-30 py-4 space-y-4 -mx-4 px-4 shadow-sm mb-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
+            <div className="sticky top-0 z-30 py-4 space-y-4 -mx-4 px-4 shadow-sm mb-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
                 <div className="relative">
                     <label htmlFor="retSearch" className="sr-only">ابحث عن منتج</label>
                     <input
