@@ -272,8 +272,9 @@ export default function CustomerAccountPage() {
                 )}
             </div>
 
-            {/* Add payment form — fixed above BottomNav, same positioning pattern as BottomNav itself (C2-01 fix) */}
-            <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
+            {/* Add payment form — fixed above BottomNav, same positioning pattern as BottomNav itself (C2-01 fix).
+                lg+ (REQ-XX): lg:right-64 stops the bar at the desktop Sidebar edge (App.tsx lg:pr-64 pattern), lg:bottom-0 removes the 4rem BottomNav gap (BottomNav is lg:hidden — live-measured 64px dead gap at 1280px). */}
+            <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 left-0 right-0 lg:right-64 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
                 <form onSubmit={handleSubmit} className="flex gap-2">
                     <div className="flex-1 min-w-0">
                         <label htmlFor="paymentAmount" className="sr-only">المبلغ</label>
