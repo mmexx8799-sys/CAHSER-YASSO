@@ -96,6 +96,10 @@ const ProductFormModal: React.FC<{
     code: '',
     name: '',
     price: 0,
+    retailCashPrice: 0,
+    retailCreditPrice: 0,
+    wholesaleCashPrice: 0,
+    wholesaleCreditPrice: 0,
     quantity: 0,
     categoryId: '',
   };
@@ -109,6 +113,10 @@ const ProductFormModal: React.FC<{
           code: product.code,
           name: product.name,
           price: product.price,
+          retailCashPrice: product.retailCashPrice ?? product.price,
+          retailCreditPrice: product.retailCreditPrice ?? product.price,
+          wholesaleCashPrice: product.wholesaleCashPrice ?? product.price,
+          wholesaleCreditPrice: product.wholesaleCreditPrice ?? product.price,
           quantity: product.quantity,
           categoryId: product.categoryId,
         });
@@ -120,7 +128,7 @@ const ProductFormModal: React.FC<{
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'price' || name === 'quantity' ? Number(value) : value }));
+    setFormData(prev => ({ ...prev, [name]: ['price', 'quantity', 'retailCashPrice', 'retailCreditPrice', 'wholesaleCashPrice', 'wholesaleCreditPrice'].includes(name) ? Number(value) : value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -133,7 +141,8 @@ const ProductFormModal: React.FC<{
       toast.error("يرجى اختيار تصنيف");
       return;
     }
-    onSave(product ? { ...product, ...formData } : formData);
+    const dataWithPrice = { ...formData, price: formData.retailCashPrice };
+    onSave(product ? { ...product, ...dataWithPrice } : dataWithPrice);
   };
 
   if (!isOpen) return null;
@@ -158,14 +167,29 @@ const ProductFormModal: React.FC<{
               {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="prodPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">السعر</label>
-              <input id="prodPrice" name="price" type="number" value={formData.price} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
-            </div>
-            <div>
-              <label htmlFor="prodQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الكمية</label>
-              <input id="prodQuantity" name="quantity" type="number" value={formData.quantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
+          <div>
+            <label htmlFor="prodQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الكمية</label>
+            <input id="prodQuantity" name="quantity" type="number" value={formData.quantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
+          </div>
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+            <p className="text-base font-bold mb-3 text-gray-900 dark:text-gray-100">الأسعار</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="prodRetailCashPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">قطاعي — نقدي</label>
+                <input id="prodRetailCashPrice" name="retailCashPrice" type="number" value={formData.retailCashPrice} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
+              </div>
+              <div>
+                <label htmlFor="prodRetailCreditPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">قطاعي — آجل</label>
+                <input id="prodRetailCreditPrice" name="retailCreditPrice" type="number" value={formData.retailCreditPrice} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
+              </div>
+              <div>
+                <label htmlFor="prodWholesaleCashPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">جملة — نقدي</label>
+                <input id="prodWholesaleCashPrice" name="wholesaleCashPrice" type="number" value={formData.wholesaleCashPrice} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
+              </div>
+              <div>
+                <label htmlFor="prodWholesaleCreditPrice" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">جملة — آجل</label>
+                <input id="prodWholesaleCreditPrice" name="wholesaleCreditPrice" type="number" value={formData.wholesaleCreditPrice} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" step="0.01" />
+              </div>
             </div>
           </div>
           <div className="flex justify-end space-x-2 space-x-reverse pt-4">

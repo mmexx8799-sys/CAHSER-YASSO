@@ -13,6 +13,10 @@ export interface Product {
   code: string;
   name: string;
   price: number;
+  retailCashPrice?: number;
+  retailCreditPrice?: number;
+  wholesaleCashPrice?: number;
+  wholesaleCreditPrice?: number;
   quantity: number;
   categoryId: string;
   createdAt: number;
@@ -58,8 +62,11 @@ export interface User {
     disabled?: boolean;
 }
 
+export type PriceType = 'retail' | 'wholesale';
+
 export interface CartItem extends Product {
   buyQuantity: number;
+  priceType: PriceType;
 }
 
 export interface Invoice {
