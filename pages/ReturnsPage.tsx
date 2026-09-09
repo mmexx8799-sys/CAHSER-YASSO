@@ -11,6 +11,7 @@ import { orderBy } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { useReturnCartStore } from '../stores/returnCartStore';
+import { ProductSearch } from '../components/ProductSearch';
 
 
 const ArchiveGuard: React.FC<{ type: 'sale' | 'return' }> = ({ type }) => {
@@ -423,47 +424,23 @@ export default function ReturnsPage() {
 
     return (
         <div className="p-4 pb-24">
-            <div className="sticky top-0 z-30 py-4 space-y-4 -mx-4 px-4 shadow-sm mb-4 border-b border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-900">
-                <div className="relative">
-                    <label htmlFor="retSearch" className="sr-only">ابحث عن منتج</label>
-                    <input
-                        id="retSearch"
-                        name="retSearch"
-                        type="text"
-                        placeholder="ابحث عن منتج..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        autoComplete="off"
-                        className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
-                    />
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                </div>
-                <label htmlFor="retCategory" className="sr-only">التصنيف</label>
-                <select
-                    id="retCategory"
-                    name="retCategory"
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    value={selectedCategory}
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
-                >
-                    <option value="">كل التصنيفات</option>
-                    {categories.map(cat => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                </select>
-            </div>
+            <ProductSearch
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                categories={categories}
+            />
 
-            <div className="mt-16">
-                <ProductGrid
-                    products={products}
-                    categories={categories}
-                    onAddToReturnCart={handleAddToReturnCart}
-                    lastProductElementRef={lastProductElementRef}
-                    isLoadingMore={isLoadingMore}
-                    hasMore={hasMore}
-                    isLoading={isLoading}
-                />
-            </div>
+            <ProductGrid
+                products={products}
+                categories={categories}
+                onAddToReturnCart={handleAddToReturnCart}
+                lastProductElementRef={lastProductElementRef}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
+                isLoading={isLoading}
+            />
 
             {returnCart.length > 0 && (
                 <button
