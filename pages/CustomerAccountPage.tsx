@@ -165,8 +165,9 @@ export default function CustomerAccountPage() {
                 </div>
             </div>
 
-            {/* Tabs bar (C2-02): fixed under Header, same proven pattern as Header/BottomNav/form */}
-            <div className="fixed top-[calc(4rem+env(safe-area-inset-top))] left-0 right-0 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" role="tablist">
+            {/* Tabs bar (C2-02): fixed under Header, same proven pattern as Header/BottomNav/form.
+                lg+ (REQ-XX follow-up): lg:right-64 stops the bar at the desktop Sidebar edge — same bug class as the payment bar fix, live-measured 256px overlap at 1280px. No lg:top-* needed: Header is visible on all screens (bar anchors at y=64 everywhere). */}
+            <div className="fixed top-[calc(4rem+env(safe-area-inset-top))] left-0 right-0 lg:right-64 z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm" role="tablist">
                 <div className="flex overflow-x-auto scrollbar-none">
                     {TABS.map(tab => (
                         <button
