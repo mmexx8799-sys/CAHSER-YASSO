@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { FileText, Undo2 } from 'lucide-react';
+import { FileText, Undo2, AlertTriangle, PackageX } from 'lucide-react';
 import { subscribeToCollection } from '../services/dataCache';
-import type { DailyArchive, Invoice, Return } from '../types';
+import type { DailyArchive, Invoice, Return, Product } from '../types';
 import { PaymentMethod } from '../types';
 import { Timestamp, orderBy, where } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
@@ -43,6 +43,7 @@ export default function ReportsPage() {
     const [selectedArchiveId, setSelectedArchiveId] = useState<string>('');
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [returns, setReturns] = useState<Return[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedTransaction, setSelectedTransaction] = useState<Invoice | Return | null>(null);
 
@@ -101,7 +102,26 @@ export default function ReportsPage() {
         };
     }, [selectedArchiveId]);
 
+    useEffect(() => {
+        const unsubscribeProducts = subscribeToCollection<Product>('products', setProducts);
+        return () => unsubscribeProducts();
+    }, []);
+
     const selectedArchive = useMemo(() => archives.find(a => a.id === selectedArchiveId), [archives, selectedArchiveId]);
+
+    const stockAlerts = useMemo(() => {
+        const DEFAULT_MIN_QUANTITY = 5;
+        return products
+            .filter(p => p.quantity === 0 || (p.quantity > 0 && p.quantity <= (p.minQuantity ?? DEFAULT_MIN_QUANTITY)))
+            .sort((a, b) => {
+                // نافد أولًا، بعدين بالأقرب للنفاد
+                const minA = a.minQuantity ?? DEFAULT_MIN_QUANTITY;
+                const minB = b.minQuantity ?? DEFAULT_MIN_QUANTITY;
+                const ratioA = a.quantity === 0 ? -1 : a.quantity / Math.max(minA, 1);
+                const ratioB = b.quantity === 0 ? -1 : b.quantity / Math.max(minB, 1);
+                return ratioA - ratioB;
+            });
+    }, [products]);
 
     const groupedInvoices = useMemo(() => {
         return invoices.reduce((acc, invoice) => {
@@ -164,6 +184,36 @@ export default function ReportsPage() {
             </div>
 
             <FinancialSummary archive={selectedArchive || null} />
+
+            {stockAlerts.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
+                    <h2 className="font-bold text-lg mb-3 text-gray-900 dark:text-gray-100">تنبيهات المخزون</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {stockAlerts.map(product => {
+                            const min = product.minQuantity ?? 5;
+                            const out = product.quantity === 0;
+                            return (
+                                <div
+                                    key={product.id}
+                                    className={`p-3 rounded-lg border text-center ${
+                                        out
+                                            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                            : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'
+                                    }`}
+                                >
+                                    <div className={`flex justify-center mb-1 ${out ? 'text-red-700 dark:text-red-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                                        {out ? <PackageX size={20} aria-hidden="true" /> : <AlertTriangle size={20} aria-hidden="true" />}
+                                    </div>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate" title={product.name}>{product.name}</p>
+                                    <p className={`text-xs mt-1 font-semibold ${out ? 'text-red-700 dark:text-red-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                                        {out ? 'نافد' : `متبقي ${product.quantity} (الحد ${min})`}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-4">
                 {Object.entries(groupedInvoices).map(([method, invoiceList]) => (

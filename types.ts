@@ -18,6 +18,7 @@ export interface Product {
   wholesaleCashPrice?: number;
   wholesaleCreditPrice?: number;
   quantity: number;
+  minQuantity?: number; // الحد الأدنى للمخزون (افتراضي 5 لو غير محدد)
   categoryId: string;
   createdAt: number;
   searchableIndex: string[];

@@ -101,6 +101,7 @@ const ProductFormModal: React.FC<{
     wholesaleCashPrice: 0,
     wholesaleCreditPrice: 0,
     quantity: 0,
+    minQuantity: 5,
     categoryId: '',
   };
 
@@ -118,6 +119,7 @@ const ProductFormModal: React.FC<{
           wholesaleCashPrice: product.wholesaleCashPrice ?? product.price,
           wholesaleCreditPrice: product.wholesaleCreditPrice ?? product.price,
           quantity: product.quantity,
+          minQuantity: product.minQuantity ?? 5,
           categoryId: product.categoryId,
         });
       } else {
@@ -128,7 +130,7 @@ const ProductFormModal: React.FC<{
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: ['price', 'quantity', 'retailCashPrice', 'retailCreditPrice', 'wholesaleCashPrice', 'wholesaleCreditPrice'].includes(name) ? Number(value) : value }));
+    setFormData(prev => ({ ...prev, [name]: ['price', 'quantity', 'minQuantity', 'retailCashPrice', 'retailCreditPrice', 'wholesaleCashPrice', 'wholesaleCreditPrice'].includes(name) ? Number(value) : value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -170,6 +172,10 @@ const ProductFormModal: React.FC<{
           <div>
             <label htmlFor="prodQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الكمية</label>
             <input id="prodQuantity" name="quantity" type="number" value={formData.quantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
+          </div>
+          <div>
+            <label htmlFor="prodMinQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الحد الأدنى للمخزون</label>
+            <input id="prodMinQuantity" name="minQuantity" type="number" value={formData.minQuantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
           </div>
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <p className="text-base font-bold mb-3 text-gray-900 dark:text-gray-100">الأسعار</p>
