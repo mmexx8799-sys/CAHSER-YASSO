@@ -41,6 +41,43 @@ export interface CustomerPayment {
   notes?: string;
 }
 
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  balance: number; // موجب = احنا مديونين له
+  createdAt: number;
+}
+
+export interface SupplierPayment {
+  id: string;
+  supplierId: string;
+  amount: number;
+  date: number;
+  notes?: string;
+}
+
+export interface PurchaseInvoice {
+  id: string;
+  invoiceNumber: string;
+  items: CartItem[]; // نفس شكل CartItem: price هنا = سعر الشراء
+  subtotal: number;
+  total: number;
+  supplierId: string;
+  supplierName?: string;
+  createdAt: number;
+}
+
+export interface SupplierReturn {
+  id: string;
+  items: CartItem[];
+  total: number;
+  supplierId: string;
+  supplierName?: string;
+  createdAt: number;
+}
+
 export enum PaymentMethod {
   Cash = 'نقدا',
   Credit = 'آجل',
@@ -115,6 +152,10 @@ export interface BackupData {
     categories: Category[];
     customers: Customer[];
     customerPayments: CustomerPayment[];
+    suppliers?: Supplier[];
+    supplierPayments?: SupplierPayment[];
+    purchaseInvoices?: PurchaseInvoice[];
+    supplierReturns?: SupplierReturn[];
     invoices: Invoice[];
     returns: Return[];
     dailyArchives: DailyArchive[];

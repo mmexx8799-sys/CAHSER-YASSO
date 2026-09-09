@@ -22,7 +22,7 @@ import {
 import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { getDB, firebaseConfig } from './firebase';
 import { initializeApp, deleteApp } from "firebase/app";
-import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, Category, CartItem, Return, BackupData, User, AppSettings, UserRole } from '../types';
+import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, Category, CartItem, Return, BackupData, User, AppSettings, UserRole, Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn } from '../types';
 import { toast } from 'react-hot-toast';
 import {
     createUserWithEmailAndPassword,
@@ -259,6 +259,172 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
 };
 
 
+// Suppliers API - Paginated (mirror of getCustomersPaginated)
+const SUPPLIERS_PAGE_SIZE = 50;
+export const getSuppliersPaginated = async (
+    searchTerm: string | null,
+    lastVisible: QueryDocumentSnapshot | null
+): Promise<{ suppliers: Supplier[], lastDoc: QueryDocumentSnapshot | null }> => {
+    try {
+        const constraints: QueryConstraint[] = [];
+        const hasSearch = searchTerm && searchTerm.trim() !== '';
+
+        if (hasSearch) {
+            const normalizedQuery = searchTerm!.trim();
+            constraints.push(where('name', '>=', normalizedQuery));
+            constraints.push(where('name', '<=', normalizedQuery + '\uf8ff'));
+        }
+
+        constraints.push(orderBy('name'));
+        constraints.push(limit(SUPPLIERS_PAGE_SIZE));
+
+        if (lastVisible) {
+            constraints.push(startAfter(lastVisible));
+        }
+
+        const q = query(collection(db, 'suppliers'), ...constraints);
+        const documentSnapshots = await getDocs(q);
+
+        const suppliers = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() } as Supplier));
+        const lastDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1] || null;
+
+        return { suppliers, lastDoc };
+    } catch (error) {
+        console.error("Error fetching paginated suppliers: ", error);
+        toast.error("حدث خطأ أثناء تحميل الموردين.");
+        return { suppliers: [], lastDoc: null };
+    }
+};
+
+// Supplier payment — reduces supplier.balance (we paid, our debt decreased)
+export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+    try {
+        const supplierRef = doc(db, "suppliers", payment.supplierId);
+        const paymentRef = doc(collection(db, "supplierPayments"));
+
+        await runTransaction(db, async (transaction) => {
+            const freshSupplierDoc = await transaction.get(supplierRef);
+            if (!freshSupplierDoc.exists()) {
+                throw new Error("Supplier not found");
+            }
+            const currentBalance = freshSupplierDoc.data().balance;
+            const newBalance = currentBalance - payment.amount;
+            transaction.update(supplierRef, { balance: newBalance });
+            transaction.set(paymentRef, { ...payment, date: serverTimestamp() });
+        });
+
+        toast.success('تم تسجيل دفعة المورد بنجاح!');
+    } catch (error: any) {
+        console.error("Error adding supplier payment:", error);
+        toast.error("حدث خطأ أثناء تسجيل دفعة المورد.");
+        throw error;
+    }
+};
+
+// Purchase invoice — increases product quantities + supplier.balance, records PurchaseInvoice
+export const processPurchase = async (purchaseData: {
+    items: CartItem[];
+    subtotal: number;
+    total: number;
+    supplierId: string;
+}) => {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+
+            // --- PHASE 1: ALL READS FIRST ---
+            const supplierRef = doc(db, 'suppliers', purchaseData.supplierId);
+            const supplierDoc = await transaction.get(supplierRef);
+            if (!supplierDoc.exists()) {
+                throw new Error("المورد المحدد غير موجود");
+            }
+            const supplierName = supplierDoc.data().name;
+
+            const productRefs = purchaseData.items.map(item => doc(db, 'products', item.id));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            // --- PHASE 2: ALL WRITES ---
+            const currentBalance = supplierDoc.data().balance || 0;
+            transaction.update(supplierRef, { balance: currentBalance + purchaseData.total });
+
+            const newPurchase: Omit<PurchaseInvoice, 'id'> = {
+                invoiceNumber: `PUR-${Date.now()}`,
+                items: purchaseData.items,
+                subtotal: purchaseData.subtotal,
+                total: purchaseData.total,
+                supplierId: purchaseData.supplierId,
+                supplierName,
+                createdAt: serverTimestamp() as unknown as number,
+            };
+            transaction.set(purchaseRef, newPurchase);
+
+            purchaseData.items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (productDoc.exists()) {
+                    const currentQuantity = productDoc.data().quantity || 0;
+                    const newQuantity = currentQuantity + item.buyQuantity;
+                    transaction.update(productRefs[idx], { quantity: newQuantity });
+                }
+            });
+        });
+        toast.success('تم تسجيل فاتورة الشراء بنجاح!');
+    } catch (error: any) {
+        console.error("Error processing purchase:", error);
+        toast.error(error.message || 'حدث خطأ أثناء تسجيل فاتورة الشراء.');
+        throw error;
+    }
+};
+
+// Supplier return — decreases product quantities + supplier.balance, records SupplierReturn
+export const processSupplierReturn = async (items: CartItem[], supplierId: string) => {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const returnRef = doc(collection(db, 'supplierReturns'));
+
+            const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+
+            // --- PHASE 1: ALL READS FIRST ---
+            const supplierRef = doc(db, 'suppliers', supplierId);
+            const supplierDoc = await transaction.get(supplierRef);
+            if (!supplierDoc.exists()) {
+                throw new Error("المورد المحدد غير موجود");
+            }
+            const supplierName = supplierDoc.data().name;
+
+            const productRefs = items.map(item => doc(db, 'products', item.id));
+            const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            // --- PHASE 2: ALL WRITES ---
+            const currentBalance = supplierDoc.data().balance || 0;
+            transaction.update(supplierRef, { balance: currentBalance - totalReturnAmount });
+
+            const newReturn: Omit<SupplierReturn, 'id'> = {
+                items,
+                total: totalReturnAmount,
+                supplierId,
+                supplierName,
+                createdAt: serverTimestamp() as unknown as number,
+            };
+            transaction.set(returnRef, newReturn);
+
+            items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (productDoc.exists()) {
+                    const currentQuantity = productDoc.data().quantity || 0;
+                    const newQuantity = currentQuantity - item.buyQuantity;
+                    transaction.update(productRefs[idx], { quantity: newQuantity });
+                }
+            });
+        });
+        toast.success('تم تسجيل مرتجع المورد بنجاح!');
+    } catch (error: any) {
+        console.error("Error processing supplier return:", error);
+        toast.error(error.message || 'حدث خطأ أثناء تسجيل مرتجع المورد.');
+        throw error;
+    }
+};
+
+
 // Invoices API
 export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
     try {
@@ -481,7 +647,11 @@ const BUSINESS_DATA_COLLECTIONS = [
     'dailyArchives',
     'invoices',
     'returns',
-    'customerPayments'
+    'customerPayments',
+    'suppliers',
+    'supplierPayments',
+    'purchaseInvoices',
+    'supplierReturns'
 ];
 
 const convertTimestampsToMillis = (data: any): any => {

@@ -62,6 +62,26 @@ service cloud.firestore {
       allow read, create, update: if isActiveUser();
       allow delete: if isAdmin();
     }
+
+    match /suppliers/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+
+    match /supplierPayments/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+
+    match /purchaseInvoices/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
+
+    match /supplierReturns/{docId} {
+      allow read, create, update: if isActiveUser();
+      allow delete: if isAdmin();
+    }
     
     match /dailyArchives/{docId} {
       allow read, create, update: if isActiveUser();
