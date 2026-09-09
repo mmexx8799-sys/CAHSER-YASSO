@@ -11,6 +11,8 @@ export const InvoiceDetailModal: React.FC<{
 
     const isReturn = 'invoiceNumber' in transaction === false;
     const invoice = transaction as Invoice;
+    const partyName = (invoice as any).customerName || (invoice as any).supplierName;
+    const partyLabel = (invoice as any).supplierName ? 'المورد:' : 'العميل:';
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
@@ -74,14 +76,16 @@ export const InvoiceDetailModal: React.FC<{
                     {!isReturn && (
                         <>
                             <div className="border-t border-dashed border-gray-400 my-2"></div>
-                            <div className="flex justify-between text-xs">
-                                <span>طريقة الدفع:</span>
-                                <span>{invoice.paymentMethod}</span>
-                            </div>
-                            {invoice.customerName && (
+                            {invoice.paymentMethod && (
                                 <div className="flex justify-between text-xs">
-                                    <span>العميل:</span>
-                                    <span>{invoice.customerName}</span>
+                                    <span>طريقة الدفع:</span>
+                                    <span>{invoice.paymentMethod}</span>
+                                </div>
+                            )}
+                            {partyName && (
+                                <div className="flex justify-between text-xs">
+                                    <span>{partyLabel}</span>
+                                    <span>{partyName}</span>
                                 </div>
                             )}
                         </>
