@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Phone, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Phone, ShoppingCart, Undo2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn, Product, Category } from '../types';
-import { addSupplierPayment, processPurchase } from '../services/api';
+import { addSupplierPayment, processPurchase, processSupplierReturn } from '../services/api';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -34,6 +34,8 @@ export default function SupplierAccountPage() {
 
     // New purchase modal
     const [isPurchaseModalOpen, setIsPurchaseModalOpen] = useState(false);
+    // New supplier return modal
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
 
     const [activeTab, setActiveTab] = useState<TabId>('overview');
     const [amount, setAmount] = useState<number | string>('');
@@ -269,6 +271,13 @@ export default function SupplierAccountPage() {
                 )}
                 {activeTab === 'returns' && (
                     <div className="space-y-2">
+                        <button
+                            onClick={() => setIsReturnModalOpen(true)}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700"
+                        >
+                            <Undo2 size={18} />
+                            <span>مرتجع مورد جديد</span>
+                        </button>
                         {supplierReturns.length === 0 ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد مرتجعات.</p>
                         ) : supplierReturns.map(ret => (
@@ -335,6 +344,12 @@ export default function SupplierAccountPage() {
                 onClose={() => setIsPurchaseModalOpen(false)}
                 supplier={supplier}
                 onComplete={handlePurchaseComplete}
+            />
+            <SupplierReturnModal
+                isOpen={isReturnModalOpen}
+                onClose={() => setIsReturnModalOpen(false)}
+                supplier={supplier}
+                onComplete={() => setIsReturnModalOpen(false)}
             />
             <InvoiceDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
         </div>
@@ -550,6 +565,226 @@ const PurchaseModal: React.FC<{
                                 onClick={handleConfirmPurchase}
                                 disabled={isSubmitting}
                                 className="py-2 px-4 bg-primary-600 text-white rounded font-semibold disabled:opacity-50"
+                            >
+                                {isSubmitting ? '...' : 'تأكيد'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
+// --- New supplier return modal: direct mirror of PurchaseModal, reversed effects.
+// Calls existing processSupplierReturn(items, supplierId) — decreases stock + supplier balance. ---
+const SupplierReturnModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    supplier: Supplier;
+    onComplete: () => void;
+}> = ({ isOpen, onClose, supplier, onComplete }) => {
+    const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [items, setItems] = useState<Array<{ product: Product; buyQuantity: number; price: number }>>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmationOpen, setConfirmationOpen] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const productsConstraints = [orderBy('name')];
+        const unsubProducts = subscribeToCollection<Product>('products', setProducts, productsConstraints);
+        const categoriesConstraints = [orderBy('name')];
+        const unsubCategories = subscribeToCollection<Category>('categories', setCategories, categoriesConstraints);
+        return () => {
+            unsubProducts();
+            unsubCategories();
+        };
+    }, [isOpen]);
+
+    // Reset on close
+    useEffect(() => {
+        if (!isOpen) {
+            setItems([]);
+            setSearchQuery('');
+            setSelectedCategory('');
+            setConfirmationOpen(false);
+        }
+    }, [isOpen]);
+
+    const filteredProducts = products.filter(p => {
+        const matchesCategory = !selectedCategory || p.categoryId === selectedCategory;
+        const q = searchQuery.trim();
+        const matchesSearch = !q || p.name.includes(q) || p.code.includes(q);
+        return matchesCategory && matchesSearch;
+    });
+
+    const addItem = (product: Product) => {
+        setItems(prev => {
+            const existing = prev.find(i => i.product.id === product.id);
+            if (existing) {
+                return prev.map(i => i.product.id === product.id ? { ...i, buyQuantity: i.buyQuantity + 1 } : i);
+            }
+            return [...prev, { product, buyQuantity: 1, price: product.price }];
+        });
+    };
+
+    const updateItem = (productId: string, buyQuantity: number, price: number) => {
+        setItems(prev => prev.map(i =>
+            i.product.id === productId
+                ? { ...i, buyQuantity: Math.max(1, buyQuantity), price: Math.max(0, price) }
+                : i
+        ));
+    };
+
+    const removeItem = (productId: string) => {
+        setItems(prev => prev.filter(i => i.product.id !== productId));
+    };
+
+    const total = items.reduce((sum, i) => sum + i.price * i.buyQuantity, 0);
+
+    const handleConfirmReturn = async () => {
+        if (items.length === 0) return;
+        setIsSubmitting(true);
+        try {
+            await processSupplierReturn(
+                items.map(i => ({
+                    ...i.product,
+                    buyQuantity: i.buyQuantity,
+                    priceType: 'retail' as const,
+                    price: i.price, // return value per unit as actually entered (defaults to recorded price, manually editable)
+                })),
+                supplier.id
+            );
+            onComplete();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-end z-50">
+                <div className="bg-white dark:bg-gray-800 rounded-t-2xl shadow-xl p-4 w-full max-w-2xl h-[85vh] flex flex-col">
+                    <div className="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-3">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">مرتجع مورد — {supplier.name}</h2>
+                        <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100">✕</button>
+                    </div>
+
+                    {/* Item search + category filter */}
+                    <div className="space-y-2 mb-3">
+                        <label htmlFor="supplierReturnSearch" className="sr-only">ابحث عن منتج</label>
+                        <input
+                            id="supplierReturnSearch"
+                            type="text"
+                            placeholder="ابحث بالاسم أو الكود..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                        />
+                        <label htmlFor="supplierReturnCategory" className="sr-only">التصنيف</label>
+                        <select
+                            id="supplierReturnCategory"
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className="w-full p-2.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                        >
+                            <option value="">كل التصنيفات</option>
+                            {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                        </select>
+                    </div>
+
+                    {/* Catalog quick-add (filtered) */}
+                    <div className="flex-1 overflow-y-auto -mx-4 px-4 space-y-2">
+                        {filteredProducts.map(p => (
+                            <button
+                                key={p.id}
+                                onClick={() => addItem(p)}
+                                className="w-full text-right p-2 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 flex justify-between items-center hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-sm"
+                            >
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">{p.name} <span className="text-xs text-gray-500">({p.code})</span></span>
+                                <span className="text-xs text-gray-600 dark:text-gray-300">المخزون: {p.quantity}</span>
+                            </button>
+                        ))}
+                        {filteredProducts.length === 0 && (
+                            <p className="text-center text-gray-600 dark:text-gray-300 text-sm py-6">لم يتم العثور على منتجات.</p>
+                        )}
+                    </div>
+
+                    {/* Selected return items */}
+                    {items.length > 0 && (
+                        <div className="mt-3 border-t dark:border-gray-700 pt-3 max-h-48 overflow-y-auto space-y-2">
+                            {items.map(i => (
+                                <div key={i.product.id} className="flex items-center gap-2">
+                                    <span className="flex-1 min-w-0 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{i.product.name}</span>
+                                    <label htmlFor={`srqty-${i.product.id}`} className="sr-only">الكمية</label>
+                                    <input
+                                        id={`srqty-${i.product.id}`}
+                                        type="number"
+                                        value={i.buyQuantity}
+                                        onChange={(e) => updateItem(i.product.id, parseInt(e.target.value) || 1, i.price)}
+                                        className="w-16 p-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-sm"
+                                        min="1"
+                                    />
+                                    <label htmlFor={`srprice-${i.product.id}`} className="sr-only">سعر الوحدة</label>
+                                    <input
+                                        id={`srprice-${i.product.id}`}
+                                        type="number"
+                                        value={i.price}
+                                        onChange={(e) => updateItem(i.product.id, i.buyQuantity, parseFloat(e.target.value) || 0)}
+                                        className="w-20 p-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-sm"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                    <button
+                                        onClick={() => removeItem(i.product.id)}
+                                        aria-label={`حذف ${i.product.name}`}
+                                        className="text-red-700 dark:text-red-300 hover:text-red-800 p-1.5 text-sm font-bold"
+                                    >
+                                        حذف
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t dark:border-gray-700 mt-auto -mx-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <span className="text-lg font-semibold text-gray-900 dark:text-gray-100">الإجمالي</span>
+                            <span className="text-2xl font-bold text-red-600 dark:text-red-300">{total.toFixed(2)} ج.م</span>
+                        </div>
+                        <button
+                            onClick={() => setConfirmationOpen(true)}
+                            disabled={items.length === 0}
+                            className="w-full py-3 px-4 bg-red-600 text-white rounded-lg font-bold text-lg shadow-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                            تسجيل مرتجع المورد
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Confirm supplier return — direction made explicit to avoid confusion with purchase */}
+            {confirmationOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm">
+                        <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-gray-100">تأكيد مرتجع المورد</h3>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                            هيقلل مديونيتك للمورد "{supplier.name}" بـ <span className="font-bold">{total.toFixed(2)} ج.م</span>،
+                            وهيقلل كمية المخزون للأصناف دي. متأكد؟
+                        </p>
+                        <div className="flex justify-end gap-2">
+                            <button onClick={() => setConfirmationOpen(false)} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">إلغاء</button>
+                            <button
+                                onClick={handleConfirmReturn}
+                                disabled={isSubmitting}
+                                className="py-2 px-4 bg-red-600 text-white rounded font-semibold disabled:opacity-50"
                             >
                                 {isSubmitting ? '...' : 'تأكيد'}
                             </button>
