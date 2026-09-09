@@ -125,7 +125,7 @@ const CartModal: React.FC<{
     onSaleComplete: () => void;
 }> = ({ customers, dailyArchive, categories, onSaleComplete }) => {
     const { confirm } = useConfirmation();
-    const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem } = usePosCartStore();
+    const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, recalcCartPrices } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     const getCategoryName = useCallback((categoryId: string) => {
@@ -167,6 +167,11 @@ const CartModal: React.FC<{
         }
     }
 
+    // Invoice-wide payment method: on change, re-resolve every affected item's price.
+    const handlePaymentMethodChange = (paymentMethod: PaymentMethod) => {
+        recalcCartPrices(paymentMethod);
+    }
+
     if (!isCartModalOpen) return null;
 
     return (
@@ -195,6 +200,22 @@ const CartModal: React.FC<{
                                     <div className="col-span-2 pr-2">
                                         <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
                                         <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
+                                        <div className="mt-1 inline-flex rounded-full bg-gray-100 dark:bg-gray-700 p-0.5 text-xs font-semibold">
+                                            <button
+                                                onClick={() => setItemPriceType(item.id, 'retail', PaymentMethod.Cash)}
+                                                aria-pressed={item.priceType === 'retail'}
+                                                className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'retail' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                            >
+                                                قطاعي
+                                            </button>
+                                            <button
+                                                onClick={() => setItemPriceType(item.id, 'wholesale', PaymentMethod.Cash)}
+                                                aria-pressed={item.priceType === 'wholesale'}
+                                                className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'wholesale' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                            >
+                                                جملة
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="col-span-1 flex items-center">
                                         <label htmlFor={`qty-${item.id}`} className="sr-only">الكمية</label>
@@ -252,6 +273,7 @@ const CartModal: React.FC<{
                 subtotal={subtotal}
                 customers={customers}
                 onSubmit={handleProcessSale}
+                onPaymentMethodChange={handlePaymentMethodChange}
             />
         </>
     )
@@ -263,7 +285,8 @@ const PaymentModal: React.FC<{
     subtotal: number;
     customers: Customer[];
     onSubmit: (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => void;
-}> = ({ isOpen, onClose, subtotal, customers, onSubmit }) => {
+    onPaymentMethodChange?: (paymentMethod: PaymentMethod) => void;
+}> = ({ isOpen, onClose, subtotal, customers, onSubmit, onPaymentMethodChange }) => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
     const [selectedCustomer, setSelectedCustomer] = useState<string>('');
     const [discount, setDiscount] = useState(0);
@@ -327,7 +350,11 @@ const PaymentModal: React.FC<{
                         id="paymentMethod"
                         name="paymentMethod"
                         value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                        onChange={(e) => {
+                            const next = e.target.value as PaymentMethod;
+                            setPaymentMethod(next);
+                            onPaymentMethodChange?.(next);
+                        }}
                         className="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500"
                     >
                         {Object.values(PaymentMethod).map(method => <option key={method} value={method}>{method}</option>)}

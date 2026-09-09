@@ -30,7 +30,7 @@ export const useReturnCartStore = create<ReturnCartState>((set) => ({
           item.id === product.id ? { ...item, buyQuantity: item.buyQuantity + 1 } : item
         );
     } else {
-        newCart = [...state.returnCart, { ...product, buyQuantity: 1 }];
+        newCart = [...state.returnCart, { ...product, buyQuantity: 1, priceType: 'retail' as const }];
     }
     return {
       returnCart: newCart,
