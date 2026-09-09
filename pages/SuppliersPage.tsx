@@ -81,7 +81,7 @@ const SupplierCard: React.FC<{
 }> = ({ supplier, onEdit, onDelete, onAddPayment }) => {
   const balance = supplier.balance || 0;
   const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
-  const balanceText = balance > 0 ? 'له مديونية (علينا)' : balance < 0 ? 'له رصيد دائن' : 'رصيد صفري';
+  const balanceText = balance > 0 ? 'له مديونية علينا (دائن)' : balance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg">

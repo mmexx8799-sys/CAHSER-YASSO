@@ -173,9 +173,9 @@ export default function SupplierAccountPage() {
                         )}
                     </div>
                     <div className="text-left shrink-0">
-                        <p className="text-xs text-gray-600 dark:text-gray-300">المديونية الحالية (له)</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">{liveBalance > 0 ? 'له مديونية علينا (دائن)' : liveBalance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري'}</p>
                         <p className={`text-lg font-bold ${(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
-                            {liveBalance.toFixed(2)} ج.م
+                            {Math.abs(liveBalance).toFixed(2)} ج.م
                         </p>
                     </div>
                 </div>
