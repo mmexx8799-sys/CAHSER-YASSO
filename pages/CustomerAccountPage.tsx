@@ -4,6 +4,7 @@ import { ArrowRight, Phone } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { addCustomerPayment } from '../services/api';
+import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 
@@ -34,6 +35,7 @@ export default function CustomerAccountPage() {
     const [amount, setAmount] = useState<number | string>('');
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<Invoice | Return | null>(null);
 
     // handleSubmit — transferred verbatim from AddPaymentModal (api layer untouched)
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
@@ -230,21 +232,20 @@ export default function CustomerAccountPage() {
                         {invoices.length === 0 ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد فواتير.</p>
                         ) : invoices.map(inv => (
-                            <div key={inv.id} className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                                <div className="flex justify-between items-start gap-2">
+                            <button
+                                key={inv.id}
+                                onClick={() => setSelectedTransaction(inv)}
+                                className="w-full text-right p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                            >
+                                <div className="flex justify-between items-center gap-2">
                                     <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">{inv.invoiceNumber}</span>
                                     <span className="font-bold text-blue-800 dark:text-blue-300">{inv.total.toFixed(2)} ج.م</span>
                                 </div>
-                                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{new Date(inv.createdAt).toLocaleString('ar-EG')} — {inv.paymentMethod}</p>
-                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-2 space-y-1">
-                                    {inv.items.map((it, i) => (
-                                        <div key={i} className="flex justify-between gap-2">
-                                            <span className="min-w-0 truncate">{it.name} ×{it.buyQuantity}</span>
-                                            <span className="shrink-0">{(it.price * it.buyQuantity).toFixed(2)}</span>
-                                        </div>
-                                    ))}
+                                <div className="flex justify-between items-center gap-2 mt-1">
+                                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(inv.createdAt).toLocaleDateString('ar-EG')} — {inv.paymentMethod}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300">{inv.items.length} صنف</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 )}
@@ -253,21 +254,20 @@ export default function CustomerAccountPage() {
                         {returns.length === 0 ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد مرتجعات.</p>
                         ) : returns.map(ret => (
-                            <div key={ret.id} className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
-                                <div className="flex justify-between items-start gap-2">
+                            <button
+                                key={ret.id}
+                                onClick={() => setSelectedTransaction(ret)}
+                                className="w-full text-right p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                            >
+                                <div className="flex justify-between items-center gap-2">
                                     <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">مرتجع</span>
                                     <span className="font-bold text-red-800 dark:text-red-300">-{ret.total.toFixed(2)} ج.م</span>
                                 </div>
-                                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1">{new Date(ret.createdAt).toLocaleString('ar-EG')}</p>
-                                <div className="text-xs text-gray-700 dark:text-gray-200 mt-2 space-y-1">
-                                    {ret.items.map((it, i) => (
-                                        <div key={i} className="flex justify-between gap-2">
-                                            <span className="min-w-0 truncate">{it.name} ×{it.buyQuantity}</span>
-                                            <span className="shrink-0">{(it.price * it.buyQuantity).toFixed(2)}</span>
-                                        </div>
-                                    ))}
+                                <div className="flex justify-between items-center gap-2 mt-1">
+                                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleDateString('ar-EG')}</p>
+                                    <p className="text-xs text-gray-600 dark:text-gray-300">{ret.items.length} صنف</p>
                                 </div>
-                            </div>
+                            </button>
                         ))}
                     </div>
                 )}
@@ -312,6 +312,8 @@ export default function CustomerAccountPage() {
                     </button>
                 </form>
             </div>
+
+            <InvoiceDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
         </div>
     );
 }
