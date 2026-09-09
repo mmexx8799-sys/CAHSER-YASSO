@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import type { Invoice, Return } from '../types';
+import type { Invoice, Return, PurchaseInvoice, SupplierReturn } from '../types';
 
 export const InvoiceDetailModal: React.FC<{
-    transaction: Invoice | Return | null;
+    transaction: Invoice | Return | PurchaseInvoice | SupplierReturn | null;
     onClose: () => void;
 }> = ({ transaction, onClose }) => {
     if (!transaction) return null;
