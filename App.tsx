@@ -1,7 +1,7 @@
 
 import React, { Suspense, useMemo, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun } from 'lucide-react';
+import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -21,6 +21,8 @@ const POSPage = React.lazy(() => import('./pages/POSPage'));
 const ProductsPage = React.lazy(() => import('./pages/ProductsPage'));
 const CustomersPage = React.lazy(() => import('./pages/CustomersPage'));
 const CustomerAccountPage = React.lazy(() => import('./pages/CustomerAccountPage'));
+const SuppliersPage = React.lazy(() => import('./pages/SuppliersPage'));
+const SupplierAccountPage = React.lazy(() => import('./pages/SupplierAccountPage'));
 const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
 const ArchivePage = React.lazy(() => import('./pages/ArchivePage'));
@@ -78,6 +80,7 @@ const useNavItems = () => {
         const items = [
             { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
             { to: "/customers", icon: Users, label: "العملاء" },
+            { to: "/suppliers", icon: Truck, label: "الموردين" },
             { to: "/returns", icon: Undo2, label: "المرتجعات" },
             { to: "/products", icon: Package, label: "المنتجات" },
             { to: "/reports", icon: BarChart2, label: "التقارير" },
@@ -255,6 +258,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/" element={<POSPage />} />
                     <Route path="/customers" element={<CustomersPage />} />
                     <Route path="/customers/:id" element={<CustomerAccountPage />} />
+                    <Route path="/suppliers" element={<SuppliersPage />} />
+                    <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
                     <Route path="/returns" element={<ReturnsPage />} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
