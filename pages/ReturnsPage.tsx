@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from '
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Trash2, Undo2, AlertCircle, Settings, Loader2 } from 'lucide-react';
 import type { Product, CartItem, DailyArchive, Category, Customer } from '../types';
+import { PaymentMethod } from '../types';
 import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
@@ -120,7 +121,7 @@ const ReturnCartModal: React.FC<{
     categories: Category[];
 }> = ({ dailyArchive, categories }) => {
     const { confirm } = useConfirmation();
-    const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType } = useReturnCartStore();
+    const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, pricingMethod, setPricingMethod } = useReturnCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -280,12 +281,13 @@ const ReturnCartModal: React.FC<{
                                             onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1)}
                                             className="w-16 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center"
                                             min="1"
+                                            max={item.quantity}
                                             autoComplete="off"
                                             disabled={isProcessing}
                                         />
                                         <button
-                                            onClick={() => updateItem(item.id, item.buyQuantity + 1)}
-                                            disabled={isProcessing}
+                                            onClick={() => updateItem(item.id, Math.min(item.quantity, item.buyQuantity + 1))}
+                                            disabled={item.buyQuantity >= item.quantity || isProcessing}
                                             aria-label={`زيادة كمية ${item.name}`}
                                             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
@@ -352,6 +354,28 @@ const ReturnCartModal: React.FC<{
                                 {isSearchingCustomers && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">جاري البحث...</p>}
                             </div>
                         )}
+                    </div>
+                    {/* Explicit pricing basis — cashier decides Cash/Credit; never inferred from the linked customer (REQ-M13-FIX) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">أساس التسعير</label>
+                        <div className="inline-flex rounded-full bg-gray-100 dark:bg-gray-700 p-0.5 text-sm font-semibold">
+                            <button
+                                onClick={() => setPricingMethod(PaymentMethod.Cash)}
+                                disabled={isProcessing}
+                                aria-pressed={pricingMethod === PaymentMethod.Cash}
+                                className={`px-3 py-1 rounded-full transition-colors ${pricingMethod === PaymentMethod.Cash ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                            >
+                                نقدي
+                            </button>
+                            <button
+                                onClick={() => setPricingMethod(PaymentMethod.Credit)}
+                                disabled={isProcessing}
+                                aria-pressed={pricingMethod === PaymentMethod.Credit}
+                                className={`px-3 py-1 rounded-full transition-colors ${pricingMethod === PaymentMethod.Credit ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                            >
+                                آجل
+                            </button>
+                        </div>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="text-lg font-semibold">إجمالي المرتجع</span>
