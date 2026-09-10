@@ -208,29 +208,53 @@ export default function SupplierAccountPage() {
     const exportStatementCsv = useCallback(() => {
         if (!supplier) return;
         const rows = filteredStatementRows;
-        const header = ['التاريخ', 'نوع الحركة', 'البيان', 'عليه', 'له', 'الرصيد'];
-        const fmt = (n: number) => n.toFixed(2);
+        const fmt = (n: number) => n.toFixed(2); // fixed 2 decimals, no thousands separators, no currency symbol
+        const fmtDate = (t: number) => {
+            const d = new Date(t);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`; // YYYY-MM-DD — sorts correctly as text in Excel
+        };
+        const escapeCsv = (cell: string) => {
+            // standard CSV escaping: wrap in quotes if the value contains comma, quote, or newline; double inner quotes
+            if (/[",\r\n]/.test(cell)) return `"${cell.replace(/"/g, '""')}"`;
+            return cell;
+        };
+        const openingRow = rows.find(row => row.id === 'opening');
+        const openingBalance = openingRow ? openingRow.balanceAfter : (supplier.openingBalance ?? 0);
+        const today = new Date().toISOString().slice(0, 10);
+        const periodLabel = statementFrom || statementTo
+            ? `الفترة: ${statementFrom || 'البداية'} إلى ${statementTo || 'الآن'}`
+            : 'كل الحركات';
         const csvRows = rows.map(row => [
-            row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '',
+            row.effectiveDate ? fmtDate(row.effectiveDate) : '',
             row.type,
             row.description,
-            row.debit ? fmt(row.debit) : '',
+            row.debit ? fmt(row.debit) : '', // empty cell, not "0.00"/"—", so Excel SUM stays correct
             row.credit ? fmt(row.credit) : '',
             fmt(row.balanceAfter),
         ]);
-        const escapeCsv = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
-        const csv = [header, ...csvRows].map(r => r.map(escapeCsv).join(',')).join('\r\n');
+        const csv = [
+            [`${supplier.name} - كشف حساب`],
+            [`تاريخ التصدير: ${today}`, periodLabel],
+            [],
+            ['التاريخ', 'نوع الحركة', 'البيان', 'عليه', 'له', 'الرصيد'],
+            ...csvRows,
+            [],
+            ['الرصيد الافتتاحي', fmt(openingBalance)],
+            ['الرصيد النهائي', fmt(liveBalance)],
+        ].map(r => r.map(escapeCsv).join(',')).join('\r\n');
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); // BOM so Excel renders Arabic correctly
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const today = new Date().toISOString().slice(0, 10);
         link.href = url;
         link.download = `كشف-حساب-${supplier.name}-${today}.csv`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-    }, [supplier, filteredStatementRows]);
+    }, [supplier, filteredStatementRows, statementFrom, statementTo, liveBalance]);
 
     const handlePurchaseComplete = useCallback(() => {
         setIsPurchaseModalOpen(false);
