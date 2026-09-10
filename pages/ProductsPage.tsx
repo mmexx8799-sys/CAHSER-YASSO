@@ -151,7 +151,7 @@ const ProductFormModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">{product ? 'تعديل منتج' : 'إضافة منتج جديد'}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
