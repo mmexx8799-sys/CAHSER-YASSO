@@ -217,7 +217,15 @@ const CartModal: React.FC<{
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="col-span-1 flex items-center">
+                                    <div className="col-span-1 flex items-center justify-center gap-1">
+                                        <button
+                                            onClick={() => updateItem(item.id, Math.max(1, item.buyQuantity - 1), item.price)}
+                                            disabled={item.buyQuantity <= 1}
+                                            aria-label={`تقليل كمية ${item.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            −
+                                        </button>
                                         <label htmlFor={`qty-${item.id}`} className="sr-only">الكمية</label>
                                         <input
                                             id={`qty-${item.id}`}
@@ -230,6 +238,14 @@ const CartModal: React.FC<{
                                             min="1"
                                             max={item.quantity}
                                         />
+                                        <button
+                                            onClick={() => updateItem(item.id, Math.min(item.quantity, item.buyQuantity + 1), item.price)}
+                                            disabled={item.buyQuantity >= item.quantity}
+                                            aria-label={`زيادة كمية ${item.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            +
+                                        </button>
                                     </div>
                                     <div className="col-span-1 flex items-center">
                                         <label htmlFor={`price-${item.id}`} className="sr-only">السعر</label>

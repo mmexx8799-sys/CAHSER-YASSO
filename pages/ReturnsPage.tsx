@@ -120,7 +120,7 @@ const ReturnCartModal: React.FC<{
     categories: Category[];
 }> = ({ dailyArchive, categories }) => {
     const { confirm } = useConfirmation();
-    const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem } = useReturnCartStore();
+    const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType } = useReturnCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [customerSearch, setCustomerSearch] = useState('');
@@ -228,34 +228,87 @@ const ReturnCartModal: React.FC<{
                 ) : (
                     <div className="flex-1 overflow-y-auto">
                         {returnCart.map(item => (
-                            <div key={item.id} className="flex items-center justify-between py-3 border-b gap-2">
-                                <div className="flex-1 pr-2">
-                                    <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                    <label htmlFor={`retQty-${item.id}`} className="text-xs">الكمية:</label>
-                                    <input
-                                        id={`retQty-${item.id}`}
-                                        name={`retQty-${item.id}`}
-                                        type="number"
-                                        value={item.buyQuantity}
-                                        onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1)}
-                                        className="w-16 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center"
-                                        min="1"
-                                        autoComplete="off"
+                            <div key={item.id} className="py-3 border-b dark:border-gray-700 space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div className="flex-1 pr-2">
+                                        <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => removeItem(item.id)}
+                                        className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 p-2 disabled:opacity-50"
                                         disabled={isProcessing}
-                                    />
+                                        aria-label={`حذف ${item.name}`}
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
-                                <p className="w-24 text-left font-bold text-sm">{(item.price * item.buyQuantity).toFixed(2)} ج.م</p>
-                                <button
-                                    onClick={() => removeItem(item.id)}
-                                    className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 p-2 disabled:opacity-50"
-                                    disabled={isProcessing}
-                                    aria-label={`حذف ${item.name}`}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                    <div className="inline-flex rounded-full bg-gray-100 dark:bg-gray-700 p-0.5 text-xs font-semibold">
+                                        <button
+                                            onClick={() => setItemPriceType(item.id, 'retail')}
+                                            disabled={isProcessing}
+                                            aria-pressed={item.priceType === 'retail'}
+                                            className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'retail' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                        >
+                                            قطاعي
+                                        </button>
+                                        <button
+                                            onClick={() => setItemPriceType(item.id, 'wholesale')}
+                                            disabled={isProcessing}
+                                            aria-pressed={item.priceType === 'wholesale'}
+                                            className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'wholesale' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                        >
+                                            جملة
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => updateItem(item.id, Math.max(1, item.buyQuantity - 1))}
+                                            disabled={item.buyQuantity <= 1 || isProcessing}
+                                            aria-label={`تقليل كمية ${item.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            −
+                                        </button>
+                                        <label htmlFor={`retQty-${item.id}`} className="sr-only">الكمية</label>
+                                        <input
+                                            id={`retQty-${item.id}`}
+                                            name={`retQty-${item.id}`}
+                                            type="number"
+                                            value={item.buyQuantity}
+                                            onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1)}
+                                            className="w-16 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center"
+                                            min="1"
+                                            autoComplete="off"
+                                            disabled={isProcessing}
+                                        />
+                                        <button
+                                            onClick={() => updateItem(item.id, item.buyQuantity + 1)}
+                                            disabled={isProcessing}
+                                            aria-label={`زيادة كمية ${item.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <label htmlFor={`retPrice-${item.id}`} className="text-xs">السعر:</label>
+                                        <input
+                                            id={`retPrice-${item.id}`}
+                                            name={`retPrice-${item.id}`}
+                                            type="number"
+                                            value={item.price}
+                                            onChange={(e) => updateItem(item.id, item.buyQuantity, parseFloat(e.target.value) || 0)}
+                                            className="w-20 p-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center"
+                                            step="0.01"
+                                            min="0"
+                                            autoComplete="off"
+                                            disabled={isProcessing}
+                                        />
+                                    </div>
+                                    <p className="w-24 text-left font-bold text-sm">{(item.price * item.buyQuantity).toFixed(2)} ج.م</p>
+                                </div>
                             </div>
                         ))}
                     </div>
