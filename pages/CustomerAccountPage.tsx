@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Phone } from 'lucide-react';
+import { ArrowRight, Phone, Download } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { addCustomerPayment } from '../services/api';
@@ -8,10 +8,11 @@ import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 
-type TabId = 'overview' | 'payments' | 'invoices' | 'returns';
+type TabId = 'overview' | 'statement' | 'payments' | 'invoices' | 'returns';
 
 const TABS: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'نظرة عامة' },
+    { id: 'statement', label: 'كشف الحساب' },
     { id: 'payments', label: 'المدفوعات' },
     { id: 'invoices', label: 'الفواتير' },
     { id: 'returns', label: 'المرتجعات' },
@@ -119,6 +120,108 @@ export default function CustomerAccountPage() {
         navigate('/customers');
     }, [navigate]);
 
+    // --- كشف الحساب (REQ-M9): client-side merge of already-loaded records, no new subscriptions ---
+    const [statementFrom, setStatementFrom] = useState('');
+    const [statementTo, setStatementTo] = useState('');
+
+    interface StatementRow {
+        id: string;
+        effectiveDate: number; // unified ordering field: `date` for payments, `createdAt` for invoices/returns — merge-time only
+        type: string;
+        description: string;
+        debit: number; // عليه — يزيد المديونية (فاتورة بيع)
+        credit: number; // له — يقلل المديونية (دفعة / مرتجع)
+        balanceAfter: number; // الرصيد بعد الحركة
+    }
+
+    const statementRows: StatementRow[] = useMemo(() => {
+        if (!customer) return [];
+        const rows: StatementRow[] = [
+            { id: 'opening', effectiveDate: 0, type: 'رصيد افتتاحي', description: 'الرصيد الافتتاحي', debit: 0, credit: 0, balanceAfter: customer.openingBalance ?? 0 },
+        ];
+        invoices.forEach(inv => rows.push({
+            id: `inv-${inv.id}`,
+            effectiveDate: inv.createdAt,
+            type: 'فاتورة بيع',
+            description: inv.invoiceNumber || 'فاتورة',
+            debit: inv.total,
+            credit: 0,
+            balanceAfter: 0,
+        }));
+        returns.forEach(ret => rows.push({
+            id: `ret-${ret.id}`,
+            effectiveDate: ret.createdAt,
+            type: 'مرتجع عميل',
+            description: 'مرتجع',
+            debit: 0,
+            credit: ret.total,
+            balanceAfter: 0,
+        }));
+        payments.forEach(p => rows.push({
+            id: `pay-${p.id}`,
+            effectiveDate: p.date,
+            type: 'دفعة',
+            description: p.notes || 'دفعة',
+            debit: 0,
+            credit: p.amount,
+            balanceAfter: 0,
+        }));
+        rows.sort((a, b) => a.effectiveDate - b.effectiveDate);
+        let balance = customer.openingBalance ?? 0;
+        rows.forEach(row => {
+            balance += row.debit - row.credit;
+            row.balanceAfter = balance;
+        });
+        return rows;
+    }, [customer, invoices, returns, payments]);
+
+    const finalStatementBalance = statementRows.length > 0
+        ? statementRows[statementRows.length - 1].balanceAfter
+        : (customer?.openingBalance ?? 0);
+
+    // Self-check (REQ-M9 #3): last row must equal liveBalance, else warn visually
+    const statementMismatch = statementRows.length > 0
+        && Math.abs(finalStatementBalance - liveBalance) > 0.005;
+
+    const filteredStatementRows = useMemo(() => {
+        if (!statementFrom && !statementTo) return statementRows;
+        const fromTime = statementFrom ? new Date(statementFrom).setHours(0, 0, 0, 0) : -Infinity;
+        const toTime = statementTo ? new Date(statementTo).setHours(23, 59, 59, 999) : Infinity;
+        return statementRows.filter(row =>
+            row.id === 'opening' ? true : (row.effectiveDate >= fromTime && row.effectiveDate <= toTime)
+        );
+    }, [statementRows, statementFrom, statementTo]);
+
+    // REQ-M9 #4: "لا توجد بيانات" empty state when no actual movements (opening row alone doesn't count)
+    const hasVisibleMovements = filteredStatementRows.some(row => row.id !== 'opening');
+
+    const exportStatementCsv = useCallback(() => {
+        if (!customer) return;
+        const rows = filteredStatementRows;
+        const header = ['التاريخ', 'نوع الحركة', 'البيان', 'عليه', 'له', 'الرصيد'];
+        const fmt = (n: number) => n.toFixed(2);
+        const csvRows = rows.map(row => [
+            row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '',
+            row.type,
+            row.description,
+            row.debit ? fmt(row.debit) : '',
+            row.credit ? fmt(row.credit) : '',
+            fmt(row.balanceAfter),
+        ]);
+        const escapeCsv = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+        const csv = [header, ...csvRows].map(r => r.map(escapeCsv).join(',')).join('\r\n');
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' }); // BOM so Excel renders Arabic correctly
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const today = new Date().toISOString().slice(0, 10);
+        link.href = url;
+        link.download = `كشف-حساب-${customer.name}-${today}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, [customer, filteredStatementRows]);
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-full pt-10">
@@ -217,6 +320,77 @@ export default function CustomerAccountPage() {
                             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-2">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">العنوان</p>
                                 <p className="mt-0.5">{customer.address}</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+                {activeTab === 'statement' && (
+                    <div className="space-y-3">
+                        {statementMismatch && (
+                            <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 text-sm text-yellow-800 dark:text-yellow-300">
+                                تنبيه: آخر رصيد في كشف الحساب ({finalStatementBalance.toFixed(2)} ج.م) لا يطابق الرصيد الحالي الظاهر أعلى الصفحة ({liveBalance.toFixed(2)} ج.م) — قد تكون هناك حركة ناقصة أو معدّلة يدويًا.
+                            </div>
+                        )}
+                        <div className="flex flex-wrap items-end gap-2">
+                            <div>
+                                <label htmlFor="statementFrom" className="block text-xs text-gray-600 dark:text-gray-300 mb-1">من تاريخ</label>
+                                <input
+                                    id="statementFrom"
+                                    type="date"
+                                    value={statementFrom}
+                                    onChange={e => setStatementFrom(e.target.value)}
+                                    className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="statementTo" className="block text-xs text-gray-600 dark:text-gray-300 mb-1">إلى تاريخ</label>
+                                <input
+                                    id="statementTo"
+                                    type="date"
+                                    value={statementTo}
+                                    onChange={e => setStatementTo(e.target.value)}
+                                    className="p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
+                                />
+                            </div>
+                            <button
+                                onClick={exportStatementCsv}
+                                disabled={!hasVisibleMovements}
+                                className="flex items-center gap-1.5 py-2 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 disabled:opacity-50"
+                            >
+                                <Download size={16} />
+                                <span>تصدير CSV</span>
+                            </button>
+                        </div>
+                        {filteredStatementRows.length === 0 || !hasVisibleMovements ? (
+                            <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد بيانات.</p>
+                        ) : (
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="text-xs text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-600">
+                                                <th className="p-2.5 text-right font-semibold">التاريخ</th>
+                                                <th className="p-2.5 text-right font-semibold">نوع الحركة</th>
+                                                <th className="p-2.5 text-right font-semibold">البيان</th>
+                                                <th className="p-2.5 text-right font-semibold">عليه</th>
+                                                <th className="p-2.5 text-right font-semibold">له</th>
+                                                <th className="p-2.5 text-right font-semibold">الرصيد</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                                            {filteredStatementRows.map(row => (
+                                                <tr key={row.id} className="text-gray-800 dark:text-gray-200">
+                                                    <td className="p-2.5 whitespace-nowrap text-xs" dir="ltr">{row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '—'}</td>
+                                                    <td className="p-2.5 whitespace-nowrap">{row.type}</td>
+                                                    <td className="p-2.5 min-w-24">{row.description}</td>
+                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold text-red-700 dark:text-red-300" dir="ltr">{row.debit ? row.debit.toFixed(2) : '—'}</td>
+                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold text-green-700 dark:text-green-300" dir="ltr">{row.credit ? row.credit.toFixed(2) : '—'}</td>
+                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold" dir="ltr">{row.balanceAfter.toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
                     </div>
