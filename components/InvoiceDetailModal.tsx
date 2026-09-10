@@ -16,7 +16,7 @@ export const InvoiceDetailModal: React.FC<{
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-4 text-gray-800 dark:text-gray-100 font-mono text-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-sm p-4 text-gray-800 dark:text-gray-100 font-mono text-sm max-h-[90vh] overflow-y-auto">
                 <div className="relative text-center mb-4">
                     <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">كاشير ياسو للملابس</h2>
                     <p>{new Date(transaction.createdAt).toLocaleDateString('ar-EG')}</p>
