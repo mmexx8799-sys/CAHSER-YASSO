@@ -195,6 +195,28 @@ export default function CustomerAccountPage() {
     // REQ-M9 #4: "لا توجد بيانات" empty state when no actual movements (opening row alone doesn't count)
     const hasVisibleMovements = filteredStatementRows.some(row => row.id !== 'opening');
 
+    // REQ-M9-fix2 #2: badge styling per movement type — same colors as the page's existing tabs
+    // (invoices = blue, returns = red, payments = green, opening = gray). No invented colors.
+    const typeBadgeClass = (type: string) => type === 'فاتورة بيع'
+        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800'
+        : type === 'مرتجع عميل'
+            ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-100 dark:border-red-800'
+            : type === 'دفعة'
+                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-100 dark:border-green-800'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600';
+
+    // REQ-M9-fix2 #3: display line for البيان — invoice/return reference number, or payment notes
+    const rowSubtitle = (row: StatementRow): string | null => {
+        if (row.id.startsWith('inv-') || row.id.startsWith('ret-')) {
+            const ref = row.description;
+            return ref === 'فاتورة' || ref === 'مرتجع' ? null : ref; // fall back when no reference number exists
+        }
+        return null; // payments already show notes in the main line
+    };
+
+    // REQ-M9-fix2 #6: desktop table rows + mobile card rows share this render data
+    const statementViewRows = filteredStatementRows;
+
     const exportStatementCsv = useCallback(() => {
         if (!customer) return;
         const rows = filteredStatementRows;
@@ -388,34 +410,74 @@ export default function CustomerAccountPage() {
                         {filteredStatementRows.length === 0 || !hasVisibleMovements ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد بيانات.</p>
                         ) : (
-                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="text-xs text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-600">
-                                                <th className="p-2.5 text-right font-semibold">التاريخ</th>
-                                                <th className="p-2.5 text-right font-semibold">نوع الحركة</th>
-                                                <th className="p-2.5 text-right font-semibold">البيان</th>
-                                                <th className="p-2.5 text-right font-semibold">عليه</th>
-                                                <th className="p-2.5 text-right font-semibold">له</th>
-                                                <th className="p-2.5 text-right font-semibold">الرصيد</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
-                                            {filteredStatementRows.map(row => (
-                                                <tr key={row.id} className="text-gray-800 dark:text-gray-200">
-                                                    <td className="p-2.5 whitespace-nowrap text-xs" dir="ltr">{row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '—'}</td>
-                                                    <td className="p-2.5 whitespace-nowrap">{row.type}</td>
-                                                    <td className="p-2.5 min-w-24">{row.description}</td>
-                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold text-red-700 dark:text-red-300" dir="ltr">{row.debit ? row.debit.toFixed(2) : '—'}</td>
-                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold text-green-700 dark:text-green-300" dir="ltr">{row.credit ? row.credit.toFixed(2) : '—'}</td>
-                                                    <td className="p-2.5 whitespace-nowrap text-left font-bold" dir="ltr">{row.balanceAfter.toFixed(2)}</td>
+                            <>
+                                {/* Desktop/tablet table (md+) — REQ-M9-fix2 #1-5, #7 */}
+                                <div className="hidden md:block bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-base">
+                                            <thead>
+                                                <tr className="text-sm text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-600">
+                                                    <th className="p-3 text-left font-semibold">التاريخ</th>
+                                                    <th className="p-3 text-right font-semibold">نوع الحركة</th>
+                                                    <th className="p-3 text-right font-semibold">البيان</th>
+                                                    <th className="p-3 text-left font-semibold">عليه</th>
+                                                    <th className="p-3 text-left font-semibold">له</th>
+                                                    <th className="p-3 text-left font-semibold">الرصيد</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                                                {statementViewRows.map((row, idx) => (
+                                                    <tr key={row.id} className={`text-gray-800 dark:text-gray-200 ${row.id === 'opening' ? 'bg-gray-200 dark:bg-gray-600' : idx % 2 === 0 ? 'bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                                        <td className="p-3 whitespace-nowrap font-medium text-sm" dir="ltr">{row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '—'}</td>
+                                                        <td className="p-3 whitespace-nowrap">
+                                                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${typeBadgeClass(row.type)}`}>{row.type}</span>
+                                                        </td>
+                                                        <td className="p-3 min-w-24">
+                                                            {row.id === 'opening' ? row.description
+                                                                : row.id.startsWith('pay-')
+                                                                    ? (row.description !== 'دفعة' ? row.description : '—')
+                                                                    : <span className="text-xs text-gray-500 dark:text-gray-400" dir="ltr">{rowSubtitle(row) ?? '—'}</span>}
+                                                        </td>
+                                                        <td className="p-3 whitespace-nowrap text-left font-bold text-red-700 dark:text-red-300" dir="ltr">{row.debit ? row.debit.toFixed(2) : '—'}</td>
+                                                        <td className="p-3 whitespace-nowrap text-left font-bold text-green-700 dark:text-green-300" dir="ltr">{row.credit ? row.credit.toFixed(2) : '—'}</td>
+                                                        <td className="p-3 whitespace-nowrap text-left font-bold" dir="ltr">{row.balanceAfter.toFixed(2)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
+
+                                {/* Mobile cards (<md) — REQ-M9-fix2 #6, same card style as invoices/returns tabs */}
+                                <div className="md:hidden space-y-2">
+                                    {statementViewRows.map(row => (
+                                        <div key={row.id} className={`p-3 rounded-lg border ${row.id === 'opening' ? 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500' : 'bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600'}`}>
+                                            <div className="flex justify-between items-center gap-2">
+                                                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${typeBadgeClass(row.type)}`}>{row.type}</span>
+                                                <span className="text-xs text-gray-600 dark:text-gray-300 whitespace-nowrap" dir="ltr">{row.effectiveDate ? new Date(row.effectiveDate).toLocaleDateString('ar-EG') : '—'}</span>
+                                            </div>
+                                            {(row.id === 'opening' || (row.id.startsWith('pay-') && row.description !== 'دفعة') || rowSubtitle(row)) && (
+                                                <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
+                                                    {row.id === 'opening' ? row.description : row.id.startsWith('pay-') ? row.description : rowSubtitle(row)}
+                                                </p>
+                                            )}
+                                            <div className="flex gap-3 items-center mt-2">
+                                                {row.debit ? (
+                                                    <span className="font-bold text-red-700 dark:text-red-300">عليه: {row.debit.toFixed(2)} ج.م</span>
+                                                ) : row.credit ? (
+                                                    <span className="font-bold text-green-700 dark:text-green-300">له: {row.credit.toFixed(2)} ج.م</span>
+                                                ) : (
+                                                    <span />
+                                                )}
+                                            </div>
+                                            <p className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600 flex justify-between items-center text-sm">
+                                                <span className="text-gray-600 dark:text-gray-300">الرصيد</span>
+                                                <span className="font-bold" dir="ltr">{row.balanceAfter.toFixed(2)} ج.م</span>
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
                         )}
                     </div>
                 )}
