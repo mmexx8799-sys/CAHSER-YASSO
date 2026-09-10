@@ -196,74 +196,78 @@ const CartModal: React.FC<{
                     ) : (
                         <div className="flex-1 overflow-y-auto -mx-4 px-4">
                             {cart.map(item => (
-                                <div key={item.id} className="grid grid-cols-6 items-center py-4 border-b dark:border-gray-700 gap-2">
-                                    <div className="col-span-2 pr-2">
-                                        <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
-                                        <div className="mt-1 inline-flex rounded-full bg-gray-100 dark:bg-gray-700 p-0.5 text-xs font-semibold">
+                                <div key={item.id} className="py-4 border-b dark:border-gray-700 space-y-2">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0 pr-2">
+                                            <p className="font-bold text-lg line-clamp-2 text-gray-900 dark:text-gray-100">{item.name}</p>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300">{getCategoryName(item.categoryId)}</p>
+                                            <div className="mt-1 inline-flex rounded-full bg-gray-100 dark:bg-gray-700 p-0.5 text-xs font-semibold">
+                                                <button
+                                                    onClick={() => setItemPriceType(item.id, 'retail', PaymentMethod.Cash)}
+                                                    aria-pressed={item.priceType === 'retail'}
+                                                    className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'retail' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                                >
+                                                    قطاعي
+                                                </button>
+                                                <button
+                                                    onClick={() => setItemPriceType(item.id, 'wholesale', PaymentMethod.Cash)}
+                                                    aria-pressed={item.priceType === 'wholesale'}
+                                                    className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'wholesale' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                                >
+                                                    جملة
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => removeItem(item.id)} aria-label={`حذف ${item.name}`} className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 p-2">
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <div className="flex items-center gap-1">
                                             <button
-                                                onClick={() => setItemPriceType(item.id, 'retail', PaymentMethod.Cash)}
-                                                aria-pressed={item.priceType === 'retail'}
-                                                className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'retail' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                                onClick={() => updateItem(item.id, Math.max(1, item.buyQuantity - 1), item.price)}
+                                                disabled={item.buyQuantity <= 1}
+                                                aria-label={`تقليل كمية ${item.name}`}
+                                                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
-                                                قطاعي
+                                                −
                                             </button>
+                                            <label htmlFor={`qty-${item.id}`} className="sr-only">الكمية</label>
+                                            <input
+                                                id={`qty-${item.id}`}
+                                                name={`qty-${item.id}`}
+                                                type="number"
+                                                value={item.buyQuantity}
+                                                onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1, item.price)}
+                                                autoComplete="off"
+                                                className="w-16 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
+                                                min="1"
+                                                max={item.quantity}
+                                            />
                                             <button
-                                                onClick={() => setItemPriceType(item.id, 'wholesale', PaymentMethod.Cash)}
-                                                aria-pressed={item.priceType === 'wholesale'}
-                                                className={`px-2.5 py-0.5 rounded-full transition-colors ${item.priceType === 'wholesale' ? 'bg-primary-600 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+                                                onClick={() => updateItem(item.id, Math.min(item.quantity, item.buyQuantity + 1), item.price)}
+                                                disabled={item.buyQuantity >= item.quantity}
+                                                aria-label={`زيادة كمية ${item.name}`}
+                                                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
                                             >
-                                                جملة
+                                                +
                                             </button>
                                         </div>
+                                        <div className="flex items-center gap-1">
+                                            <label htmlFor={`price-${item.id}`} className="text-xs">السعر:</label>
+                                            <input
+                                                id={`price-${item.id}`}
+                                                name={`price-${item.id}`}
+                                                type="number"
+                                                value={item.price}
+                                                onChange={(e) => updateItem(item.id, item.buyQuantity, parseFloat(e.target.value) || 0)}
+                                                autoComplete="off"
+                                                className="w-20 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
+                                                step="0.01"
+                                            />
+                                        </div>
+                                        <p className="w-24 text-left font-bold text-base text-gray-900 dark:text-gray-100">{(item.price * item.buyQuantity).toFixed(2)}</p>
                                     </div>
-                                    <div className="col-span-1 flex items-center justify-center gap-1">
-                                        <button
-                                            onClick={() => updateItem(item.id, Math.max(1, item.buyQuantity - 1), item.price)}
-                                            disabled={item.buyQuantity <= 1}
-                                            aria-label={`تقليل كمية ${item.name}`}
-                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            −
-                                        </button>
-                                        <label htmlFor={`qty-${item.id}`} className="sr-only">الكمية</label>
-                                        <input
-                                            id={`qty-${item.id}`}
-                                            name={`qty-${item.id}`}
-                                            type="number"
-                                            value={item.buyQuantity}
-                                            onChange={(e) => updateItem(item.id, parseInt(e.target.value) || 1, item.price)}
-                                            autoComplete="off"
-                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
-                                            min="1"
-                                            max={item.quantity}
-                                        />
-                                        <button
-                                            onClick={() => updateItem(item.id, Math.min(item.quantity, item.buyQuantity + 1), item.price)}
-                                            disabled={item.buyQuantity >= item.quantity}
-                                            aria-label={`زيادة كمية ${item.name}`}
-                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                    <div className="col-span-1 flex items-center">
-                                        <label htmlFor={`price-${item.id}`} className="sr-only">السعر</label>
-                                        <input
-                                            id={`price-${item.id}`}
-                                            name={`price-${item.id}`}
-                                            type="number"
-                                            value={item.price}
-                                            onChange={(e) => updateItem(item.id, item.buyQuantity, parseFloat(e.target.value) || 0)}
-                                            autoComplete="off"
-                                            className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-base"
-                                            step="0.01"
-                                        />
-                                    </div>
-                                    <p className="col-span-1 text-center font-bold text-base text-gray-900 dark:text-gray-100">{(item.price * item.buyQuantity).toFixed(2)}</p>
-                                    <button onClick={() => removeItem(item.id)} aria-label={`حذف ${item.name}`} className="col-span-1 text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 justify-self-end p-2">
-                                        <Trash2 size={20} />
-                                    </button>
                                 </div>
                             ))}
                         </div>
