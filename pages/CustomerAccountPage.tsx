@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowRight, Phone, Download } from 'lucide-react';
+import { ArrowRight, Phone, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
 import { addCustomerPayment } from '../services/api';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
+import ExcelJS from 'exceljs';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 type TabId = 'overview' | 'statement' | 'payments' | 'invoices' | 'returns';
 
@@ -268,6 +272,159 @@ export default function CustomerAccountPage() {
         URL.revokeObjectURL(url);
     }, [customer, filteredStatementRows, statementFrom, statementTo, liveBalance]);
 
+    // REQ-M10: production-formatted .xlsx export (borders/colors/bold) — web download + Android native share
+    const exportStatementExcel = useCallback(async () => {
+        if (!customer) return;
+        try {
+            const rows = filteredStatementRows;
+            const fmtDate = (t: number) => {
+                const d = new Date(t);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+            const today = fmtDate(Date.now());
+            const fileName = `كشف-حساب-${customer.name}-${today}.xlsx`;
+
+            const wb = new ExcelJS.Workbook();
+            const sheet = wb.addWorksheet('كشف الحساب', {
+                views: [{ rightToLeft: true, state: 'frozen', ySplit: 2 }], // RTL + freeze title&header rows
+            });
+            sheet.columns = [
+                { header: 'التاريخ', key: 'date', width: 14 },
+                { header: 'نوع الحركة', key: 'type', width: 16 },
+                { header: 'البيان', key: 'desc', width: 22 },
+                { header: 'عليه', key: 'debit', width: 14 },
+                { header: 'له', key: 'credit', width: 14 },
+                { header: 'الرصيد', key: 'balance', width: 14 },
+            ];
+
+            // Title row (merged across all 6 columns), bold size 14
+            sheet.spliceRows(1, 0, []); // insert empty row 1 — header auto-added by addWorksheet becomes row 2
+            sheet.mergeCells('A1:F1');
+            const titleCell = sheet.getCell('A1');
+            titleCell.value = `${customer.name} - كشف حساب - ${today}`;
+            titleCell.font = { bold: true, size: 14 };
+            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // Header row: dark fill, white bold, centered, thin borders
+            const headerRow = sheet.getRow(2);
+            headerRow.eachCell(cell => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                    left: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                    bottom: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                    right: { style: 'thin', color: { argb: 'FF9CA3AF' } },
+                };
+            });
+            headerRow.commit();
+
+            // Data rows
+            const numFmt = '#,##0.00';
+            const dataBorderStyle: Partial<ExcelJS.Borders> = {
+                top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+                right: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+            };
+            rows.forEach((row, idx) => {
+                const isOpening = row.id === 'opening';
+                const xlsxRow = sheet.addRow({
+                    date: row.effectiveDate ? fmtDate(row.effectiveDate) : '',
+                    type: row.type,
+                    desc: row.description,
+                    debit: row.debit || null, // null keeps the cell empty — SUM-safe, unlike 0
+                    credit: row.credit || null,
+                    balance: row.balanceAfter,
+                });
+                const zebra = !isOpening && idx % 2 === 1; // light-gray zebra on even data rows
+                xlsxRow.eachCell(cell => {
+                    cell.border = dataBorderStyle;
+                    if (isOpening) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } };
+                        cell.font = { bold: true };
+                    } else if (zebra) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+                    }
+                });
+                // numeric columns: real numbers + colored fonts (red له / green عليه per screen convention is inverted: عليه=red debt)
+                if (row.debit) {
+                    xlsxRow.getCell('debit').numFmt = numFmt;
+                    xlsxRow.getCell('debit').font = { bold: true, color: { argb: 'FFB91C1C' } };
+                }
+                if (row.credit) {
+                    xlsxRow.getCell('credit').numFmt = numFmt;
+                    xlsxRow.getCell('credit').font = { bold: true, color: { argb: 'FF15803D' } };
+                }
+                xlsxRow.getCell('balance').numFmt = numFmt;
+                if (isOpening) xlsxRow.getCell('balance').font = { bold: true };
+            });
+
+            // Footer: الرصيد النهائي with thick top separator, bold 12, red/green by sign
+            const footerRow = sheet.addRow({ desc: 'الرصيد النهائي', balance: liveBalance });
+            sheet.mergeCells(`B${footerRow.number}:E${footerRow.number}`);
+            const footerLabel = sheet.getCell(`B${footerRow.number}`);
+            footerLabel.value = 'الرصيد النهائي';
+            footerLabel.font = { bold: true, size: 12 };
+            footerLabel.alignment = { horizontal: 'center', vertical: 'middle' };
+            footerRow.eachCell(cell => {
+                cell.border = {
+                    ...dataBorderStyle,
+                    top: { style: 'thick', color: { argb: 'FF1E293B' } },
+                } as Partial<ExcelJS.Borders>;
+            });
+            const footerBalance = footerRow.getCell('balance');
+            footerBalance.numFmt = numFmt;
+            footerBalance.font = {
+                bold: true, size: 12,
+                color: { argb: liveBalance >= 0 ? 'FFB91C1C' : 'FF15803D' }, // same red/green convention as live balance
+            };
+            footerBalance.alignment = { horizontal: 'center', vertical: 'middle' };
+            footerRow.commit();
+
+            const buffer = await wb.xlsx.writeBuffer();
+
+            if (Capacitor.isNativePlatform()) {
+                // Android APK: cache file + native share sheet
+                let binary = '';
+                const bytes = new Uint8Array(buffer as ArrayBuffer);
+                const chunk = 0x8000; // 32k chunks — avoids call-stack limits in WebView btoa
+                for (let i = 0; i < bytes.length; i += chunk) {
+                    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+                }
+                const base64 = btoa(binary);
+                const result = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64,
+                    directory: Directory.Cache,
+                });
+                await Share.share({
+                    title: fileName,
+                    url: result.uri,
+                    dialogTitle: 'مشاركة كشف الحساب',
+                });
+            } else {
+                // Web: same <a download> approach as CSV
+                const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+        } catch (error) {
+            console.error('Excel export failed:', error);
+            toast.error('فشل تصدير ملف Excel');
+        }
+    }, [customer, filteredStatementRows, liveBalance]);
+
     if (isLoading) {
         return (
             <div className="flex justify-center items-center h-full pt-10">
@@ -405,6 +562,14 @@ export default function CustomerAccountPage() {
                             >
                                 <Download size={16} />
                                 <span>تصدير CSV</span>
+                            </button>
+                            <button
+                                onClick={exportStatementExcel}
+                                disabled={!hasVisibleMovements}
+                                className="flex items-center gap-1.5 py-2 px-4 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
+                            >
+                                <FileSpreadsheet size={16} />
+                                <span>تصدير Excel</span>
                             </button>
                         </div>
                         {filteredStatementRows.length === 0 || !hasVisibleMovements ? (
