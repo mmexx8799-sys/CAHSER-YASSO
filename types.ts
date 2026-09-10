@@ -30,6 +30,7 @@ export interface Customer {
   phone?: string;
   address?: string;
   balance: number; // الرصيد الحالي (مدين/دائن)
+  openingBalance?: number; // الرصيد الافتتاحي التاريخي — ثابت لا تتغير معه العمليات (REQ-M8)
   createdAt: number;
 }
 
@@ -47,6 +48,7 @@ export interface Supplier {
   phone?: string;
   address?: string;
   balance: number; // موجب = احنا مديونين له
+  openingBalance?: number; // الرصيد الافتتاحي التاريخي — ثابت لا تتغير معه العمليات (REQ-M8)
   createdAt: number;
 }
 

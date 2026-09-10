@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Customer } from '../types';
-import { getCustomersPaginated, addDocument, updateDocument, deleteDocument } from '../services/api';
+import { getCustomersPaginated, updateDocument, deleteDocument, addCustomer } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -202,7 +202,7 @@ export default function CustomersPage() {
         toast.success('تم تحديث العميل');
         loadCustomers(true);
       } else {
-        await addDocument('customers', customerData);
+        await addCustomer(customerData);
         toast.success('تمت إضافة العميل');
         loadCustomers(true);
       }

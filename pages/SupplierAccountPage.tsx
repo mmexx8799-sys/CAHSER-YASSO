@@ -227,6 +227,12 @@ export default function SupplierAccountPage() {
                                 <p className="text-xs mt-1">مرتجعات</p>
                             </div>
                         </div>
+                        {(supplier.openingBalance ?? 0) !== 0 && (
+                            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-2">
+                                <p className="text-xs text-gray-600 dark:text-gray-300">الرصيد الافتتاحي</p>
+                                <p className="mt-0.5 font-bold">{(supplier.openingBalance ?? 0).toFixed(2)} ج.م</p>
+                            </div>
+                        )}
                         {supplier.address && (
                             <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mt-2">
                                 <p className="text-xs text-gray-600 dark:text-gray-300">العنوان</p>

@@ -233,6 +233,25 @@ export const getCustomersPaginated = async (
 };
 
 
+// Customer creation — persists openingBalance as a separate immutable historical field (REQ-M8).
+// balance starts equal to it; only balance moves afterwards, openingBalance never changes.
+export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt' | 'openingBalance'>) => {
+    try {
+        const openingBalance = Number(customerData.balance) || 0;
+        const docRef = await addDoc(collection(db, 'customers'), {
+            ...customerData,
+            balance: openingBalance,
+            openingBalance, // saved explicitly (0 when left empty) — never touched by any later operation
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (e) {
+        console.error("Error adding customer:", e);
+        throw new Error("Failed to add customer");
+    }
+};
+
+
 // Add payment to customer's balance
 export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
     try {
@@ -260,8 +279,7 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
 
 
 // Suppliers API - Paginated (mirror of getCustomersPaginated)
-const SUPPLIERS_PAGE_SIZE = 50;
-export const getSuppliersPaginated = async (
+const SUPPLIERS_PAGE_SIZE = 50;export const getSuppliersPaginated = async (
     searchTerm: string | null,
     lastVisible: QueryDocumentSnapshot | null
 ): Promise<{ suppliers: Supplier[], lastDoc: QueryDocumentSnapshot | null }> => {
@@ -293,6 +311,24 @@ export const getSuppliersPaginated = async (
         console.error("Error fetching paginated suppliers: ", error);
         toast.error("حدث خطأ أثناء تحميل الموردين.");
         return { suppliers: [], lastDoc: null };
+    }
+};
+
+// Supplier creation — persists openingBalance as a separate immutable historical field (REQ-M8).
+// balance starts equal to it; only balance moves afterwards, openingBalance never changes.
+export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'openingBalance'>) => {
+    try {
+        const openingBalance = Number(supplierData.balance) || 0;
+        const docRef = await addDoc(collection(db, 'suppliers'), {
+            ...supplierData,
+            balance: openingBalance,
+            openingBalance, // saved explicitly (0 when left empty) — never touched by any later operation
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (e) {
+        console.error("Error adding supplier:", e);
+        throw new Error("Failed to add supplier");
     }
 };
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Supplier } from '../types';
-import { getSuppliersPaginated, addDocument, updateDocument, deleteDocument } from '../services/api';
+import { getSuppliersPaginated, updateDocument, deleteDocument, addSupplier } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -203,7 +203,7 @@ export default function SuppliersPage() {
         toast.success('تم تحديث المورد');
         loadSuppliers(true);
       } else {
-        await addDocument('suppliers', supplierData);
+        await addSupplier(supplierData);
         toast.success('تمت إضافة المورد');
         loadSuppliers(true);
       }
