@@ -254,6 +254,9 @@ export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt
 
 // Add payment to customer's balance
 export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
+    if (!payment.amount || payment.amount <= 0) {
+        throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
+    }
     try {
         const customerRef = doc(db, "customers", payment.customerId);
         const paymentRef = doc(collection(db, "customerPayments"));
@@ -334,6 +337,9 @@ export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt
 
 // Supplier payment — reduces supplier.balance (we paid, our debt decreased)
 export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+    if (!payment.amount || payment.amount <= 0) {
+        throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
+    }
     try {
         const supplierRef = doc(db, "suppliers", payment.supplierId);
         const paymentRef = doc(collection(db, "supplierPayments"));
@@ -482,13 +488,24 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             // --- VALIDATION (still before any writes) ---
             invoiceData.items.forEach((item, idx) => {
                 const productDoc = productDocs[idx];
-                if (productDoc.exists()) {
-                    const currentQuantity = productDoc.data().quantity || 0;
-                    if (currentQuantity < item.buyQuantity) {
-                        throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
-                    }
+                if (!productDoc.exists()) {
+                    throw new Error(`منتج غير موجود: ${item.name || item.id}`);
+                }
+                const currentQuantity = productDoc.data().quantity || 0;
+                if (currentQuantity < item.buyQuantity) {
+                    throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
                 }
             });
+
+            if (invoiceData.subtotal < 0) {
+                throw new Error("الإجمالي الفرعي لا يمكن أن يكون سالبًا");
+            }
+            if ((invoiceData.discount || 0) > (invoiceData.subtotal || 0)) {
+                throw new Error("الخصم لا يمكن أن يكون أكبر من الإجمالي الفرعي");
+            }
+            if (invoiceData.total < 0) {
+                throw new Error("المبلغ النهائي لا يمكن أن يكون سالبًا");
+            }
 
             // --- PHASE 2: ALL WRITES ---
             let customerName: string | undefined = undefined;
