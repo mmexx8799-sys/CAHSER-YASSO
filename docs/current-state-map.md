@@ -15,6 +15,7 @@ Backup/Restore Safety                               ✅ Fixed (P0-4/P0-4b — 20
 Double-Submit Guard (POS Sale)                      ✅ Fixed (P0-5 — 2026-09-12)
 Dependency Security (npm audit)                     🟡 Partial — P0-6 (44→22: 1 critical/5 high/16 moderate؛ المتبقي major/no-fix مؤجل — 2026-09-12)
 Price Tampering Guard (unit price 50% floor)          ✅ Fixed (P0-3 — 2026-09-12 — سياسة مؤقتة)
+Build Scaffold Cleanup (importmap aistudiocdn)       ✅ Fixed (P1-2 — 2026-09-12)
 Automated Tests (unit/integration/E2E)              ❌ Not Started
 Staging Environment                                 ❌ Not Started
 Monitoring / Error Tracking                         ❌ Not Started

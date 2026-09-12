@@ -51,7 +51,7 @@ Details (2026-09-12):
 BUG-P1-2
 Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإنتاج المبني فعليًا
 Severity: Low
-Status: Open
+Status: Fixed (REQ-P1-2 — 2026-09-12)
 
 ## مخاطرة مقبولة — بقرار مالك المنتج (Accepted Risk — Owner Decision)
 
@@ -69,6 +69,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 
+BUG-P1-2 — importmap aistudiocdn — Status: Fixed (REQ-P1-2 — 2026-09-12)
 BUG-P0-3 — تلاعب بالسعر — Status: Fixed (partial 50% floor, REQ-P0-3 — 2026-09-12)
 BUG-P0-5 — حارس الإرسال المكرر — Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-1b — ترقيم عشوائي — Status: Fixed (REQ-P0-1b — 2026-09-12)
