@@ -93,5 +93,9 @@ service cloud.firestore {
       );
       allow delete: if isAdmin();
     }
+
+    match /counters/{docId} {
+      allow read, write: if isActiveUser();
+    }
   }
 }

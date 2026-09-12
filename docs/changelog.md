@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Added
+- [REQ-P0-1b] ترقيم تسلسلي ذري للفواتير/فواتير الشراء عبر counters (INV-000001/PUR-000001) داخل نفس transaction (services/api.ts, firestore.rules)
 - [REQ-P0-1] ربط المرتجع بالفاتورة الأصلية — اختيار فاتورة العميل + فحص الكمية المتبقية + تخزين originalInvoiceId (types.ts, services/api.ts, pages/ReturnsPage.tsx) + عرض الربط في تاب المرتجعات وكشف الحساب (pages/CustomerAccountPage.tsx)
 ### Fixed
 - [REQ-P0-4] أمان الاستعادة: التحقق من بنية النسخة الاحتياطية و schemaVersion قبل أي حذف (services/api.ts)

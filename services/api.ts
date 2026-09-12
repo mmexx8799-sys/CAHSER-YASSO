@@ -385,12 +385,26 @@ export const processPurchase = async (purchaseData: {
             const productRefs = purchaseData.items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
+            // REQ-P0-1b: قراءة عدّاد فواتير الشراء (atomic — نفس الـ transaction)
+            const purchaseCounterRef = doc(db, 'counters', 'purchaseInvoices');
+            const purchaseCounterDoc = await transaction.get(purchaseCounterRef);
+            const lastPurchaseNumber = purchaseCounterDoc.exists() ? (purchaseCounterDoc.data().lastNumber || 0) : 0;
+            const newPurchaseNumber = lastPurchaseNumber + 1;
+            const purchaseInvoiceNumber = `PUR-${String(newPurchaseNumber).padStart(6, '0')}`;
+
             // --- PHASE 2: ALL WRITES ---
             const currentBalance = supplierDoc.data().balance || 0;
             transaction.update(supplierRef, { balance: currentBalance + purchaseData.total });
 
+            // تحديث العدّاد ذريًا مع باقي الكتابات
+            if (purchaseCounterDoc.exists()) {
+                transaction.update(purchaseCounterRef, { lastNumber: newPurchaseNumber });
+            } else {
+                transaction.set(purchaseCounterRef, { lastNumber: newPurchaseNumber });
+            }
+
             const newPurchase: Omit<PurchaseInvoice, 'id'> = {
-                invoiceNumber: `PUR-${Date.now()}`,
+                invoiceNumber: purchaseInvoiceNumber,
                 items: purchaseData.items,
                 subtotal: purchaseData.subtotal,
                 total: purchaseData.total,
@@ -488,6 +502,13 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             const productRefs = invoiceData.items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
+            // REQ-P0-1b: قراءة عدّاد الفواتير (atomic — نفس الـ transaction، ما زلنا في مرحلة القراءات)
+            const counterRef = doc(db, 'counters', 'invoices');
+            const counterDoc = await transaction.get(counterRef);
+            const lastNumber = counterDoc.exists() ? (counterDoc.data().lastNumber || 0) : 0;
+            const newNumber = lastNumber + 1;
+            const generatedInvoiceNumber = `INV-${String(newNumber).padStart(6, '0')}`;
+
             // --- VALIDATION (still before any writes) ---
             invoiceData.items.forEach((item, idx) => {
                 const productDoc = productDocs[idx];
@@ -511,6 +532,13 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             }
 
             // --- PHASE 2: ALL WRITES ---
+            // تحديث العدّاد ذريًا مع باقي الكتابات (commit واحد)
+            if (counterDoc.exists()) {
+                transaction.update(counterRef, { lastNumber: newNumber });
+            } else {
+                transaction.set(counterRef, { lastNumber: newNumber });
+            }
+
             let customerName: string | undefined = undefined;
             if (customerRef && customerDoc && customerDoc.exists()) {
                 const customerData = customerDoc.data();
@@ -522,7 +550,7 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
             const newInvoice = {
                 ...invoiceData,
                 ...(customerName && { customerName }),
-                invoiceNumber: `INV-${Date.now()}`,
+                invoiceNumber: generatedInvoiceNumber,
                 createdAt: serverTimestamp()
             };
             transaction.set(invoiceRef, newInvoice);

@@ -10,7 +10,7 @@ Status: Fixed (REQ-P0-1 — 2026-09-12)
 BUG-P0-1b
 Problem: ترقيم الفواتير/المشتريات عشوائي (Date.now()) بدل تسلسلي
 Severity: Medium
-Status: Open
+Status: Fixed (REQ-P0-1b — 2026-09-12)
 
 BUG-P0-3
 Problem: لا تحقق أن السعر المُرسَل من العميل يطابق سعر المنتج المسجَّل فعليًا في المنتجات (احتمال تلاعب بالسعر عبر استدعاء مباشر)
@@ -58,6 +58,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 
+BUG-P0-1b — ترقيم عشوائي — Status: Fixed (REQ-P0-1b — 2026-09-12)
 BUG-P0-1 — المرتجعات بدون ربط — Status: Fixed (REQ-P0-1 — 2026-09-12)
 BUG-P0-4 — الاستعادة قبل التحقق — Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-4b — لا يوجد schemaVersion — Status: Fixed (REQ-P0-4 — 2026-09-12)
