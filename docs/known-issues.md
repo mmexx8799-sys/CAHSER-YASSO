@@ -12,11 +12,6 @@ Problem: ترقيم الفواتير/المشتريات عشوائي (Date.now()
 Severity: Medium
 Status: Open
 
-BUG-P0-2
-Problem: أي مستخدم نشط (مش admin بس) يقدر يعدّل customers/invoices/returns/dailyArchives مباشرة من الـ SDK بدون تحقق على القيم
-Severity: Critical
-Status: Open
-
 BUG-P0-3
 Problem: لا تحقق أن السعر المُرسَل من العميل يطابق سعر المنتج المسجَّل فعليًا في المنتجات (احتمال تلاعب بالسعر عبر استدعاء مباشر)
 Severity: High
@@ -46,6 +41,20 @@ BUG-P1-2
 Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإنتاج المبني فعليًا
 Severity: Low
 Status: Open
+
+## مخاطرة مقبولة — بقرار مالك المنتج (Accepted Risk — Owner Decision)
+
+BUG-P0-2 — 2026-09-12
+Problem: أي مستخدم نشط (مش admin بس) يقدر يعدّل customers/suppliers/invoices/returns مباشرة من الـ SDK (balance/openingBalance)
+Severity: Critical → Accepted Risk
+Status: Accepted Risk (Owner Decision — 2026-09-12) — لا يُعد ثغرة عاجلة
+Decision Rationale:
+- كل المستخدمين المصرح لهم بالدخول موظفون معروفون وموثوقون، وليس عملاء أو أطراف خارجية.
+- الاستغلال يتطلب معرفة تقنية متعمدة (أدوات المطور + كتابة كود مباشر) غير متوفرة لدى مستخدمي النظام الفعليين.
+- الإصلاح الكامل يتطلب إما getAfter/complex rules أو ترقية إلى Blaze (Cloud Functions) — غير مبرر حاليًا.
+- تم اختبار التضييق المقترح (diff().affectedKeys() على balance/openingBalance) وتبيّن أنه يكسر المسار الطبيعي: processSale/addCustomerPayment/processReturn تصبح DENIED للكاشير (firestore.rules لا تميّز بين كتابة مباشرة و transaction شرعي). تم التراجع فورًا (git checkout firestore.rules).
+Follow-up: يبقى موثّقًا للمستقبل — إعادة التقييم عند الترقية لـ Blaze أو عند إضافة أدوار/مستخدمين خارجيين.
+Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 

@@ -3,7 +3,7 @@ PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-10
 Core Architecture (React/TS/Firebase/Capacitor)   ✅ Stable
 Database (Firestore)                              🟡 Needs Review (indexes/rules ناقصين تاريخيًا)
 Authentication                                     ✅ Stable
-RBAC (صلاحيات admin/cashier)                        🔴 Needs Review — P0-2 مفتوح
+RBAC (صلاحيات admin/cashier)                        🟡 Accepted Risk — P0-2 (قرار مالك المنتج 2026-09-12، موثّق في known-issues.md)
 Customers / Suppliers Accounts                     ✅ Complete (REQ-M6..M9-fix2)
 Statement / Excel Export                           ✅ Complete (web only) — APK path 🟡 Pending (مسار المشروع عربي)
 POS + Returns Cart UX                               ✅ Complete
