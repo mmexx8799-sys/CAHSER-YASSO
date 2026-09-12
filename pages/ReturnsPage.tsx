@@ -622,7 +622,7 @@ export default function ReturnsPage() {
     return (
         <div className="p-4 pb-24">
             {/* REQ-P0-1: قسم ربط المرتجع بفاتورة أصلية — اختياري، للتوافق مع البيانات القديمة */}
-            <div className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-3">
+            <div className="mb-4 p-4 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-gray-800 dark:text-gray-100">
                     <Link2 size={16} className="text-primary-600" />
                     <span>ربط بفاتورة أصلية (اختياري)</span>
@@ -644,8 +644,8 @@ export default function ReturnsPage() {
                         ) : (
                             <div className="space-y-2">
                                 <div className="relative">
-                                    <input type="text" placeholder="بحث برقم الفاتورة أو التاريخ..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="w-full p-2 ps-8 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm text-right" />
-                                    <Search className="absolute start-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                                    <input type="text" placeholder="بحث برقم الفاتورة أو التاريخ..." value={invoiceSearch} onChange={e => setInvoiceSearch(e.target.value)} className="w-full p-3 ps-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-base focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500" />
+                                    <Search className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                 </div>
                                 <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y dark:divide-gray-700">
                                     {filteredInvoices.map(inv => {
@@ -670,8 +670,8 @@ export default function ReturnsPage() {
                     </div>
                 ) : (
                     <div className="relative">
-                        <input type="text" placeholder="ابحث عن عميل لعرض فواتيره..." value={invoiceCustomerSearch} onChange={e => setInvoiceCustomerSearch(e.target.value)} className="w-full p-2 ps-8 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm text-right" />
-                        <Search className="absolute start-2 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                        <input type="text" placeholder="ابحث عن عميل لعرض فواتيره..." value={invoiceCustomerSearch} onChange={e => setInvoiceCustomerSearch(e.target.value)} className="w-full p-3 ps-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-base focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500" />
+                        <Search className="absolute start-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         {invoiceCustomerResults.length > 0 && (
                             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto">
                                 {invoiceCustomerResults.map(c => (
