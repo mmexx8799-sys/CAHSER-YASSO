@@ -481,6 +481,9 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
 
             const archiveRef = doc(db, 'dailyArchives', invoiceData.dailyArchiveId);
             const archiveDoc = await transaction.get(archiveRef);
+            if (!archiveDoc.exists() || archiveDoc.data().status !== 'open') {
+                throw new Error("لا يمكن تسجيل عملية بيع على يومية غير مفتوحة");
+            }
 
             const productRefs = invoiceData.items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
@@ -569,8 +572,8 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
             const archiveRef = doc(db, 'dailyArchives', dailyArchiveId);
             const archiveDoc = await transaction.get(archiveRef);
-            if (!archiveDoc.exists()) {
-                throw new Error("لم يتم العثور على اليومية المفتوحة.");
+            if (!archiveDoc.exists() || archiveDoc.data().status !== 'open') {
+                throw new Error("لا يمكن تسجيل عملية بيع على يومية غير مفتوحة");
             }
 
             const productRefs = items.map(item => doc(db, 'products', item.id));

@@ -84,7 +84,13 @@ service cloud.firestore {
     }
     
     match /dailyArchives/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser();
+      allow update: if isActiveUser() && (
+        !('status' in request.resource.data.diff(resource.data).affectedKeys())
+        || resource.data.status != 'closed'
+        || isAdmin()
+      );
       allow delete: if isAdmin();
     }
   }
