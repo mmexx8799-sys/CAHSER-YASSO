@@ -9,7 +9,7 @@ Statement / Excel Export                           ✅ Complete (web only) — A
 POS + Returns Cart UX                               ✅ Complete
 Daily Archive Lock                                  ✅ Fixed (P0-9)
 Financial Guardrails (phantom product/negative)     ✅ Fixed (P0-10/11/12)
-Return↔Invoice Linking                              🔴 Not Started — P0-1
+Return↔Invoice Linking                              ✅ Fixed (P0-1 — 2026-09-12)
 Sequential Invoice Numbering                        🔴 Not Started — P0-1b
 Backup/Restore Safety                               ✅ Fixed (P0-4/P0-4b — 2026-09-12)
 Double-Submit Guard (POS Sale)                      🟡 Partial — P0-5 (موجود في المرتجعات، ناقص في البيع)

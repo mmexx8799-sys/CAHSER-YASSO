@@ -5,7 +5,7 @@
 BUG-P0-1
 Problem: المرتجعات مش مربوطة بفاتورة أصلها (لا يوجد originalInvoiceId)
 Severity: High
-Status: Open
+Status: Fixed (REQ-P0-1 — 2026-09-12)
 
 BUG-P0-1b
 Problem: ترقيم الفواتير/المشتريات عشوائي (Date.now()) بدل تسلسلي
@@ -58,6 +58,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 
+BUG-P0-1 — المرتجعات بدون ربط — Status: Fixed (REQ-P0-1 — 2026-09-12)
 BUG-P0-4 — الاستعادة قبل التحقق — Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-4b — لا يوجد schemaVersion — Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-8 — عدم استقرار البناء المزعوم — Status: Closed (كان PASS فعليًا، تأكد ببناء نظيف)

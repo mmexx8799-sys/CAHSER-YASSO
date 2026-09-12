@@ -562,8 +562,10 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
     }
 };
 
-// Returns API
-export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }) => {
+// Returns API — REQ-P0-1: يدعم ربط المرتجع بفاتورة أصلية مع فحص الكمية المتبقية
+export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
+    // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
+    const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
     try {
         await runTransaction(db, async (transaction) => {
             const returnRef = doc(collection(db, 'returns'));
@@ -589,6 +591,45 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
                 }
             }
 
+            // --- REQ-P0-1: فحص الفاتورة الأصلية والكمية المتبقية (إن وجد ربط) ---
+            if (linkedInvoiceId) {
+                const invoiceRef = doc(db, 'invoices', linkedInvoiceId);
+                const invoiceDoc = await transaction.get(invoiceRef);
+                if (!invoiceDoc.exists()) {
+                    throw new Error("الفاتورة الأصلية غير موجودة");
+                }
+                const invoiceData = invoiceDoc.data() as Invoice;
+                // لو المرتجع مرتبط بعميل والفاتورة آجلة لعميل آخر → رفض
+                if (customer && invoiceData.customerId && invoiceData.customerId !== customer.id) {
+                    throw new Error("الفاتورة الأصلية لا تخص نفس العميل");
+                }
+                // حساب الكميات المرتجعة سابقًا لنفس الفاتورة (داخل الـ transaction عبر query)
+                const returnsQuery = query(collection(db, 'returns'), where('originalInvoiceId', '==', linkedInvoiceId));
+                // transaction.get يدعم Query في SDK v10 — نستخدمه للحفاظ على atomicity
+                const priorReturnsSnap: any = await (transaction as any).get(returnsQuery);
+                const priorMap = new Map<string, number>();
+                priorReturnsSnap.docs.forEach((d: any) => {
+                    const r = d.data() as Return;
+                    (r.items || []).forEach((it: CartItem) => {
+                        priorMap.set(it.id, (priorMap.get(it.id) || 0) + (it.buyQuantity || 0));
+                    });
+                });
+                for (const item of items) {
+                    const invItem = (invoiceData.items || []).find((i: CartItem) => i.id === item.id);
+                    if (!invItem) {
+                        throw new Error(`الصنف ${item.name || item.id} غير موجود في الفاتورة الأصلية`);
+                    }
+                    const alreadyReturned = priorMap.get(item.id) || 0;
+                    const remaining = (invItem.buyQuantity || 0) - alreadyReturned;
+                    if (remaining <= 0) {
+                        throw new Error(`الصنف ${item.name} لا يوجد له كمية متبقية للإرجاع في الفاتورة الأصلية`);
+                    }
+                    if (item.buyQuantity > remaining) {
+                        throw new Error(`كمية الإرجاع للصنف ${item.name} (${item.buyQuantity}) تتجاوز المتبقي (${remaining}) في الفاتورة الأصلية`);
+                    }
+                }
+            }
+
             // --- PHASE 2: ALL WRITES ---
             const newReturn: Omit<Return, 'id'> = {
                 items,
@@ -596,6 +637,7 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
                 createdAt: serverTimestamp() as unknown as number,
                 dailyArchiveId,
                 ...(customer && { customerId: customer.id, customerName: customer.name }),
+                ...(linkedInvoiceId && { originalInvoiceId: linkedInvoiceId }),
             };
             transaction.set(returnRef, newReturn);
 

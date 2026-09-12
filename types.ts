@@ -131,6 +131,7 @@ export interface Return {
     dailyArchiveId: string;
     customerId?: string;
     customerName?: string;
+    originalInvoiceId?: string; // REQ-P0-1: ربط المرتجع بفاتورة البيع الأصلية (اختياري للتوافق مع البيانات القديمة)
 }
 
 

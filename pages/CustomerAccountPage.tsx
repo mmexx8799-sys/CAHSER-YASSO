@@ -152,15 +152,20 @@ export default function CustomerAccountPage() {
             credit: 0,
             balanceAfter: 0,
         }));
-        returns.forEach(ret => rows.push({
-            id: `ret-${ret.id}`,
-            effectiveDate: ret.createdAt,
-            type: 'مرتجع عميل',
-            description: 'مرتجع',
-            debit: 0,
-            credit: ret.total,
-            balanceAfter: 0,
-        }));
+        returns.forEach(ret => {
+            // AC-05: اعرض رقم الفاتورة الأصلية في عمود البيان إن وجد، وإلا "مرتجع" للتوافق (AC-06)
+            const linkedInv = ret.originalInvoiceId ? invoices.find(i => i.id === ret.originalInvoiceId) : undefined;
+            const retDesc = linkedInv ? `مرتجع — فاتورة ${linkedInv.invoiceNumber}` : (ret.originalInvoiceId ? `مرتجع — فاتورة ${ret.originalInvoiceId.slice(-6)}` : 'مرتجع');
+            rows.push({
+                id: `ret-${ret.id}`,
+                effectiveDate: ret.createdAt,
+                type: 'مرتجع عميل',
+                description: retDesc,
+                debit: 0,
+                credit: ret.total,
+                balanceAfter: 0,
+            });
+        });
         payments.forEach(p => rows.push({
             id: `pay-${p.id}`,
             effectiveDate: p.date,
@@ -684,7 +689,9 @@ export default function CustomerAccountPage() {
                     <div className="space-y-2">
                         {returns.length === 0 ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد مرتجعات.</p>
-                        ) : returns.map(ret => (
+                        ) : returns.map(ret => {
+                            const linkedInv = ret.originalInvoiceId ? invoices.find(i => i.id === ret.originalInvoiceId) : undefined;
+                            return (
                             <button
                                 key={ret.id}
                                 onClick={() => setSelectedTransaction(ret)}
@@ -695,11 +702,12 @@ export default function CustomerAccountPage() {
                                     <span className="font-bold text-red-800 dark:text-red-300">-{ret.total.toFixed(2)} ج.م</span>
                                 </div>
                                 <div className="flex justify-between items-center gap-2 mt-1">
-                                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleDateString('ar-EG')}</p>
+                                    <p className="text-xs text-gray-700 dark:text-gray-200">{new Date(ret.createdAt).toLocaleDateString('ar-EG')} {linkedInv ? `— فاتورة ${linkedInv.invoiceNumber}` : (ret.originalInvoiceId ? `— فاتورة ${ret.originalInvoiceId.slice(-6)}` : '')}</p>
                                     <p className="text-xs text-gray-600 dark:text-gray-300">{ret.items.length} صنف</p>
                                 </div>
+                                {ret.originalInvoiceId && <p className="text-xs text-primary-600 dark:text-primary-300 mt-1 text-right">مرتبط بفاتورة: {linkedInv ? linkedInv.invoiceNumber : ret.originalInvoiceId.slice(-6)}</p>}
                             </button>
-                        ))}
+                        );})}
                     </div>
                 )}
             </div>
