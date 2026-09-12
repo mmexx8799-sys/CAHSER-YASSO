@@ -30,7 +30,7 @@ Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-5
 Problem: لا يوجد حارس in-flight في عملية البيع (POSPage) — إمكانية إرسال فاتورة مكررة بضغط مزدوج أثناء شبكة بطيئة (موجود بالفعل في المرتجعات)
 Severity: Medium
-Status: Open
+Status: Fixed (REQ-P0-5 — 2026-09-12)
 
 BUG-P0-6
 Problem: 21 ثغرة أمنية في التبعيات (2 critical: protobufjs, websocket-driver)
@@ -58,6 +58,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 
+BUG-P0-5 — حارس الإرسال المكرر — Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-1b — ترقيم عشوائي — Status: Fixed (REQ-P0-1b — 2026-09-12)
 BUG-P0-1 — المرتجعات بدون ربط — Status: Fixed (REQ-P0-1 — 2026-09-12)
 BUG-P0-4 — الاستعادة قبل التحقق — Status: Fixed (REQ-P0-4 — 2026-09-12)

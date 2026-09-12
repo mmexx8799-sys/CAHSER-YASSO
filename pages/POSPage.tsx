@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings } from 'lucide-react';
+import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2 } from 'lucide-react';
 import type { Product, CartItem, Customer, DailyArchive, Category } from '../types';
 import { PaymentMethod } from '../types';
 import { getProductsPaginated, processSale, getOpenDailyArchive } from '../services/api';
@@ -127,12 +127,14 @@ const CartModal: React.FC<{
     const { confirm } = useConfirmation();
     const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, recalcCartPrices } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const getCategoryName = useCallback((categoryId: string) => {
         return categories.find(c => c.id === categoryId)?.name || 'غير مصنف';
     }, [categories]);
 
     const handleClearCart = async () => {
+        if (isProcessing) return;
         const confirmed = await confirm({
             title: "تأكيد إفراغ السلة",
             message: "هل أنت متأكد من رغبتك في إفراغ السلة؟"
@@ -148,7 +150,8 @@ const CartModal: React.FC<{
             toast.error("لا يمكن إتمام البيع، لم يتم فتح اليومية.");
             return;
         }
-        setIsPaymentModalOpen(false);
+        if (isProcessing) return;
+        setIsProcessing(true);
         try {
             await processSale({
                 items: cart,
@@ -160,10 +163,13 @@ const CartModal: React.FC<{
                 dailyArchiveId: dailyArchive.id
             });
             clearCart();
+            setIsPaymentModalOpen(false);
             onSaleComplete();
         } catch (error) {
             toast.error("حدث خطأ أثناء إتمام البيع.");
             console.error(error);
+        } finally {
+            setIsProcessing(false);
         }
     }
 
@@ -181,11 +187,11 @@ const CartModal: React.FC<{
                     <div className="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-3">
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">السلة</h2>
                         <div className='flex items-center gap-4'>
-                            <button onClick={handleClearCart} aria-label="إفراغ السلة" className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1 text-base font-semibold">
+                            <button onClick={handleClearCart} disabled={isProcessing} aria-label="إفراغ السلة" className="text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 flex items-center gap-1 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Trash2 size={18} />
                                 إفراغ السلة
                             </button>
-                            <button onClick={() => setCartModalOpen(false)} aria-label="إغلاق السلة" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"><X size={24} /></button>
+                            <button onClick={() => !isProcessing && setCartModalOpen(false)} disabled={isProcessing} aria-label="إغلاق السلة" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 disabled:opacity-50"><X size={24} /></button>
                         </div>
                     </div>
                     {cart.length === 0 ? (
@@ -278,22 +284,23 @@ const CartModal: React.FC<{
                             <span className="text-3xl font-bold text-primary-600 dark:text-primary-300">{subtotal.toFixed(2)} ج.م</span>
                         </div>
                         <button
-                            onClick={() => setIsPaymentModalOpen(true)}
-                            disabled={cart.length === 0}
+                            onClick={() => !isProcessing && setIsPaymentModalOpen(true)}
+                            disabled={cart.length === 0 || isProcessing}
                             className="w-full py-3 px-4 bg-primary-600 text-white rounded-lg font-bold text-xl shadow-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                         >
-                            دفع
+                            {isProcessing ? 'جارٍ التنفيذ...' : 'دفع'}
                         </button>
                     </div>
                 </div>
             </div>
             <PaymentModal
                 isOpen={isPaymentModalOpen}
-                onClose={() => setIsPaymentModalOpen(false)}
+                onClose={() => !isProcessing && setIsPaymentModalOpen(false)}
                 subtotal={subtotal}
                 customers={customers}
                 onSubmit={handleProcessSale}
                 onPaymentMethodChange={handlePaymentMethodChange}
+                isProcessing={isProcessing}
             />
         </>
     )
@@ -306,7 +313,8 @@ const PaymentModal: React.FC<{
     customers: Customer[];
     onSubmit: (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => void;
     onPaymentMethodChange?: (paymentMethod: PaymentMethod) => void;
-}> = ({ isOpen, onClose, subtotal, customers, onSubmit, onPaymentMethodChange }) => {
+    isProcessing?: boolean;
+}> = ({ isOpen, onClose, subtotal, customers, onSubmit, onPaymentMethodChange, isProcessing = false }) => {
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
     const [selectedCustomer, setSelectedCustomer] = useState<string>('');
     const [discount, setDiscount] = useState(0);
@@ -340,7 +348,7 @@ const PaymentModal: React.FC<{
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm transition-colors duration-200">
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إتمام البيع</h2>
-                    <button onClick={onClose} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"><X size={24} /></button>
+                    <button onClick={() => !isProcessing && onClose()} disabled={isProcessing} aria-label="إغلاق" className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100 disabled:opacity-50"><X size={24} /></button>
                 </div>
                 <div className="space-y-3 mb-6">
                     <div className="flex justify-between text-lg text-gray-600 dark:text-gray-300">
@@ -397,12 +405,12 @@ const PaymentModal: React.FC<{
                     )}
                 </div>
                 <div className="mt-8 flex space-x-2 space-x-reverse">
-                    <button onClick={onClose} className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-lg">
+                    <button onClick={() => !isProcessing && onClose()} disabled={isProcessing} className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         إلغاء
                     </button>
-                    <button onClick={handleSubmit} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg">
-                        <CreditCard size={20} />
-                        <span>تأكيد الدفع</span>
+                    <button onClick={handleSubmit} disabled={isProcessing} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
+                        <span>{isProcessing ? 'جارٍ التنفيذ...' : 'تأكيد الدفع'}</span>
                     </button>
                 </div>
             </div>

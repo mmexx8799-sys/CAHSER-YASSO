@@ -12,7 +12,7 @@ Financial Guardrails (phantom product/negative)     ✅ Fixed (P0-10/11/12)
 Return↔Invoice Linking                              ✅ Fixed (P0-1 — 2026-09-12)
 Sequential Invoice Numbering                        ✅ Fixed (P0-1b — 2026-09-12)
 Backup/Restore Safety                               ✅ Fixed (P0-4/P0-4b — 2026-09-12)
-Double-Submit Guard (POS Sale)                      🟡 Partial — P0-5 (موجود في المرتجعات، ناقص في البيع)
+Double-Submit Guard (POS Sale)                      ✅ Fixed (P0-5 — 2026-09-12)
 Dependency Security (npm audit)                     🔴 Needs Review — P0-6 (21 ثغرة، 2 critical)
 Automated Tests (unit/integration/E2E)              ❌ Not Started
 Staging Environment                                 ❌ Not Started
