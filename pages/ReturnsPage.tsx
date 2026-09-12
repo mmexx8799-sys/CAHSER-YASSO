@@ -592,19 +592,7 @@ export default function ReturnsPage() {
         addToReturnCart(product);
     }, [addToReturnCart, selectedInvoice, remainingMap, returnCart]);
 
-    if (isArchiveLoading) {
-        return (
-            <div className="flex justify-center items-center h-full relative">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-500"></div>
-            </div>
-        );
-    }
-
-    if (!dailyArchive) {
-        return <div className="relative h-full"><ArchiveGuard type="return" /></div>;
-    }
-
-    // فلترة فواتير حسب بحث رقم الفاتورة/التاريخ
+    // فلترة فواتير حسب بحث رقم الفاتورة/التاريخ — قبل أي early return لضمان ترتيب Hooks ثابت (يمنع React #310)
     const filteredInvoices = useMemo(() => {
         if (!invoiceSearch.trim()) return invoicesForCustomer;
         const q = invoiceSearch.trim().toLowerCase();
@@ -618,6 +606,18 @@ export default function ReturnsPage() {
         if (!selectedInvoice) return false;
         return Array.from(remainingMap.values()).every(v => v <= 0);
     }, [selectedInvoice, remainingMap]);
+
+    if (isArchiveLoading) {
+        return (
+            <div className="flex justify-center items-center h-full relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-500"></div>
+            </div>
+        );
+    }
+
+    if (!dailyArchive) {
+        return <div className="relative h-full"><ArchiveGuard type="return" /></div>;
+    }
 
     return (
         <div className="p-4 pb-24">
