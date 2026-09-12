@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Added
+- [REQ-UI-1b] تمييز الفاتورة/المرتجع الآجل في الإيصال — "إيصال بيع آجل" (paymentMethod آجل) و"إيصال مرتجع آجل" (مرتبط بعميل) بلون أزرق مميز عن النقدي، ظاهر في كل الشاشات التي تستخدم نفس المودال (components/InvoiceDetailModal.tsx)
 - [REQ-UI-1] إعادة تصميم مودال الفاتورة/الإيصال — ألوان receipt theme-adaptive، شبكة Grid بمحاذاة دقيقة، شارة نوع العملية (بيع/شراء/مرتجع/مرتجع مورد) وشريحة رقم المستند monospace، إجمالي المرتجع بالأحمر (components/InvoiceDetailModal.tsx, tailwind.config.js)
 - [REQ-P0-1b] ترقيم تسلسلي ذري للفواتير/فواتير الشراء عبر counters (INV-000001/PUR-000001) داخل نفس transaction (services/api.ts, firestore.rules)
 - [REQ-P0-1] ربط المرتجع بالفاتورة الأصلية — اختيار فاتورة العميل + فحص الكمية المتبقية + تخزين originalInvoiceId (types.ts, services/api.ts, pages/ReturnsPage.tsx) + عرض الربط في تاب المرتجعات وكشف الحساب (pages/CustomerAccountPage.tsx)

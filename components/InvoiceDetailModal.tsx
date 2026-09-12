@@ -15,14 +15,22 @@ export const InvoiceDetailModal: React.FC<{
     const partyName = (invoice as any).customerName || (invoice as any).supplierName;
     const partyLabel = (invoice as any).supplierName ? 'المورد:' : 'العميل:';
 
-    // REQ-UI-1: derive badge from existing fields (no schema change)
-    const getBadge = (): { label: string; isPurchase: boolean; isSupplierReturn: boolean } => {
+    // REQ-UI-1 + UI-1b: derive badge from existing fields (no schema change) — يميّز الآجل
+    const getBadge = (): { label: string; isCredit: boolean } => {
         const hasInvoiceNumber = 'invoiceNumber' in transaction && !!(transaction as any).invoiceNumber;
         const hasSupplierName = 'supplierName' in transaction && !!(transaction as any).supplierName;
-        if (hasInvoiceNumber && hasSupplierName) return { label: 'إيصال شراء', isPurchase: true, isSupplierReturn: false };
-        if (hasInvoiceNumber && !hasSupplierName) return { label: 'إيصال بيع', isPurchase: false, isSupplierReturn: false };
-        if (!hasInvoiceNumber && hasSupplierName) return { label: 'إيصال مرتجع مورد', isPurchase: false, isSupplierReturn: true };
-        return { label: 'إيصال مرتجع', isPurchase: false, isSupplierReturn: false };
+        const paymentMethod = (transaction as any).paymentMethod as string | undefined;
+        const customerId = (transaction as any).customerId as string | undefined;
+        const originalInvoiceId = (transaction as any).originalInvoiceId as string | undefined;
+        if (hasInvoiceNumber && hasSupplierName) return { label: 'إيصال شراء', isCredit: false };
+        if (hasInvoiceNumber && !hasSupplierName) {
+            const isCredit = paymentMethod === 'آجل';
+            return { label: isCredit ? 'إيصال بيع آجل' : 'إيصال بيع', isCredit };
+        }
+        if (!hasInvoiceNumber && hasSupplierName) return { label: 'إيصال مرتجع مورد', isCredit: false };
+        // Return: آجل إذا مرتبط بعميل (customerId أو originalInvoiceId) — دون قراءة إضافية
+        const isCreditReturn = !!(customerId || originalInvoiceId);
+        return { label: isCreditReturn ? 'إيصال مرتجع آجل' : 'إيصال مرتجع', isCredit: isCreditReturn };
     };
     const badge = getBadge();
     const isReturnTx = isReturn; // for totals coloring
@@ -41,7 +49,7 @@ export const InvoiceDetailModal: React.FC<{
             <div className="bg-receipt-paper dark:bg-receipt-paper-dark text-gray-900 dark:text-gray-100 rounded-xl shadow-xl w-full max-w-sm p-4 text-sm max-h-[90vh] overflow-y-auto border border-receipt-hair dark:border-receipt-hair-dark">
                 {/* Header: badge + close */}
                 <div className="relative flex items-start justify-between gap-2 mb-3">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border bg-receipt-accent/10 text-receipt-accent border-receipt-accent/20 dark:bg-receipt-accent-dark/20 dark:text-receipt-accent-dark dark:border-receipt-accent-dark/30">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${badge.isCredit ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' : 'bg-receipt-accent/10 text-receipt-accent border-receipt-accent/20 dark:bg-receipt-accent-dark/20 dark:text-receipt-accent-dark dark:border-receipt-accent-dark/30'}`}>
                         {badge.label}
                     </span>
                     <button onClick={onClose} aria-label="إغلاق" className="text-receipt-muted dark:text-receipt-muted-dark hover:text-gray-900 dark:hover:text-gray-100">

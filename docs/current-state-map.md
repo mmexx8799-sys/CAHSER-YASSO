@@ -17,6 +17,7 @@ Dependency Security (npm audit)                     🟡 Partial — P0-6 (44→
 Price Tampering Guard (unit price 50% floor)          ✅ Fixed (P0-3 — 2026-09-12 — سياسة مؤقتة)
 Build Scaffold Cleanup (importmap aistudiocdn)       ✅ Fixed (P1-2 — 2026-09-12)
 Invoice/Receipt Modal (theme-adaptive Grid)         ✅ Fixed (UI-1 — 2026-09-12)
+Invoice/Receipt Credit Distinction (آجل badge)       ✅ Fixed (UI-1b — 2026-09-12)
 Automated Tests (unit/integration/E2E)              ❌ Not Started
 Staging Environment                                 ❌ Not Started
 Monitoring / Error Tracking                         ❌ Not Started
