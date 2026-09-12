@@ -12,6 +12,7 @@
 - REQ-P0-6 — ترقيات major مؤجلة — Deferred (2026-09-12): @capacitor/cli 8.5.2, vite 8.3.0, react-router-dom 7.18.3 تحتاج major bump؛ exceljs downgrade مرفوض (load-bearing)؛ @capacitor/assets/sharp لا يوجد fix — Ref: docs/known-issues.md BUG-P0-6
 
 ## Done
+- REQ-UI-1 — إعادة تصميم مودال الفاتورة/الإيصال (theme-adaptive) (2026-09-12)
 - REQ-P1-2 — تنظيف importmap من index.html (2026-09-12)
 - REQ-P0-3 — التحقق السعري الخادمي 50% floor (2026-09-12)
 - REQ-P0-6 — إصلاح ثغرات npm audit غير الكاسرة 44→22 (2026-09-12)

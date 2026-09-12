@@ -26,6 +26,16 @@ export default {
           "800": "#1e40af",
           "900": "#1e3a8a",
           "950": "#172554"
+        },
+        receipt: {
+          accent: "#7A2036",
+          "accent-dark": "#F0B9C5",
+          paper: "#FFFFFF",
+          "paper-dark": "#1E2430",
+          muted: "#6B7280",
+          "muted-dark": "#9C978A",
+          hair: "#E4E1D8",
+          "hair-dark": "#3A4150"
         }
       }
     },
