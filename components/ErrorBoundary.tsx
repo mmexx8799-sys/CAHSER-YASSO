@@ -45,10 +45,10 @@ class ErrorBoundary extends Component<Props, State> {
                     <RefreshCw size={20} />
                     <span>إعادة تحميل الصفحة</span>
                 </button>
-                {process.env.NODE_ENV === 'development' && this.state.error && (
-                    <details className="mt-4 text-left w-full bg-gray-50 p-2 rounded text-xs text-red-600 overflow-auto max-h-32">
-                        <summary>تفاصيل الخطأ</summary>
-                        <pre>{this.state.error.toString()}</pre>
+                {this.state.error && (
+                    <details className="mt-4 text-left w-full bg-gray-50 p-2 rounded text-xs text-red-600 overflow-auto max-h-40" open>
+                        <summary>تفاصيل الخطأ (للتشخيص)</summary>
+                        <pre className="whitespace-pre-wrap break-words">{this.state.error.toString()}{this.state.error.stack ? '\n\n' + this.state.error.stack : ''}</pre>
                     </details>
                 )}
             </div>

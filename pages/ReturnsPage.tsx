@@ -694,8 +694,8 @@ export default function ReturnsPage() {
                         <span>أصناف الفاتورة {selectedInvoice.invoiceNumber} — اضغط لإضافة للمرتجع</span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                        {selectedInvoice.items.map(item => {
-                            const remaining = remainingMap.get(item.id) ?? item.buyQuantity;
+                        {(selectedInvoice.items || []).map(item => {
+                            const remaining = remainingMap.get(item.id) ?? (item.buyQuantity || 0);
                             const categoryName = categories.find(c => c.id === item.categoryId)?.name || 'غير مصنف';
                             const cartQty = returnCart.find(ci => ci.id === item.id)?.buyQuantity || 0;
                             const disabled = remaining <= 0;
