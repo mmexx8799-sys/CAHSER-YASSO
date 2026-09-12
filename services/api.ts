@@ -708,7 +708,31 @@ const BUSINESS_DATA_COLLECTIONS = [
     'supplierPayments',
     'purchaseInvoices',
     'supplierReturns'
-];
+] as const;
+
+export const BACKUP_SCHEMA_VERSION = 1;
+export const APP_VERSION = '1.0.0';
+
+function validateBackupStructure(data: any): void {
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('ملف النسخة الاحتياطية غير صالح: يجب أن يكون كائن JSON صالح');
+    }
+    if (data.schemaVersion === undefined || data.schemaVersion === null) {
+        throw new Error('ملف النسخة الاحتياطية غير صالح: حقل schemaVersion ناقص — النسخة قديمة جدًا أو غير متوافقة');
+    }
+    if (data.schemaVersion !== BACKUP_SCHEMA_VERSION) {
+        throw new Error(`إصدار النسخة الاحتياطية غير متوافق: المتوقع ${BACKUP_SCHEMA_VERSION}، الموجود ${data.schemaVersion}`);
+    }
+    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+        const value = data[collectionName];
+        if (value === undefined || value === null) {
+            throw new Error(`حقل النسخ الاحتياطي ناقص: ${collectionName} — يجب أن يكون مصفوفة`);
+        }
+        if (!Array.isArray(value)) {
+            throw new Error(`حقل النسخ الاحتياطي نوعه غير صحيح: ${collectionName} — يجب أن يكون مصفوفة (array)، النوع الحالي: ${typeof value}`);
+        }
+    }
+}
 
 const convertTimestampsToMillis = (data: any): any => {
     for (const key in data) {
@@ -730,19 +754,22 @@ const convertMillisToTimestamps = (data: any): any => {
 }
 
 
-export const backupData = async (): Promise<BackupData> => {
-    const backup: Partial<BackupData> = {};
+export const backupData = async (): Promise<BackupData & { schemaVersion: number; appVersion: string; createdAt: string }> => {
+    const backup: any = {
+        schemaVersion: BACKUP_SCHEMA_VERSION,
+        appVersion: APP_VERSION,
+        createdAt: new Date().toISOString(),
+    };
 
     // Only backup business data
     for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
         const querySnapshot = await getDocs(collection(db, collectionName));
-        // @ts-ignore
         backup[collectionName] = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return { id: doc.id, ...convertTimestampsToMillis(data) };
         });
     }
-    return backup as BackupData;
+    return backup as BackupData & { schemaVersion: number; appVersion: string; createdAt: string };
 };
 
 const deleteCollection = async (collectionPath: string) => {
@@ -770,14 +797,16 @@ export const factoryReset = async () => {
     }
 };
 
-export const restoreData = async (backupData: BackupData) => {
+export const restoreData = async (backupData: any) => {
+    // Validate BEFORE any destructive operation
+    validateBackupStructure(backupData);
+
     // 1. Clean existing business data
     await factoryReset();
 
     // 2. Restore business data from backup
     const CHUNK_SIZE = 450;
     for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
-        // @ts-ignore
         const dataToRestore = backupData[collectionName];
         if (dataToRestore && dataToRestore.length > 0) {
             for (let i = 0; i < dataToRestore.length; i += CHUNK_SIZE) {
