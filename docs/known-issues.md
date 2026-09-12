@@ -35,11 +35,12 @@ Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-6
 Problem: ثغرات أمنية في التبعيات — قبل الإصلاح: 44 ثغرة (4 critical, 21 high, 16 moderate, 3 low) — بعد `npm audit fix` (بدون --force) في REQ-P0-6: 22 ثغرة متبقية (1 critical, 5 high, 16 moderate)
 Severity: High
-Status: Open — Partially Fixed (non-breaking only)
+Status: Fixed — Partially Fixed (non-breaking only) — Verified Live (2026-09-12)
 Details (2026-09-12):
 - تم تشغيل `npm audit fix` فقط (بدون --force، بدون تعديل يدوي لـ package.json) — package.json بدون أي semver-major، package-lock.json فقط تغيّر (480 إضافات/2721 حذف).
 - المتبقي 22: @capacitor/cli (tar → يحتاج 8.5.2 major)، vite (esbuild + path traversal → يحتاج 8.3.0 major)، exceljs (uuid → يقترح downgrade إلى 3.4.0 مرفوض — load-bearing لـ M10 Excel export)، react-router/react-router-dom (يحتاج 7.18.3 major)، sharp (libvips → لا يوجد fix)، @capacitor/assets + @trapezedev/project/xcode (لا يوجد fix)، بالإضافة لـ firebase/undici المتبقي (يتطلب تحديث firebase major لاحقًا).
 - المرفوض/المؤجل كمخاطرة مقبولة أو Backlog: @capacitor/cli, vite, exceljs, @capacitor/assets, sharp — سيتم إعادة التقييم عند ترقية major مخططة.
+- AC-06 — اختبار حي حقيقي (ليس محاكى بالبناء): تم تشغيل `firebase deploy --only firestore:rules` ثم اختبار فعلي على مشروع Firebase الحي — بيع نقدي: success، بيع آجل (customer): success — تم بعد نشر القواعد التي كانت معلّقة منذ REQ-P0-9/d5d7d0f وcounters rule. فجوة النشر السابقة موثّقة كحادثة مغلقة أدناه.
 
 BUG-P1-2
 Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإنتاج المبني فعليًا
@@ -65,6 +66,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 BUG-P0-5 — حارس الإرسال المكرر — Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-1b — ترقيم عشوائي — Status: Fixed (REQ-P0-1b — 2026-09-12)
 BUG-P0-1 — المرتجعات بدون ربط — Status: Fixed (REQ-P0-1 — 2026-09-12)
+BUG-P0-6 — ثغرات npm audit — Status: Fixed (partial non-breaking 44→22, live smoke verified 2026-09-12)
 BUG-P0-4 — الاستعادة قبل التحقق — Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-4b — لا يوجد schemaVersion — Status: Fixed (REQ-P0-4 — 2026-09-12)
 BUG-P0-8 — عدم استقرار البناء المزعوم — Status: Closed (كان PASS فعليًا، تأكد ببناء نظيف)
@@ -72,3 +74,11 @@ BUG-P0-9 — بيع/مرتجع ممكن على يومية مقفولة — Statu
 BUG-P0-10 — بيع منتج وهمي بدون خصم مخزون — Status: Fixed (commit dd438b2)
 BUG-P0-11 — لا تحقق من إجمالي/خصم سالب على مستوى الخادم — Status: Fixed (commit dd438b2)
 BUG-P0-12 — دفعات بقيمة سالبة أو صفر مقبولة — Status: Fixed (commit dd438b2)
+
+## حوادث مغلقة — دروس منهجية (Closed Incidents — Methodology)
+
+INC-2026-09-12 — فجوة نشر firestore.rules
+Incident: قواعد firestore.rules المحدّثة عبر REQ-P0-9 (d5d7d0f — منع البيع على يومية مقفولة) وإضافة `counters` في REQ-P0-1b تم دفعها إلى git فقط دون تنفيذ `firebase deploy --only firestore:rules` على المشروع الحي — مما تسبب في انقطاع كامل لعملية الدفع (403 batchGet) حتى تم اكتشافه يدويًا ونشره في 2026-09-12.
+Root Cause: قالب الـ REQ كان يطلب tsc/build/git diff فقط كأدلة — لا يغطي النشر الحي للقواعد، ونجاح البناء المحلي لا يعطي أي معلومات عن ما هو مُطبّق فعليًا في الإنتاج.
+Fix: إضافة قاعدة دائمة جديدة لقالب REQ (موثّقة في docs/req-template.md) — أي REQ يلمس firestore.rules يجب أن يحتوي AC إضافي يطلب تشغيل `firebase deploy --only firestore:rules` ولصق مخرجاته كدليل، ولا يُعتبر مكتملًا حتى يتم تأكيد النشر الحي.
+Status: Closed — Deployment gap resolved 2026-09-12
