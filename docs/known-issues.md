@@ -15,7 +15,13 @@ Status: Fixed (REQ-P0-1b — 2026-09-12)
 BUG-P0-3
 Problem: لا تحقق أن السعر المُرسَل من العميل يطابق سعر المنتج المسجَّل فعليًا في المنتجات (احتمال تلاعب بالسعر عبر استدعاء مباشر)
 Severity: High
-Status: Open
+Status: Fixed — Partial (REQ-P0-3 — 2026-09-12) — سياسة 50% مؤقتة، انظر التفاصيل
+Details (2026-09-12):
+- تمت إضافة تحقق سعري خادمي في processSale (+ processReturn) داخل نفس مرحلة قراءات productDocs — قبل أي كتابة (services/api.ts).
+- القاعدة: item.price مقبول إذا (a) يطابق تمامًا أحد الأسعار المعرّفة للمنتج (price/retailCash/retailCredit/wholesaleCash/wholesaleCredit)، أو (b) ≥ 0.5 * min(الأسعار المعرّفة) — للمنتج وحيد السعر min=price.
+- هذا يسد ثغرة "1 ج.م لمنتج بـ100" مع الإبقاء على خصم تفاوضي شرعي حتى 50% كما هو في POSPage.tsx/ReturnsPage.tsx (تعديل سعر يدوي مفتوح).
+- الاستثناء موثّق كسياسة مؤقتة قابلة للمراجعة — backlog: "سياسة حد أدنى للخصم (50% مؤقت)".
+- تم فحص processReturn ووجد أنه يقرأ السعر من العميل بشكل مستقل (لا يشتق من الفاتورة)، فطُبّقت نفس القاعدة عليه.
 
 BUG-P0-4
 Problem: الاستعادة (Restore) تنفّذ factoryReset (حذف كامل) قبل التحقق من صحة محتوى ملف النسخة الاحتياطية
@@ -63,6 +69,7 @@ Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 
 ## مُغلَقة (Closed)
 
+BUG-P0-3 — تلاعب بالسعر — Status: Fixed (partial 50% floor, REQ-P0-3 — 2026-09-12)
 BUG-P0-5 — حارس الإرسال المكرر — Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-1b — ترقيم عشوائي — Status: Fixed (REQ-P0-1b — 2026-09-12)
 BUG-P0-1 — المرتجعات بدون ربط — Status: Fixed (REQ-P0-1 — 2026-09-12)

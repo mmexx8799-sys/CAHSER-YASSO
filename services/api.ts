@@ -481,6 +481,25 @@ export const processSupplierReturn = async (items: CartItem[], supplierId: strin
 };
 
 
+// REQ-P0-3 — helper: الأسعار المعرّفة للمنتج والحد الأدنى للتحقق
+function getDefinedPrices(productData: any): number[] {
+    const prices: number[] = [];
+    if (typeof productData.price === 'number') prices.push(productData.price);
+    if (typeof productData.retailCashPrice === 'number') prices.push(productData.retailCashPrice);
+    if (typeof productData.retailCreditPrice === 'number') prices.push(productData.retailCreditPrice);
+    if (typeof productData.wholesaleCashPrice === 'number') prices.push(productData.wholesaleCashPrice);
+    if (typeof productData.wholesaleCreditPrice === 'number') prices.push(productData.wholesaleCreditPrice);
+    return prices.filter(v => typeof v === 'number' && !Number.isNaN(v));
+}
+function isPriceAccepted(submittedPrice: number, productData: any): boolean {
+    const defined = getDefinedPrices(productData);
+    if (defined.length === 0) return true; // لا يوجد سعر مرجعي — لا يمكن التحقق
+    if (defined.includes(submittedPrice)) return true; // (a) مطابق لأحد الأسعار
+    const minPrice = Math.min(...defined);
+    if (minPrice <= 0) return true;
+    return submittedPrice >= 0.5 * minPrice; // (b) ≥ 50% من أقل سعر
+}
+
 // Invoices API
 export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
     try {
@@ -518,6 +537,18 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
                 const currentQuantity = productDoc.data().quantity || 0;
                 if (currentQuantity < item.buyQuantity) {
                     throw new Error(`الكمية غير كافية للمنتج ${item.id}`);
+                }
+            });
+
+            // REQ-P0-3: تحقق السعر المرسل مقابل الأسعار المعرّفة — يرفض التلاعب قبل أي كتابة (نفس مرحلة القراءات)
+            invoiceData.items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (!productDoc.exists()) return;
+                const productData = productDoc.data();
+                if (!isPriceAccepted(item.price, productData)) {
+                    const defined = getDefinedPrices(productData);
+                    const minPrice = defined.length ? Math.min(...defined) : 0;
+                    throw new Error(`سعر الصنف ${item.name || item.id} غير مقبول (المرسل: ${item.price}، المسموح: أحد [${defined.join(', ')}] أو ≥ ${(0.5 * minPrice).toFixed(2)} — 50% من أقل سعر)`);
                 }
             });
 
@@ -657,6 +688,18 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
                     }
                 }
             }
+
+            // REQ-P0-3: تحقق السعر للمرتجع — نفس قاعدة 50% (السعر مُرسل من العميل بشكل مستقل)
+            items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (!productDoc.exists()) return;
+                const productData = productDoc.data();
+                if (!isPriceAccepted(item.price, productData)) {
+                    const defined = getDefinedPrices(productData);
+                    const minPrice = defined.length ? Math.min(...defined) : 0;
+                    throw new Error(`سعر الصنف ${item.name || item.id} في المرتجع غير مقبول (المرسل: ${item.price}، المسموح: أحد [${defined.join(', ')}] أو ≥ ${(0.5 * minPrice).toFixed(2)})`);
+                }
+            });
 
             // --- PHASE 2: ALL WRITES ---
             const newReturn: Omit<Return, 'id'> = {

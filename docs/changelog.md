@@ -5,6 +5,7 @@
 - [REQ-P0-1b] ترقيم تسلسلي ذري للفواتير/فواتير الشراء عبر counters (INV-000001/PUR-000001) داخل نفس transaction (services/api.ts, firestore.rules)
 - [REQ-P0-1] ربط المرتجع بالفاتورة الأصلية — اختيار فاتورة العميل + فحص الكمية المتبقية + تخزين originalInvoiceId (types.ts, services/api.ts, pages/ReturnsPage.tsx) + عرض الربط في تاب المرتجعات وكشف الحساب (pages/CustomerAccountPage.tsx)
 ### Fixed
+- [REQ-P0-3] التحقق السعري الخادمي — رفض المبيعات/المرتجعات بسعر متلاعب (أقل من 50% من أقل سعر معرّف) داخل نفس مرحلة قراءات productDocs قبل أي كتابة (services/api.ts) — مع استثناء خصم تفاوضي حتى 50% (POSPage/ReturnsPage تعديل يدوي) وسياسة مؤقتة موثّقة كـ backlog
 - [REQ-P0-6] إصلاح ثغرات npm audit غير الكاسرة — 44→22 (1 critical, 5 high, 16 moderate) عبر `npm audit fix` بدون --force؛ package.json بدون major bump (vite, @capacitor/cli, exceljs كما هي) — package-lock فقط (package-lock.json) — اختبار حي حقيقي بعد `firebase deploy --only firestore:rules`: بيع نقدي success + بيع آجل success (2026-09-12)
 - [REQ-P0-5] منع الإرسال المكرر للبيع — حارس in-flight يمنع double-click في POS (pages/POSPage.tsx) — نفس نمط ReturnsPage
 - [REQ-P0-4] أمان الاستعادة: التحقق من بنية النسخة الاحتياطية و schemaVersion قبل أي حذف (services/api.ts)

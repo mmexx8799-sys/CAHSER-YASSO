@@ -4,7 +4,7 @@
 - REQ-P1-2 — تنظيف importmap الإنتاج ← التالي
 
 ## Backlog (by priority)
-- (لا يوجد — P1-2 هو الأخير في السلسلة الحالية)
+- سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)
 
 ## Deferred / Accepted Risk (Owner Decision)
 - REQ-P0-2 — تضييق صلاحيات RBAC على مستوى الحقول — Accepted Risk (2026-09-12)
@@ -12,6 +12,7 @@
 - REQ-P0-6 — ترقيات major مؤجلة — Deferred (2026-09-12): @capacitor/cli 8.5.2, vite 8.3.0, react-router-dom 7.18.3 تحتاج major bump؛ exceljs downgrade مرفوض (load-bearing)؛ @capacitor/assets/sharp لا يوجد fix — Ref: docs/known-issues.md BUG-P0-6
 
 ## Done
+- REQ-P0-3 — التحقق السعري الخادمي 50% floor (2026-09-12)
 - REQ-P0-6 — إصلاح ثغرات npm audit غير الكاسرة 44→22 (2026-09-12)
 - REQ-P0-5 — حارس الإرسال المكرر في البيع (2026-09-12)
 - REQ-P0-1b — ترقيم تسلسلي للفواتير (2026-09-12)
