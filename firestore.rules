@@ -37,9 +37,28 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    // BUG-P0-3: non-admin users may never change product prices directly.
+    // App transaction paths (processSale/processPurchase/processReturn in
+    // services/api.ts) write quantity only, so freezing price fields for
+    // cashiers breaks nothing legitimate. create is split from update on
+    // purpose: diff() needs an existing doc (resource.data), so a first-time
+    // create carries no price check at all (there is no "old price").
     match /products/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser() && request.resource.data.quantity >= 0;
+      allow create: if isActiveUser()
+        && request.resource.data.quantity >= 0;
+      allow update: if isActiveUser()
+        && request.resource.data.quantity >= 0
+        && (
+          isAdmin()
+          ||
+          // Cashier: every price field must stay untouched.
+          (!('price' in request.resource.data.diff(resource.data).affectedKeys())
+            && !('retailCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
+            && !('retailCreditPrice' in request.resource.data.diff(resource.data).affectedKeys())
+            && !('wholesaleCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
+            && !('wholesaleCreditPrice' in request.resource.data.diff(resource.data).affectedKeys()))
+        );
       allow delete: if isAdmin();
     }
     
