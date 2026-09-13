@@ -3,6 +3,9 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
+  "auth": {
+    "enabled": true
+  },
   "hosting": {
     "site": "casher-yasoo",
     "public": "dist",

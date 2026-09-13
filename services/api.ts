@@ -622,9 +622,36 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
 };
 
 // Returns API — REQ-P0-1: يدعم ربط المرتجع بفاتورة أصلية مع فحص الكمية المتبقية
+// BUG-P0-1 ROOT CAUSE (للمراجع المستقل — يُحذف هذا السطر مع merge التعليقات):
+// النسخة السابقة استدعت (transaction as any).get(returnsQuery) داخل runTransaction،
+// وtransaction.get() في firebase v10.14.1 يقبل DocumentReference فقط — تحقق ذلك
+// مباشرة في node_modules/@firebase/firestore/dist/index.cjs.js:
+// get() → __PRIVATE_validateReference() → lookup([t._key])، وQuery لا يملك _key
+// فيصل undefined إلى toName() ويرمي TypeError قبل أي اتصال بالشبكة.
+// TEST-REG-P0-1 (tests/processReturn.test.ts) أثبت الانهيار هذا قبل الإصلاح.
+// الإصلاح (خيار A، قرار مالك المنتج 2026-09-13): نقل قراءة المرتجعات السابقة
+// إلى getDocs() عادية قبل بدء runTransaction — Atomicity خيار B مؤجل كـ TECH-P0-1b.
 export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
+
+    // BUG-P0-1 (خيار A): قراءة المرتجعات السابقة لنفس الفاتورة قبل بدء الـ transaction
+    // — transaction.get() لا يدعم Query في firebase v10 (يقبل DocumentReference فقط).
+    // Accepted Risk (قرار مالك 2026-09-13): نافذة سباق نظرية ضيقة بين هذه القراءة
+    // وبدء الـ transaction مع عدد كاشيرين محدود — البديل الذري الكامل (TECH-P0-1b)
+    // مسجّل في backlog. فشل القراءة يرفض العملية كاملة قبل أي كتابة (BR-2).
+    let priorMap = new Map<string, number>();
+    if (linkedInvoiceId) {
+        const returnsQuery = query(collection(db, 'returns'), where('originalInvoiceId', '==', linkedInvoiceId));
+        const priorReturnsSnap = await getDocs(returnsQuery);
+        priorReturnsSnap.docs.forEach((d) => {
+            const r = d.data() as Return;
+            (r.items || []).forEach((it: CartItem) => {
+                priorMap.set(it.id, (priorMap.get(it.id) || 0) + (it.buyQuantity || 0));
+            });
+        });
+    }
+
     try {
         await runTransaction(db, async (transaction) => {
             const returnRef = doc(collection(db, 'returns'));
@@ -662,17 +689,8 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
                 if (customer && invoiceData.customerId && invoiceData.customerId !== customer.id) {
                     throw new Error("الفاتورة الأصلية لا تخص نفس العميل");
                 }
-                // حساب الكميات المرتجعة سابقًا لنفس الفاتورة (داخل الـ transaction عبر query)
-                const returnsQuery = query(collection(db, 'returns'), where('originalInvoiceId', '==', linkedInvoiceId));
-                // transaction.get يدعم Query في SDK v10 — نستخدمه للحفاظ على atomicity
-                const priorReturnsSnap: any = await (transaction as any).get(returnsQuery);
-                const priorMap = new Map<string, number>();
-                priorReturnsSnap.docs.forEach((d: any) => {
-                    const r = d.data() as Return;
-                    (r.items || []).forEach((it: CartItem) => {
-                        priorMap.set(it.id, (priorMap.get(it.id) || 0) + (it.buyQuantity || 0));
-                    });
-                });
+                // حساب الكميات المرتجعة سابقًا لنفس الفاتورة — محسوب قبل الـ transaction (BUG-P0-1 خيار A)
+                // فحص فوري للكمية المتبقية لكل صنف (BR-1: لا يتجاوز المجموع الكمية الأصلية)
                 for (const item of items) {
                     const invItem = (invoiceData.items || []).find((i: CartItem) => i.id === item.id);
                     if (!invItem) {
