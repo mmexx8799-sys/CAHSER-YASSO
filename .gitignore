@@ -32,5 +32,8 @@ android/casher-yasoo-release.keystore
 # Bundled archives (avoid bloating repo, may contain stale keystore)
 *.zip
 
+# Vite temp scaffold file (regenerated on every dev/build — must never be tracked)
+vite.config.ts.timestamp-*.mjs
+
 # Firebase CLI local cache (hosting deploy metadata)
 .firebase/
