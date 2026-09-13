@@ -670,7 +670,13 @@ export default function ReturnsPage() {
                     </div>
                 ) : (
                     <div className="relative">
-                        <input type="text" placeholder="ابحث عن عميل لعرض فواتيره..." value={invoiceCustomerSearch} onChange={e => setInvoiceCustomerSearch(e.target.value)} className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-full shadow-sm text-lg focus:ring-primary-500 focus:border-primary-500 placeholder-gray-400 dark:placeholder-gray-500" />
+                        <input
+                            type="text"
+                            placeholder="ابحث عن عميل لعرض فواتيره..."
+                            value={invoiceCustomerSearch}
+                            onChange={e => setInvoiceCustomerSearch(e.target.value)}
+                            className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-full shadow-sm text-base focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                        />
                         <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={22} />
                         {invoiceCustomerResults.length > 0 && (
                             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-32 overflow-y-auto">
