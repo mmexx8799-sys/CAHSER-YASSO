@@ -44,7 +44,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import type { Product, CartItem } from '../types';
+import type { Product, CartItem, Invoice } from '../types';
 
 // tests/setup.ts already mocks react-hot-toast before this import.
 const { processSale, processPurchase } = await import('../services/api');
@@ -139,12 +139,12 @@ async function seedSaleFixtures(ctx: RulesTestContext) {
   } as any);
 }
 
-async function getCounter(db: ReturnType<RulesTestContext['firestore']>, docId: string) {
+async function getCounter(db: any, docId: string) {
   const snap = await getDoc(doc(db, 'counters', docId));
   return snap.exists() ? (snap.data() as any).lastNumber : undefined;
 }
 
-async function findInvoiceByNumber(db: ReturnType<RulesTestContext['firestore']>, invoiceNumber: string) {
+async function findInvoiceByNumber(db: any, invoiceNumber: string) {
   const snap = await getDocs(query(collection(db, 'invoices'), where('invoiceNumber', '==', invoiceNumber), where('dailyArchiveId', '==', ARCHIVE_ID)));
   return snap.empty ? null : snap.docs[0].data();
 }
@@ -229,7 +229,7 @@ describe('BUG-P0-13: counters rule — legitimate transaction path (AC-01/AC-03)
       subtotal: 200,
       discount: 0,
       total: 200,
-      paymentMethod: 'نقدا',
+      paymentMethod: 'نقدا' as Invoice['paymentMethod'],
       dailyArchiveId: ARCHIVE_ID,
     });
 
@@ -250,7 +250,7 @@ describe('BUG-P0-13: counters rule — legitimate transaction path (AC-01/AC-03)
       subtotal: 100,
       discount: 0,
       total: 100,
-      paymentMethod: 'نقدا',
+      paymentMethod: 'نقدا' as Invoice['paymentMethod'],
       dailyArchiveId: ARCHIVE_ID,
     });
     await processSale({
@@ -258,7 +258,7 @@ describe('BUG-P0-13: counters rule — legitimate transaction path (AC-01/AC-03)
       subtotal: 100,
       discount: 0,
       total: 100,
-      paymentMethod: 'نقدا',
+      paymentMethod: 'نقدا' as Invoice['paymentMethod'],
       dailyArchiveId: ARCHIVE_ID,
     });
 
@@ -296,7 +296,7 @@ describe('BUG-P0-13: counters rule — legitimate transaction path (AC-01/AC-03)
         subtotal: 100,
         discount: 0,
         total: 100,
-        paymentMethod: 'نقدا',
+        paymentMethod: 'نقدا' as Invoice['paymentMethod'],
         dailyArchiveId: ARCHIVE_ID,
       });
 
