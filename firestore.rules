@@ -94,8 +94,26 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // BUG-P0-13: counters may only ever advance by exactly +1 (atomic numbering).
+    // Legitimate path (processSale/processPurchase in services/api.ts) reads
+    // lastNumber inside a transaction and writes lastNumber+1 — or creates the
+    // doc with lastNumber=1 on first use. Any direct write with an arbitrary
+    // value (or delete by a non-admin) is denied.
+    // Residual risk (documented, same style as docs/REQ-P0-2-baseline.md):
+    // rules evaluate each write independently and cannot verify that a +1
+    // happened "inside the same transaction that creates the invoice" — a
+    // rogue client can still bump by +1 (numbering gaps only; never duplicates
+    // or collisions, since numbering stays read-then-write in a retried
+    // transaction). Owner decision pending on this note.
     match /counters/{docId} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create: if isActiveUser()
+        && request.resource.data.lastNumber == 1
+        && request.resource.data.keys().hasOnly(['lastNumber']);
+      allow update: if isActiveUser()
+        && request.resource.data.lastNumber == resource.data.lastNumber + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']);
+      allow delete: if isAdmin();
     }
   }
 }

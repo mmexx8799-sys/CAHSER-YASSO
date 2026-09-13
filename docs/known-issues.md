@@ -58,6 +58,10 @@ Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإن
 Severity: Low
 Status: Fixed (REQ-P1-2 — 2026-09-12)
 
+BUG-P0-14 (جديد، منفصل تمامًا عن BUG-P0-13)
+العنوان: معاملات Firestore متزامنة تمامًا قد ترفض بـ PERMISSION_DENIED بسبب تقييم isActiveUser()/get() تحت تنافس — 5/5 تكرار على الـ Emulator، لم يُختبر بعد على Firestore الحي.
+الحالة: مفتوح — يحتاج Reproduce على بيئة حية قبل تحديد الخطورة الفعلية (انظر Golden Bug Rule §16 — لم نصل بعد لـ Root Cause، فقط لموقع الاشتباه).
+
 ## مخاطرة مقبولة — بقرار مالك المنتج (Accepted Risk — Owner Decision)
 
 BUG-P0-2 — 2026-09-12
