@@ -1,5 +1,5 @@
 
-import React, { Suspense, useMemo, useEffect } from 'react';
+import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
@@ -222,6 +222,19 @@ const AndroidBackHandler = () => {
 const AppRoutes: React.FC = () => {
     const { currentUser, isLoading } = useAuth();
 
+    // BUG-P0-5: side effects (signOut + toast) must not run in the render
+    // body — they fired on every render. Guard is keyed on uid (not a plain
+    // boolean) so a *different* disabled user signing in later in the same
+    // browser tab still gets exactly one toast.
+    const disabledToastShownForUid = useRef<string | null>(null);
+    useEffect(() => {
+        if (currentUser?.disabled === true && disabledToastShownForUid.current !== currentUser.uid) {
+            disabledToastShownForUid.current = currentUser.uid;
+            signOut();
+            toast.error("تم تعطيل حسابك. يرجى التواصل مع المدير.");
+        }
+    }, [currentUser]);
+
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen bg-gray-100"><PageLoader /></div>;
     }
@@ -237,9 +250,7 @@ const AppRoutes: React.FC = () => {
         );
     }
 
-    if (currentUser.disabled === true) {
-        signOut();
-        toast.error("تم تعطيل حسابك. يرجى التواصل مع المدير.");
+    if (currentUser?.disabled === true) {
         return (
             <Suspense fallback={<PageLoader />}>
                 <Routes>
