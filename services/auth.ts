@@ -42,9 +42,25 @@ export const sendPasswordReset = (email: string) => {
     return sendPasswordResetEmail(auth, email);
 };
 
-export const changePassword = async (newPassword: string) => {
-    if (auth.currentUser) {
-        return updatePassword(auth.currentUser, newPassword);
+// BUG-P0-6: require the current password and re-authenticate before any
+// change. Never log passwords (current or new) on any path — including
+// error messages.
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!auth.currentUser || !auth.currentUser.email) {
+        throw new Error("لا يوجد مستخدم مسجَّل دخول");
     }
-    throw new Error("No user is currently signed in.");
+    const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    try {
+        await reauthenticateWithCredential(auth.currentUser, credential);
+    } catch (error: any) {
+        const code = String(error?.code || '');
+        if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+            throw new Error("كلمة السر الحالية غير صحيحة");
+        }
+        if (code === 'auth/requires-recent-login') {
+            throw new Error("يرجى تسجيل الخروج والدخول مجددًا قبل هذه العملية");
+        }
+        throw error;
+    }
+    return updatePassword(auth.currentUser, newPassword);
 };

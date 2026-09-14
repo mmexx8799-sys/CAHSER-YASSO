@@ -115,12 +115,17 @@ const AppSettingsSection = memo(({ initialAppName }: { initialAppName: string })
 });
 
 const SecuritySection = memo(() => {
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const handleChangePassword = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!currentPassword) {
+            toast.error("يرجى إدخال كلمة المرور الحالية أولًا.");
+            return;
+        }
         if (newPassword.length < 6) {
             toast.error("يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.");
             return;
@@ -132,12 +137,13 @@ const SecuritySection = memo(() => {
 
         setIsLoading(true);
         try {
-            await changePassword(newPassword);
+            await changePassword(currentPassword, newPassword);
             toast.success("تم تغيير كلمة المرور بنجاح.");
+            setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-        } catch (error) {
-            toast.error("فشل تغيير كلمة المرور. قد تحتاج إلى تسجيل الخروج والدخول مرة أخرى.");
+        } catch (error: any) {
+            toast.error(error?.message || "فشل تغيير كلمة المرور. قد تحتاج إلى تسجيل الخروج والدخول مرة أخرى.");
         } finally {
             setIsLoading(false);
         }
@@ -147,6 +153,10 @@ const SecuritySection = memo(() => {
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">تغيير كلمة المرور</h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                    <label htmlFor="currentPassword" className="block text-base font-medium text-gray-700 dark:text-gray-300">كلمة المرور الحالية</label>
+                    <input id="currentPassword" name="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required autoComplete="current-password" />
+                </div>
                 <div>
                     <label htmlFor="newPassword" className="block text-base font-medium text-gray-700 dark:text-gray-300">كلمة المرور الجديدة</label>
                     <input id="newPassword" name="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md" required autoComplete="new-password" />
