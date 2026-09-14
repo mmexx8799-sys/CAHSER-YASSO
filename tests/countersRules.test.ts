@@ -318,3 +318,78 @@ describe('BUG-P0-13: counters rule — legitimate transaction path (AC-01/AC-03)
 
 
 });
+
+// --- BUG-P0-14c: app-level bounded retry absorbs commit races ------------------
+// Self-contained (own archive + product + counterReads) so it never disturbs
+// the counts asserted by the tests above. Exercises the REAL processSale
+// (with runTransactionWithRetry) against N=20 same-tick sales.
+
+async function seedP14CFixtures(ctx: any, archiveId: string, prodId: string) {
+  const db = ctx.firestore();
+  await setDoc(doc(db, 'products', prodId), { ...mkProduct(prodId, 100, 5000), createdAt: Date.now() });
+  await setDoc(doc(db, 'dailyArchives', archiveId), {
+    startTime: Date.now(),
+    status: 'open',
+    totalSales: 0,
+    totalReturns: 0,
+    totalCash: 0,
+    totalCredit: 0,
+    totalVodafoneCash: 0,
+    totalInstapay: 0,
+    totalReturnsCash: 0,
+    totalReturnsOnAccount: 0,
+  } as any);
+}
+
+async function runConcurrentSales(n: number, archiveId: string, prodId: string) {
+  await testEnv.clearFirestore();
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await seedP14CFixtures(ctx, archiveId, prodId);
+  });
+  await signInAppUser();
+  const db = getDB();
+  const before = (await getCounter(db, 'invoices')) ?? 0;
+  const p = mkProduct(prodId, 100, 5000);
+
+  const results = await Promise.allSettled(
+    Array.from({ length: n }, () =>
+      processSale({
+        items: [mkCartItem(p, 1)],
+        subtotal: 100,
+        discount: 0,
+        total: 100,
+        paymentMethod: 'نقدا' as Invoice['paymentMethod'],
+        dailyArchiveId: archiveId,
+      })
+    )
+  );
+  const ok = results.filter((r) => r.status === 'fulfilled').length;
+  const after = await getCounter(db, 'invoices');
+  const all = await getDocs(
+    query(collection(db, 'invoices'), where('dailyArchiveId', '==', archiveId))
+  );
+  const numbers = all.docs.map((d) => (d.data() as any).invoiceNumber).filter(Boolean);
+  return { ok, before, after, numbers };
+}
+
+describe('BUG-P0-14c: concurrent sales survive via bounded retry (AC-14c)', () => {
+  it('N=5 (realistic cashier contention): strict gate, at least 4/5 succeed', async () => {
+    const { ok, before, after, numbers } = await runConcurrentSales(5, '2026-09-14-p14c', 'prod-p14c');
+    expect(ok).toBeGreaterThanOrEqual(4);
+    expect(after).toBe(before + ok); // counter advances exactly by successes
+    expect(numbers.length).toBe(ok);
+    expect(new Set(numbers).size).toBe(numbers.length); // zero duplicates
+  });
+
+  // Documentary only — NOT an acceptance gate. Sustained 20-way hammering on
+  // one doc is a stress shape, not a POS reality; high concurrency (10+) is a
+  // documented residual risk (see known-issues BUG-P0-14). Asserts only that
+  // the retry makes progress (>0) and never corrupts numbering.
+  it('N=20 stress: documents residual risk, numbering stays clean', async () => {
+    const { ok, before, after, numbers } = await runConcurrentSales(20, '2026-09-14-p14c-20', 'prod-p14c-20');
+    expect(ok).toBeGreaterThan(0);
+    expect(after).toBe(before + ok);
+    expect(numbers.length).toBe(ok);
+    expect(new Set(numbers).size).toBe(numbers.length);
+  });
+});

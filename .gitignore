@@ -1,3 +1,6 @@
+# Local env with live credentials (NEVER commit — repro scripts read REPRO_* from here)
+.env
+
 # Logs
 logs
 *.log

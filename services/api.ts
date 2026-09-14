@@ -371,7 +371,7 @@ export const processPurchase = async (purchaseData: {
     supplierId: string;
 }) => {
     try {
-        await runTransaction(db, async (transaction) => {
+        await runTransactionWithRetry('processPurchase', async (transaction) => {
             const purchaseRef = doc(collection(db, 'purchaseInvoices'));
 
             // --- PHASE 1: ALL READS FIRST ---
@@ -500,10 +500,39 @@ function isPriceAccepted(submittedPrice: number, productData: any): boolean {
     return submittedPrice >= 0.5 * minPrice; // (b) ≥ 50% من أقل سعر
 }
 
+// BUG-P0-14c: bounded application-level retry around runTransaction.
+// The Firestore SDK retries automatically ONLY on retryable codes
+// (ABORTED/UNAVAILABLE). When a rule compares resource.data (the counters
+// +1 check), the loser of a commit race fails rule evaluation with
+// PERMISSION_DENIED — which the SDK never retries, so the sale/purchase
+// would be lost permanently. Re-running the whole transaction gets fresh
+// reads, so genuine timing contention resolves; genuine denials (disabled
+// user, real RBAC rejection) fail every attempt and still surface — only
+// ~1s later. Business validation errors (plain Errors without .code,
+// thrown before any commit) are never retried.
+const RETRYABLE_TX_CODES = ['permission-denied', 'aborted', 'unavailable'];
+const sleepMs = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction: any) => Promise<T>, maxAttempts = 4): Promise<T> {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            return await runTransaction(db, attemptFn as any);
+        } catch (error: any) {
+            lastError = error;
+            const retryable = RETRYABLE_TX_CODES.includes(String(error?.code || ''));
+            if (!retryable || attempt === maxAttempts) throw error;
+            // Jittered backoff 100–400ms to break herd collisions.
+            await sleepMs(100 + Math.floor(Math.random() * 300));
+        }
+    }
+    throw lastError;
+}
+
 // Invoices API
 export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
     try {
-        await runTransaction(db, async (transaction) => {
+        await runTransactionWithRetry('processSale', async (transaction) => {
             const invoiceRef = doc(collection(db, 'invoices'));
 
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---

@@ -65,6 +65,7 @@ Status: Fixed (REQ-P1-2 — 2026-09-12)
 BUG-P0-14 (جديد، منفصل تمامًا عن BUG-P0-13)
 العنوان: معاملات Firestore متزامنة تمامًا قد ترفض بـ PERMISSION_DENIED بسبب تقييم isActiveUser()/get() تحت تنافس — 5/5 تكرار على الـ Emulator، لم يُختبر بعد على Firestore الحي.
 الحالة: مفتوح — يحتاج Reproduce على بيئة حية قبل تحديد الخطورة الفعلية (انظر Golden Bug Rule §16 — لم نصل بعد لـ Root Cause، فقط لموقع الاشتباه).
+تحديث REQ-P0-14c (مرتبط بـ BUG-P0-13): السبب الجذري المثبت ليس RBAC (admin == cashier حرفيًا 9/96/0 حيًا) بل رفض صحيح من شرط +1 مع PERMISSION_DENIED غير قابل لإعادة المحاولة من الـSDK — شُحن تخفيف فوري: bounded retry (×4 + jitter) حول runTransaction في processSale/processPurchase (بلا مساس بالقاعدة). القياس الحي: N=5 → 87-100% (مقبول للشحن)؛ التزامن العالي (10+) residual risk معروف ومتفق عليه. الحل البنيوي (Cloud Function بصلاحية Admin SDK) مؤجل — لا sharded counters (الترقيم التسلسلي متطلب محاسبي).
 
 ## مخاطرة مقبولة — بقرار مالك المنتج (Accepted Risk — Owner Decision)
 
