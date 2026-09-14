@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { subscribeToCollection } from '../services/dataCache';
 import type { DailyArchive } from '../types';
+import { calculateNetCash } from '../utils/archiveCalculations';
 import { ArrowLeft } from 'lucide-react';
 import { Timestamp, orderBy } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
@@ -10,7 +11,7 @@ import type { QueryConstraint } from 'firebase/firestore';
 const ArchiveCard: React.FC<{ archive: DailyArchive; onViewDetails: (id: string) => void; }> = ({ archive, onViewDetails }) => {
   const totalSales = archive.totalSales || 0;
   const totalReturns = archive.totalReturns || 0;
-  const netCashInDrawer = (archive.totalCash || 0) - totalReturns;
+  const netCashInDrawer = calculateNetCash(archive);
   const isOpen = archive.status === 'open';
 
   return (

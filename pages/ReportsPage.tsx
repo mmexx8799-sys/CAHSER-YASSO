@@ -7,16 +7,16 @@ import { PaymentMethod } from '../types';
 import { Timestamp, orderBy, where } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
+import { calculateNetCash } from '../utils/archiveCalculations';
 
 const FinancialSummary: React.FC<{ archive: DailyArchive | null }> = ({ archive }) => {
     if (!archive) return null;
 
-    const hasNewReturnFields = (archive as any).totalReturnsCash !== undefined || (archive as any).totalReturnsOnAccount !== undefined;
     const summaryItems = [
         { label: 'إجمالي المبيعات', value: archive.totalSales || 0, color: 'text-green-700 dark:text-green-300' },
         { label: 'إجمالي المرتجعات', value: archive.totalReturns || 0, color: 'text-red-700 dark:text-red-300' },
         { label: 'مرتجعات على حساب العملاء', value: (archive as any).totalReturnsOnAccount || 0, color: 'text-orange-700 dark:text-orange-300' },
-        { label: 'صافي النقدية بالدرج', value: (archive.totalCash || 0) - (hasNewReturnFields ? ((archive as any).totalReturnsCash || 0) : (archive.totalReturns || 0)), color: 'text-blue-700 dark:text-blue-300' },
+        { label: 'صافي النقدية بالدرج', value: calculateNetCash(archive), color: 'text-blue-700 dark:text-blue-300' },
         { label: 'إجمالي الآجل', value: archive.totalCredit || 0, color: 'text-orange-700 dark:text-orange-300' },
         { label: 'إجمالي فودافون كاش', value: archive.totalVodafoneCash || 0, color: 'text-purple-700 dark:text-purple-300' },
         { label: 'إجمالي انستا باي', value: archive.totalInstapay || 0, color: 'text-teal-700 dark:text-teal-300' },
