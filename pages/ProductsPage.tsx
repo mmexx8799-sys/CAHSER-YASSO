@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Plus, Edit, Trash2, Search, X, FolderCog } from 'lucide-react';
 import type { Product, Category } from '../types';
-import { getProductsPaginated, addDocument, saveProduct, deleteDocument } from '../services/api';
+import { getProductsPaginated, saveProduct, deleteDocument, addCategory } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { toast } from 'react-hot-toast';
@@ -25,7 +25,7 @@ const CategoryManagerModal: React.FC<{
       return;
     }
     try {
-      await addDocument('categories', { name: newCategoryName });
+      await addCategory(newCategoryName);
       toast.success("تمت إضافة التصنيف");
       setNewCategoryName('');
     } catch (e) {

@@ -275,6 +275,25 @@ export const saveProduct = async (
     }
 };
 
+// REQ-SEC1-4 (AUDIT-SEC-1): single-field category creation. The signature
+// itself ((name: string)) makes smuggling extra fields structurally
+// impossible — there is no `data` object to destructure. Always stores the
+// trimmed name. NOTE: no duplicate check (would need a racy pre-read;
+// out of scope — same as before).
+export const addCategory = async (name: string): Promise<string> => {
+    const trimmed = String(name ?? '').trim();
+    if (!trimmed) {
+        throw new Error("اسم التصنيف لا يمكن أن يكون فارغًا");
+    }
+    try {
+        const docRef = await addDoc(collection(db, 'categories'), { name: trimmed });
+        return docRef.id;
+    } catch (e) {
+        console.error("Error adding category: ", e);
+        throw new Error("Failed to add category");
+    }
+};
+
 // Generic function to delete a document
 export const deleteDocument = async (collectionPath: string, id: string) => {
     try {
