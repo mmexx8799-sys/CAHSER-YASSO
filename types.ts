@@ -162,6 +162,8 @@ export interface BackupData {
     invoices: Invoice[];
     returns: Return[];
     dailyArchives: DailyArchive[];
+    // BUG-P0-15: counters backup (schema v2). Optional so v1 backups still type-check.
+    counters?: { id: string; lastNumber: number }[];
     users?: (Omit<User, 'uid'> & { id: string })[];
     appSettings?: AppSettings[];
 }

@@ -856,7 +856,28 @@ export const closeDailyArchive = async (id: string) => {
 
 // Define collections strictly related to business transactions and data.
 // Excluding 'users' and 'appSettings' to prevent session loss or configuration reset during bulk operations.
+// BUG-P0-15: 'counters' is included — it was previously excluded, so any
+// restore wiped invoices but left counters at their live values (or a
+// factoryReset wiped counters while invoices were restored with existing
+// numbers) → duplicate invoiceNumbers after restore. Counters are tiny
+// (2 fixed docs: invoices, purchaseInvoices) so backup cost is negligible.
 const BUSINESS_DATA_COLLECTIONS = [
+    'categories',
+    'customers',
+    'products',
+    'dailyArchives',
+    'invoices',
+    'returns',
+    'customerPayments',
+    'suppliers',
+    'supplierPayments',
+    'purchaseInvoices',
+    'supplierReturns',
+    'counters'
+] as const;
+
+// Collections present in schema v1 backups (pre-BUG-P0-15, no 'counters').
+const V1_BUSINESS_DATA_COLLECTIONS = [
     'categories',
     'customers',
     'products',
@@ -870,7 +891,7 @@ const BUSINESS_DATA_COLLECTIONS = [
     'supplierReturns'
 ] as const;
 
-export const BACKUP_SCHEMA_VERSION = 1;
+export const BACKUP_SCHEMA_VERSION = 2;
 export const APP_VERSION = '1.0.0';
 
 function validateBackupStructure(data: any): void {
@@ -880,10 +901,14 @@ function validateBackupStructure(data: any): void {
     if (data.schemaVersion === undefined || data.schemaVersion === null) {
         throw new Error('ملف النسخة الاحتياطية غير صالح: حقل schemaVersion ناقص — النسخة قديمة جدًا أو غير متوافقة');
     }
-    if (data.schemaVersion !== BACKUP_SCHEMA_VERSION) {
+    if (data.schemaVersion !== BACKUP_SCHEMA_VERSION && data.schemaVersion !== 1) {
         throw new Error(`إصدار النسخة الاحتياطية غير متوافق: المتوقع ${BACKUP_SCHEMA_VERSION}، الموجود ${data.schemaVersion}`);
     }
-    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+    // BUG-P0-15: v1 backups have no 'counters' field — validate against the
+    // v1 collection list so old backups remain restorable (counters are then
+    // left untouched, see restoreData). v2 backups must include counters.
+    const expectedCollections = data.schemaVersion === 1 ? V1_BUSINESS_DATA_COLLECTIONS : BUSINESS_DATA_COLLECTIONS;
+    for (const collectionName of expectedCollections) {
         const value = data[collectionName];
         if (value === undefined || value === null) {
             throw new Error(`حقل النسخ الاحتياطي ناقص: ${collectionName} — يجب أن يكون مصفوفة`);
@@ -961,8 +986,19 @@ export const restoreData = async (backupData: any) => {
     // Validate BEFORE any destructive operation
     validateBackupStructure(backupData);
 
-    // 1. Clean existing business data
-    await factoryReset();
+    // BUG-P0-15: delete only collections present in the backup. A v1 backup
+    // has no 'counters' field, so live counters are not wiped here — they
+    // are reconciled in step 3 below (max(live, derived from restored
+    // invoices)). A v2 backup includes counters, so they are wiped +
+    // restored atomically-per-batch like everything else.
+    // NOTE: this intentionally duplicates factoryReset's loop instead of
+    // calling it, so factoryReset (full wipe incl. counters) keeps its
+    // fresh-start semantics for the standalone button.
+    for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
+        if (backupData[collectionName] !== undefined) {
+            await deleteCollection(collectionName);
+        }
+    }
 
     // 2. Restore business data from backup
     const CHUNK_SIZE = 450;
@@ -981,5 +1017,38 @@ export const restoreData = async (backupData: any) => {
                 await batch.commit();
             }
         }
+    }
+
+    // 3. BUG-P0-15: v1 backups carry no counters — derive them from the
+    // highest restored invoice/purchase numbers so the next sale can never
+    // reuse an existing number. Without this, restoring a v1 backup whose
+    // invoices exceed the live counter (e.g. live=10, backup up to
+    // INV-000050) would produce INV-000011 next — a real duplicate.
+    // Never move a counter backwards: final = max(live, derived).
+    if (backupData.schemaVersion === 1) {
+        const maxNumbered = (items: any[] | undefined, prefix: string): number => {
+            let max = 0;
+            for (const item of items || []) {
+                const raw = item?.invoiceNumber;
+                const match = typeof raw === 'string' ? raw.match(new RegExp(`^${prefix}-(\\d+)$`)) : null;
+                if (match) max = Math.max(max, parseInt(match[1], 10));
+            }
+            return max;
+        };
+        const liveCountersSnap = await getDocs(collection(db, 'counters'));
+        const live = new Map(liveCountersSnap.docs.map(d => [d.id, (d.data() as any)?.lastNumber || 0]));
+        const targets: Record<string, number> = {
+            invoices: Math.max(live.get('invoices') || 0, maxNumbered(backupData.invoices, 'INV')),
+            purchaseInvoices: Math.max(live.get('purchaseInvoices') || 0, maxNumbered(backupData.purchaseInvoices, 'PUR')),
+        };
+        const counterBatch = writeBatch(db);
+        let hasCounterWrites = false;
+        for (const [counterId, lastNumber] of Object.entries(targets)) {
+            if (lastNumber > 0 && lastNumber !== (live.get(counterId) || 0)) {
+                counterBatch.set(doc(db, 'counters', counterId), { lastNumber });
+                hasCounterWrites = true;
+            }
+        }
+        if (hasCounterWrites) await counterBatch.commit();
     }
 };

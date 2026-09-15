@@ -124,14 +124,23 @@ service cloud.firestore {
     // rogue client can still bump by +1 (numbering gaps only; never duplicates
     // or collisions, since numbering stays read-then-write in a retried
     // transaction). Owner decision pending on this note.
+    // BUG-P0-15: admins bypass the +1/create==1 checks so backup restore
+    // (batch.set of arbitrary lastNumber) works. Cashiers stay on the strict
+    // path. Restore/factoryReset already require admin in practice (they
+    // delete dailyArchives, which is admin-only delete).
+    // Accepted Risk (owner decision 2026-09-15): rules cannot distinguish
+    // "admin during restore" from "admin writing by hand", so any admin can
+    // set a counter to any value via SDK directly. Accepted because admins
+    // already hold wider destructive powers (delete archives/products), and
+    // the bypass is what makes numbered-restore possible at all.
     match /counters/{docId} {
       allow read: if isActiveUser();
-      allow create: if isActiveUser()
+      allow create: if isAdmin() || (isActiveUser()
         && request.resource.data.lastNumber == 1
-        && request.resource.data.keys().hasOnly(['lastNumber']);
-      allow update: if isActiveUser()
+        && request.resource.data.keys().hasOnly(['lastNumber']));
+      allow update: if isAdmin() || (isActiveUser()
         && request.resource.data.lastNumber == resource.data.lastNumber + 1
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']));
       allow delete: if isAdmin();
     }
   }

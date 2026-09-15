@@ -359,7 +359,7 @@ export default function SettingsPage() {
     const handleFactoryReset = useCallback(async () => {
         const confirmed = await confirm({
             title: "تأكيد ضبط المصنع",
-            message: "تحذير! سيؤدي هذا إلى حذف جميع بيانات المعاملات (الفواتير، المنتجات، الخ) بشكل نهائي، ولكن سيتم الحفاظ على حساب المستخدم. هل أنت متأكد؟"
+            message: "تحذير! سيؤدي هذا إلى حذف جميع بيانات المعاملات (الفواتير، المنتجات، الخ) بشكل نهائي وإعادة ترقيم الفواتير من 1، ولكن سيتم الحفاظ على حساب المستخدم. هل أنت متأكد؟"
         });
         if (confirmed) {
             setIsDataBusy(true);

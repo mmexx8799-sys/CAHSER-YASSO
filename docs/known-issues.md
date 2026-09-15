@@ -2,6 +2,12 @@
 
 ## مفتوحة (Open)
 
+BUG-P0-15 (عدادات النسخ الاحتياطي — 2026-09-15)
+Problem: مجموعة counters مستبعدة من BUSINESS_DATA_COLLECTIONS — أي استعادة تعيد فواتير بأرقام موجودة بينما العداد يبقى على قيمته الحية (أو يُمسح) → تكرار invoiceNumber/purchaseInvoiceNumber بعد أي استعادة. كل النسخ الموجودة حاليًا v1 (بلا counters).
+Severity: Critical (تكرار أرقام فواتير حقيقي، أخطر من فجوة الترقيم المقبولة)
+Status: Fix in review — counters دخلت النسخة (schema v2) + مسار v1 يشتق العداد من أعلى رقم مستعاد max(live, derived) ولا يرجع للخلف أبدًا + تجاوز admin في القواعد لتمكين الاستعادة. Ref: tests/backupCounters.test.ts (م pending تشغيل Emulator)
+Accepted Risk (قرار مالك 2026-09-15): القواعد لا تميز "admin أثناء restore" عن "admin يكتب يدويًا" — أي admin يستطيع ضبط العداد لأي قيمة عبر SDK. مقبول لأن الـ admin يملك أصلًا صلاحيات تدميرية أوسع (حذف اليوميات/المنتجات)، والتجاوز هو ما يجعل الاستعادة المرقمة ممكنة أصلًا.
+
 Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)
 
 UX-raw-auth-error (مراجعة BUG-P0-6 — 2026-09-14): أخطاء Firebase خارج الثلاثة المترجمة (مثل network-request-failed) تُعرض خامًا بالإنجليزية في SettingsPage — ليست ثغرة (لا تسريب)، فقط تجربة أقل احترافًا في حالات نادرة — Status: مفتوح (لا إصلاح بعد)
