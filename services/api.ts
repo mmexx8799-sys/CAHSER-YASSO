@@ -141,6 +141,28 @@ export const updateDocument = async (collectionPath: string, id: string, data: a
     }
 };
 
+// REQ-SEC1-1 (AUDIT-SEC-1): profile-only customer update. Destructures
+// {name, phone, address} EXPLICITLY — balance/openingBalance/createdAt (or
+// anything else smuggled in `data`) never reach Firestore, no matter what
+// the caller passes. Balance changes happen ONLY via processSale,
+// processReturn and addCustomerPayment transactions.
+export const updateCustomerProfile = async (id: string, data: any): Promise<void> => {
+    const { name, phone, address } = data || {};
+    if (!name || !String(name).trim()) {
+        throw new Error("اسم العميل مطلوب");
+    }
+    try {
+        await updateDoc(doc(db, 'customers', id), {
+            name: String(name).trim(),
+            phone: phone ?? '',
+            address: address ?? '',
+        });
+    } catch (e) {
+        console.error("Error updating customer profile: ", e);
+        throw new Error("Failed to update customer profile");
+    }
+};
+
 // Generic function to delete a document
 export const deleteDocument = async (collectionPath: string, id: string) => {
     try {

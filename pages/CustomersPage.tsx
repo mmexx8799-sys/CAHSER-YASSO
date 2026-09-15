@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Customer } from '../types';
-import { getCustomersPaginated, updateDocument, deleteDocument, addCustomer } from '../services/api';
+import { getCustomersPaginated, updateCustomerProfile, deleteDocument, addCustomer } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -198,7 +198,7 @@ export default function CustomersPage() {
     setIsFormModalOpen(false);
     try {
       if ('id' in customerData) {
-        await updateDocument('customers', customerData.id, customerData);
+        await updateCustomerProfile(customerData.id, customerData);
         toast.success('تم تحديث العميل');
         loadCustomers(true);
       } else {
