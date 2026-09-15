@@ -135,22 +135,11 @@ const buildSearchableIndex = (name: string, code: string): string[] => {
     ])];
 };
 
-// Generic function to add a document
-export const addDocument = async <T,>(collectionPath: string, data: Omit<T, 'id' | 'createdAt'>): Promise<string> => {
-    try {
-        const docRef = await addDoc(collection(db, collectionPath), {
-            ...data,
-            createdAt: serverTimestamp(),
-        });
-        return docRef.id;
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        throw new Error("Failed to add document");
-    }
-};
-
-// Generic function to update a document
-export const updateDocument = async (collectionPath: string, id: string, data: any) => {
+// Generic function to update a document — REQ-SEC1-6 (AUDIT-SEC-1):
+// NO LONGER EXPORTED. Internal use only (setUserDisabled below). Pages must
+// use updateCustomerProfile / updateSupplierProfile / saveProduct instead,
+// so no caller can smuggle arbitrary fields (e.g. balance) into a write.
+const updateDocument = async (collectionPath: string, id: string, data: any) => {
     try {
         const docRef = doc(db, collectionPath, id);
         await updateDoc(docRef, data);
