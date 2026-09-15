@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { Plus, Edit, Trash2, Search, X, FolderCog } from 'lucide-react';
 import type { Product, Category } from '../types';
-import { getProductsPaginated, addDocument, updateDocument, deleteDocument } from '../services/api';
+import { getProductsPaginated, addDocument, saveProduct, deleteDocument } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { toast } from 'react-hot-toast';
@@ -316,37 +316,10 @@ export default function ProductsPage() {
   }, []);
 
   const handleSaveProduct = useCallback(async (productData: Omit<Product, 'id' | 'createdAt' | 'searchableIndex'> | Product) => {
-    const normalizeArabic = (str: string): string => {
-      if (!str) return '';
-      return str.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').toLowerCase();
-    };
-
-    const nameTokens = normalizeArabic(productData.name).split(' ').filter(Boolean);
-    const codeToken = normalizeArabic(productData.code);
-
-    const generatePrefixes = (word: string): string[] => {
-      const prefixes: string[] = [];
-      for (let i = 2; i <= word.length; i++) {
-        prefixes.push(word.slice(0, i));
-      }
-      return prefixes;
-    };
-
-    const searchableIndex = [...new Set([
-      ...nameTokens.flatMap(t => generatePrefixes(t)),
-      ...generatePrefixes(codeToken)
-    ])];
-    const dataToSave = { ...productData, searchableIndex };
-
     setIsModalOpen(false);
     try {
-      if ('id' in dataToSave) {
-        await updateDocument('products', dataToSave.id, dataToSave);
-        toast.success('تم تحديث المنتج بنجاح');
-      } else {
-        await addDocument('products', dataToSave);
-        toast.success('تمت إضافة المنتج بنجاح');
-      }
+      await saveProduct(productData);
+      toast.success('id' in productData ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح');
       loadProducts(true);
     } catch (error) {
       toast.error('فشلت عملية الحفظ');

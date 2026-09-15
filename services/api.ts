@@ -116,6 +116,25 @@ const normalizeArabic = (str: string): string => {
         .toLowerCase();
 };
 
+// Moved from ProductsPage.tsx (REQ-SEC1-3) to sit next to normalizeArabic:
+// builds the prefix tokens for searchableIndex. Single source from now on.
+const generatePrefixes = (word: string): string[] => {
+    const prefixes: string[] = [];
+    for (let i = 2; i <= word.length; i++) {
+        prefixes.push(word.slice(0, i));
+    }
+    return prefixes;
+};
+
+const buildSearchableIndex = (name: string, code: string): string[] => {
+    const nameTokens = normalizeArabic(name).split(' ').filter(Boolean);
+    const codeToken = normalizeArabic(code);
+    return [...new Set([
+        ...nameTokens.flatMap(t => generatePrefixes(t)),
+        ...generatePrefixes(codeToken)
+    ])];
+};
+
 // Generic function to add a document
 export const addDocument = async <T,>(collectionPath: string, data: Omit<T, 'id' | 'createdAt'>): Promise<string> => {
     try {
@@ -182,6 +201,77 @@ export const updateSupplierProfile = async (id: string, data: any): Promise<void
     } catch (e) {
         console.error("Error updating supplier profile: ", e);
         throw new Error("Failed to update supplier profile");
+    }
+};
+
+// REQ-SEC1-3 (AUDIT-SEC-1): validated product upsert with a CLOSED
+// whitelist. Only known Product fields are destructured — id, createdAt,
+// searchableIndex-from-caller, CartItem extras (buyQuantity/priceType) or
+// anything else smuggled in `productData` never reach Firestore.
+// searchableIndex is always rebuilt here (single source); createdAt is
+// serverTimestamp() on create and preserved on update.
+export const saveProduct = async (
+    productData: Omit<Product, 'id' | 'createdAt' | 'searchableIndex'> | Product
+): Promise<string | void> => {
+    const data: any = productData || {};
+    const {
+        code, name, categoryId, quantity, minQuantity,
+        price, retailCashPrice, retailCreditPrice,
+        wholesaleCashPrice, wholesaleCreditPrice,
+    } = data;
+
+    const text = (v: any, field: string): string => {
+        if (v === undefined || v === null || !String(v).trim()) {
+            throw new Error(`حقل المنتج مطلوب: ${field}`);
+        }
+        return String(v).trim();
+    };
+    const num = (v: any, field: string, required: boolean): number | undefined => {
+        if (v === undefined || v === null || v === '') {
+            if (required) throw new Error(`حقل المنتج مطلوب: ${field}`);
+            return undefined;
+        }
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0) {
+            throw new Error(`قيمة غير صالحة لحقل المنتج: ${field}`);
+        }
+        return n;
+    };
+
+    const clean: any = {
+        code: text(code, 'الكود'),
+        name: text(name, 'الاسم'),
+        categoryId: text(categoryId, 'التصنيف'),
+        quantity: num(quantity, 'الكمية', true),
+        price: num(price, 'السعر', true),
+    };
+    const minQ = num(minQuantity, 'الحد الأدنى للمخزون', false);
+    if (minQ !== undefined) clean.minQuantity = minQ;
+    const priceFields: Record<string, any> = {
+        retailCashPrice, retailCreditPrice, wholesaleCashPrice, wholesaleCreditPrice,
+    };
+    for (const [field, value] of Object.entries(priceFields)) {
+        const n = num(value, field, false);
+        if (n !== undefined) clean[field] = n;
+    }
+    clean.searchableIndex = buildSearchableIndex(clean.name, clean.code);
+
+    try {
+        if ('id' in data && data.id) {
+            await updateDoc(doc(db, 'products', data.id), clean);
+            return;
+        }
+        const docRef = await addDoc(collection(db, 'products'), {
+            ...clean,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (e: any) {
+        // Re-throw our own validation errors untouched (clear Arabic text);
+        // only wrap unexpected Firestore failures.
+        if (e?.message && /حقل المنتج|المنتج مطلوب/.test(e.message)) throw e;
+        console.error("Error saving product: ", e);
+        throw new Error("Failed to save product");
     }
 };
 
