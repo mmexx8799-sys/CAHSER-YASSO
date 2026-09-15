@@ -163,6 +163,28 @@ export const updateCustomerProfile = async (id: string, data: any): Promise<void
     }
 };
 
+// REQ-SEC1-2 (AUDIT-SEC-1): profile-only supplier update. Same pattern as
+// updateCustomerProfile — {name, phone, address} EXPLICITLY, balance/
+// openingBalance (or anything else smuggled in `data`) never reach
+// Firestore. Balance changes happen ONLY via processPurchase,
+// processSupplierReturn and addSupplierPayment transactions.
+export const updateSupplierProfile = async (id: string, data: any): Promise<void> => {
+    const { name, phone, address } = data || {};
+    if (!name || !String(name).trim()) {
+        throw new Error("اسم المورد مطلوب");
+    }
+    try {
+        await updateDoc(doc(db, 'suppliers', id), {
+            name: String(name).trim(),
+            phone: phone ?? '',
+            address: address ?? '',
+        });
+    } catch (e) {
+        console.error("Error updating supplier profile: ", e);
+        throw new Error("Failed to update supplier profile");
+    }
+};
+
 // Generic function to delete a document
 export const deleteDocument = async (collectionPath: string, id: string) => {
     try {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Supplier } from '../types';
-import { getSuppliersPaginated, updateDocument, deleteDocument, addSupplier } from '../services/api';
+import { getSuppliersPaginated, updateSupplierProfile, deleteDocument, addSupplier } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -199,7 +199,7 @@ export default function SuppliersPage() {
     setIsFormModalOpen(false);
     try {
       if ('id' in supplierData) {
-        await updateDocument('suppliers', supplierData.id, supplierData);
+        await updateSupplierProfile(supplierData.id, supplierData);
         toast.success('تم تحديث المورد');
         loadSuppliers(true);
       } else {
