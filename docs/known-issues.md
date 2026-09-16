@@ -86,6 +86,7 @@ Decision Rationale:
 - تم اختبار التضييق المقترح (diff().affectedKeys() على balance/openingBalance) وتبيّن أنه يكسر المسار الطبيعي: processSale/addCustomerPayment/processReturn تصبح DENIED للكاشير (firestore.rules لا تميّز بين كتابة مباشرة و transaction شرعي). تم التراجع فورًا (git checkout firestore.rules).
 Follow-up: يبقى موثّقًا للمستقبل — إعادة التقييم عند الترقية لـ Blaze أو عند إضافة أدوار/مستخدمين خارجيين.
 Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
+Update REQ-SEC1-8 Phase 0 (2026-09-16): تجميد openingBalance عن غير الأدمن (customers/suppliers — لا مسار شرعي يغيّره بعد الإنشاء) + حواجز رقمية (payments amount>0، invoices/purchase/returns total>=0) — حي ومختبر (tests/balanceOpeningFreeze.test.ts 9/9 + كامل السويت 56/56). المتبقي كمخاطرة مقبولة: كتابة balance المنفردة ما زالت ممكنة عبر SDK (مثبتة باختبار residual مقصود) — القفل الكامل يتطلب Cloud Functions/Blaze (Phase 1، بقرار مالك صريح فقط).
 
 ## مُغلَقة (Closed)
 

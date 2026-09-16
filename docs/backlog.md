@@ -19,8 +19,8 @@
   - AUDIT-TX-1 (اتساق صغير — توثيق أو إصلاح): توحيد runTransactionWithRetry على processReturn/processSupplierReturn/addCustomerPayment/addSupplierPayment — حاليًا فقط processSale/processPurchase يستخدمانها (مبرر محتمل: الأخيران فقط يلمسان counters، لكن القرار غير موثق)
 
 ## Deferred / Accepted Risk (Owner Decision)
-- REQ-P0-2 — تضييق صلاحيات RBAC على مستوى الحقول — Accepted Risk (2026-09-12)
-  السبب: المستخدمون موظفون موثوقون، الاستغلال يتطلب معرفة تقنية متعمدة، والإصلاح يكسر المسار الطبيعي (processSale/payment/return تصبح DENIED) ويحتاج Blaze/Functions — غير مبرر حاليًا. Ref: docs/known-issues.md (Accepted Risk) + docs/REQ-P0-2-baseline.md
+- REQ-P0-2 — تضييق صلاحيات RBAC على مستوى الحقول — Partially mitigated (Phase 0 live 2026-09-16: تجميد openingBalance + حواجز amount/total — Ref: tests/balanceOpeningFreeze.test.ts) — المتبقي (قفل balance الكامل عبر Functions/Blaze) Accepted Risk بقرار مالك، لا يبدأ إلا بطلب صريح (تكلفة تشغيلية).
+  السبب: المستخدمون موظفون موثوقون، الاستغلال يتطلب معرفة تقنية متعمدة، والقفل الكامل لـ balance يكسر المسار الطبيعي (processSale/payment/return تصبح DENIED) ويحتاج Blaze/Functions — غير مبرر حاليًا. Ref: docs/known-issues.md (Accepted Risk) + docs/REQ-P0-2-baseline.md
 - REQ-P0-6 — ترقيات major مؤجلة — Deferred (2026-09-12): @capacitor/cli 8.5.2, vite 8.3.0, react-router-dom 7.18.3 تحتاج major bump؛ exceljs downgrade مرفوض (load-bearing)؛ @capacitor/assets/sharp لا يوجد fix — Ref: docs/known-issues.md BUG-P0-6
 
 ## Done

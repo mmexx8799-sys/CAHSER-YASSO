@@ -13,6 +13,7 @@
 - [REQ-P0-5] منع الإرسال المكرر للبيع — حارس in-flight يمنع double-click في POS (pages/POSPage.tsx) — نفس نمط ReturnsPage
 - [REQ-P0-4] أمان الاستعادة: التحقق من بنية النسخة الاحتياطية و schemaVersion قبل أي حذف (services/api.ts)
 ### Security
+- [REQ-SEC1-8 Phase 0] تجميد openingBalance عن غير الأدمن (customers/suppliers) + حواجز رقمية خادمية (customerPayments/supplierPayments amount>0، invoices/purchaseInvoices/returns/supplierReturns total>=0) — بلا أي مساس بـ services/api.ts؛ الكتابة المنفردة لـ balance تبقى مخاطرة مقبولة موثقة باختبار (firestore.rules, tests/balanceOpeningFreeze.test.ts 9/9، كامل السويت 56/56)
 - [REQ-P0-4] منع فقدان البيانات عبر رفض الاستعادة من ملف ناقص/تالف قبل factoryReset
 ### Docs
 - [P0-6 follow-up] إغلاق بدليل حي + توثيق فجوة نشر firestore.rules كحادثة مغلقة وإضافة قاعدة منهجية دائمة (docs/req-template.md#7: أي REQ يلمس firestore.rules يجب أن يرفق `firebase deploy --only firestore:rules`)

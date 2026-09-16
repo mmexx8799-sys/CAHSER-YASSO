@@ -62,43 +62,81 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // REQ-SEC1-8 Phase 0: openingBalance is immutable history (REQ-M8) — no
+    // legitimate path ever changes it after create (addCustomer/addSupplier
+    // set it once; updateCustomerProfile/updateSupplierProfile write
+    // name/phone/address only; all six balance transactions write balance
+    // only). Freezing it for non-admins breaks nothing legitimate. balance
+    // itself stays writable (BUG-P0-2 residual — rules evaluate each write
+    // independently and cannot link a balance delta to a sibling
+    // invoice/payment doc; full fix needs Cloud Functions/Blaze).
     match /customers/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read, create: if isActiveUser();
+      allow update: if isAdmin() || (isActiveUser()
+        && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
       allow delete: if isAdmin();
     }
     
+    // REQ-SEC1-8 Phase 0: numeric guard mirrors the client-side P0-12 check
+    // (services/api.ts) at Rules level. Rejects junk totals written directly
+    // via SDK; cannot stop a "plausible" forged total — Blaze/Functions
+    // needed for the full fix.
     match /invoices/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
+    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /returns/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
+    // REQ-SEC1-8 Phase 0: payments must be strictly positive (mirrors the
+    // client-side amount>0 check in addCustomerPayment). Rejects negative /
+    // zero payments written directly via SDK.
     match /customerPayments/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.amount > 0;
       allow delete: if isAdmin();
     }
 
+    // REQ-SEC1-8 Phase 0: same openingBalance freeze as customers (see note
+    // above — updateSupplierProfile writes name/phone/address only).
     match /suppliers/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read, create: if isActiveUser();
+      allow update: if isAdmin() || (isActiveUser()
+        && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
       allow delete: if isAdmin();
     }
 
+    // REQ-SEC1-8 Phase 0: same strictly-positive guard as customerPayments
+    // (mirrors addSupplierPayment).
     match /supplierPayments/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.amount > 0;
       allow delete: if isAdmin();
     }
 
+    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /purchaseInvoices/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
 
+    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /supplierReturns/{docId} {
-      allow read, create, update: if isActiveUser();
+      allow read: if isActiveUser();
+      allow create, update: if isActiveUser()
+        && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
