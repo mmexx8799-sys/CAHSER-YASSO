@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Trash2, Undo2, AlertCircle, Settings, Loader2, FileText, Link2 } from 'lucide-react';
-import type { Product, CartItem, DailyArchive, Category, Customer, Invoice, Return } from '../types';
+import type { Product, DailyArchive, Category, Customer, Invoice, Return } from '../types';
 import { PaymentMethod } from '../types';
 import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';

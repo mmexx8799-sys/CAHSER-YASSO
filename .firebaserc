@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "casher-yasoo"
+    "default": "casher-yasoo",
+    "staging": "casher-yasoo-staging"
   },
   "targets": {},
   "etags": {}

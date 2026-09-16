@@ -28,7 +28,7 @@ const CategoryManagerModal: React.FC<{
       await addCategory(newCategoryName);
       toast.success("تمت إضافة التصنيف");
       setNewCategoryName('');
-    } catch (e) {
+    } catch {
       toast.error("فشلت إضافة التصنيف");
     }
   };
@@ -42,7 +42,7 @@ const CategoryManagerModal: React.FC<{
       try {
         await deleteDocument('categories', id);
         toast.success("تم حذف التصنيف");
-      } catch (e) {
+      } catch {
         toast.error("فشل حذف التصنيف");
       }
     }
@@ -321,7 +321,7 @@ export default function ProductsPage() {
       await saveProduct(productData);
       toast.success('id' in productData ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح');
       loadProducts(true);
-    } catch (error) {
+    } catch {
       toast.error('فشلت عملية الحفظ');
     }
   }, [loadProducts]);
@@ -336,7 +336,7 @@ export default function ProductsPage() {
         await deleteDocument('products', id);
         toast.success('تم حذف المنتج');
         loadProducts(true);
-      } catch (error) {
+      } catch {
         toast.error('فشل حذف المنتج');
       }
     }

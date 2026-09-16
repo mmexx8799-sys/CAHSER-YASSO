@@ -57,7 +57,7 @@ export default function CustomerAccountPage() {
             toast.success("تمت إضافة الدفعة بنجاح");
             setAmount('');
             setNotes('');
-        } catch (error) {
+        } catch {
             toast.error("فشلت إضافة الدفعة");
         } finally {
             setIsSubmitting(false);

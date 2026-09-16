@@ -22,7 +22,7 @@ const generateCacheKey = (path: string, constraints: QueryConstraint[]): string 
     try {
         const constraintString = constraints.map(c => JSON.stringify((c as any)._toFieldFilter ? (c as any)._toFieldFilter() : c.type)).join(';');
         return `${path}::${constraintString}`;
-    } catch(e) {
+    } catch {
         return `${path}::${constraints.length}`;
     }
 };

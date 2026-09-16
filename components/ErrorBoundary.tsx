@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reportError } from '../services/monitoring';
 
 interface Props {
   children?: ReactNode;
@@ -21,7 +22,8 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Uncaught error in application:", error, errorInfo);
+    // 2.2-free: single reporting path — console + Firestore always, Sentry when configured.
+    reportError(error, { source: 'ErrorBoundary', extra: { componentStack: String(errorInfo.componentStack || '').slice(0, 500) } });
   }
 
   private handleRetry = () => {

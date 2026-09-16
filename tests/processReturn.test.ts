@@ -150,10 +150,6 @@ async function seedFixtures(ctx: RulesTestContext, overrides: Partial<{ invoiceI
   return { product, archive, invoice, mkCartItems };
 }
 
-function makeCart(product: Product, qty: number): CartItem[] {
-  return [{ ...product, buyQuantity: qty, priceType: 'retail' }];
-}
-
 // --- Tests ------------------------------------------------------------------
 
 describe('TEST-REG-P0-1: processReturn linked to original invoice (BUG-P0-1)', () => {

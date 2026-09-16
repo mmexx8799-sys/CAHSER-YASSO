@@ -9,7 +9,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
+import { getFirestore, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDkP4sNYxHkVffXADVdunXU0iDxlXAWuDE",

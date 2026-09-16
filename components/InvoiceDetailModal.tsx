@@ -10,8 +10,6 @@ export const InvoiceDetailModal: React.FC<{
 
     const isReturn = 'invoiceNumber' in transaction === false;
     const invoice = transaction as Invoice;
-    const purchaseInvoice = transaction as PurchaseInvoice;
-    const supplierReturn = transaction as SupplierReturn;
     const partyName = (invoice as any).customerName || (invoice as any).supplierName;
     const partyLabel = (invoice as any).supplierName ? 'المورد:' : 'العميل:';
 
