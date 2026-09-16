@@ -32,6 +32,10 @@ keystore.properties
 android/app/release.keystore
 android/casher-yasoo-release.keystore
 
+# Firebase Admin service account key (NEVER commit - full project admin access)
+*serviceAccountKey*.json
+firebase-adminsdk-*.json
+
 # Bundled archives (avoid bloating repo, may contain stale keystore)
 *.zip
 
