@@ -534,6 +534,28 @@ export const processPurchase = async (purchaseData: {
             const newPurchaseNumber = lastPurchaseNumber + 1;
             const purchaseInvoiceNumber = `PUR-${String(newPurchaseNumber).padStart(6, '0')}`;
 
+            // REQ-SEC1-9: تحقق الكمية/السعر/الوجود لأصناف الشراء — نفس أسلوب
+            // processSale (قبل أي كتابة، ما زلنا في مرحلة القراءات).
+            purchaseData.items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (!productDoc.exists()) {
+                    throw new Error(`منتج غير موجود: ${item.name || item.id}`);
+                }
+                if (typeof item.buyQuantity !== 'number' || !Number.isFinite(item.buyQuantity) || item.buyQuantity <= 0) {
+                    throw new Error(`كمية الشراء غير صالحة للصنف ${item.name || item.id}`);
+                }
+                if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price < 0) {
+                    throw new Error(`سعر الشراء غير صالح للصنف ${item.name || item.id}`);
+                }
+            });
+
+            if (typeof purchaseData.subtotal !== 'number' || purchaseData.subtotal < 0) {
+                throw new Error("الإجمالي الفرعي لفاتورة الشراء لا يمكن أن يكون سالبًا");
+            }
+            if (typeof purchaseData.total !== 'number' || purchaseData.total < 0) {
+                throw new Error("إجمالي فاتورة الشراء لا يمكن أن يكون سالبًا");
+            }
+
             // --- PHASE 2: ALL WRITES ---
             const currentBalance = supplierDoc.data().balance || 0;
             transaction.update(supplierRef, { balance: currentBalance + purchaseData.total });
@@ -576,7 +598,7 @@ export const processPurchase = async (purchaseData: {
 // Supplier return — decreases product quantities + supplier.balance, records SupplierReturn
 export const processSupplierReturn = async (items: CartItem[], supplierId: string) => {
     try {
-        await runTransaction(db, async (transaction) => {
+        await runTransactionWithRetry('processSupplierReturn', async (transaction) => {
             const returnRef = doc(collection(db, 'supplierReturns'));
 
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
@@ -591,6 +613,25 @@ export const processSupplierReturn = async (items: CartItem[], supplierId: strin
 
             const productRefs = items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            // REQ-SEC1-9: تحقق الكمية/السعر/الوجود/المخزون لأصناف مرتجع المورد
+            // — قبل أي كتابة (نفس أسلوب processSale/processPurchase).
+            items.forEach((item, idx) => {
+                const productDoc = productDocs[idx];
+                if (!productDoc.exists()) {
+                    throw new Error(`منتج غير موجود: ${item.name || item.id}`);
+                }
+                if (typeof item.buyQuantity !== 'number' || !Number.isFinite(item.buyQuantity) || item.buyQuantity <= 0) {
+                    throw new Error(`كمية المرتجع غير صالحة للصنف ${item.name || item.id}`);
+                }
+                if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price < 0) {
+                    throw new Error(`سعر المرتجع غير صالح للصنف ${item.name || item.id}`);
+                }
+                const currentQuantity = productDoc.data().quantity || 0;
+                if (currentQuantity < item.buyQuantity) {
+                    throw new Error(`الكمية المتاحة غير كافية لإرجاعها للمورد للصنف ${item.name || item.id}`);
+                }
+            });
 
             // --- PHASE 2: ALL WRITES ---
             const currentBalance = supplierDoc.data().balance || 0;
