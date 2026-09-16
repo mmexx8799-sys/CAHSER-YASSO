@@ -1,6 +1,7 @@
 // Seed marked test products to verify the server-side category filter fix (commit bddf430).
 //
-// Usage:  node scripts/seedTestProducts.mjs <admin-email> <admin-password> [existingCategoryId]
+// Usage (credentials via ENVIRONMENT ONLY — never on the command line):
+//   SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/seedTestProducts.mjs [existingCategoryId]
 //
 // Requires the ADMIN account (category create + product create both needed; cleanup needs
 // admin too because product/category delete is admin-only per firestore.rules).
@@ -23,7 +24,7 @@
 //   -> you must see all 10 products INCLUDING "يوسفي ..." and "ويجر ..." right away.
 //   Watch F12 console for any "The query requires an index" error (should be none).
 //
-// Cleanup: node scripts/cleanupTestProducts.mjs <admin-email> <admin-password>
+// Cleanup: SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/cleanupTestProducts.mjs
 // Do NOT use the in-app factory reset - it wipes ALL business data (customers, archives...).
 
 import { initializeApp } from "firebase/app";
@@ -41,12 +42,12 @@ const firebaseConfig = {
 
 const MARKER = "TEST-SEED-2026-09";
 
-const email = process.argv[2];
-const password = process.argv[3];
-const existingCategoryId = process.argv[4] || null;
+const email = process.env.SEED_ADMIN_EMAIL;
+const password = process.env.SEED_ADMIN_PASSWORD;
+const existingCategoryId = process.argv[2] || null;
 
 if (!email || !password) {
-  console.error("Usage: node scripts/seedTestProducts.mjs <admin-email> <admin-password> [existingCategoryId]");
+  console.error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD env vars first (never pass credentials on the command line).");
   process.exit(1);
 }
 
@@ -146,7 +147,7 @@ async function seed() {
   console.log("  2. 'يوسفي ...' and 'ويجر ...' products MUST appear on the FIRST page.");
   console.log("  3. F12 console: no 'The query requires an index' errors.");
   console.log("");
-  console.log("CLEANUP: node scripts/cleanupTestProducts.mjs <admin-email> <admin-password>");
+  console.log("CLEANUP: SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/cleanupTestProducts.mjs");
   process.exit(0);
 }
 

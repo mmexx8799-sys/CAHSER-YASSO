@@ -1,7 +1,8 @@
 // Remove ONLY the test documents created by seedTestProducts.mjs (marker-based).
 // Real data (customers, real products, real categories, invoices...) is never touched.
 //
-// Usage: node scripts/cleanupTestProducts.mjs <admin-email> <admin-password>
+// Usage (credentials via ENVIRONMENT ONLY — never on the command line):
+//   SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/cleanupTestProducts.mjs
 //
 // Requires ADMIN (product + category deletes are admin-only per firestore.rules).
 // If seedTestProducts was run with an existing categoryId, that category is kept.
@@ -21,11 +22,11 @@ const firebaseConfig = {
 
 const MARKER = "TEST-SEED-2026-09";
 
-const email = process.argv[2];
-const password = process.argv[3];
+const email = process.env.SEED_ADMIN_EMAIL;
+const password = process.env.SEED_ADMIN_PASSWORD;
 
 if (!email || !password) {
-  console.error("Usage: node scripts/cleanupTestProducts.mjs <admin-email> <admin-password>");
+  console.error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD env vars first (never pass credentials on the command line).");
   process.exit(1);
 }
 

@@ -11,12 +11,11 @@ const firebaseConfig = {
   appId: "1:285707912161:web:fcda41b3d68bc8dbc7c8a0"
 };
 
-const email = process.argv[2];
-const password = process.argv[3];
+const email = process.env.SEED_ADMIN_EMAIL;
+const password = process.env.SEED_ADMIN_PASSWORD;
 
 if (!email || !password) {
-  console.error("Usage: node scripts/seedCustomers.mjs <email> <password>");
-  console.error("Example: node scripts/seedCustomers.mjs izatadel007@gmail.com YOUR_PASSWORD");
+  console.error("Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD env vars first (never pass credentials on the command line).");
   process.exit(1);
 }
 
