@@ -14,7 +14,7 @@ UX-raw-auth-error (مراجعة BUG-P0-6 — 2026-09-14): أخطاء Firebase خ
 
 BUG-P0-1 (دفعة 2026-09-13 — انهيار processReturn عند ربط مرتجع بفاتورة: transaction.get(Query) غير مدعوم في firebase v10)
 Severity: Critical
-Status: Fixed in code + covered by TEST-REG-P0-1 (commit 86f7f4e — خيار A بقرار المالك، Accepted Risk لنافذة السباق موثّق، والبديل الذري TECH-P0-1b في backlog) — TASK-P0-1-09 (live smoke test) ما زال مفتوحًا: إجراء يدوي من المالك بعد الـ deploy
+Status: Fixed in code + covered by TEST-REG-P0-1 (commit 86f7f4e — خيار A بقرار المالك، Accepted Risk لنافذة السباق موثّق، والبديل الذري TECH-P0-1b في backlog) — TASK-P0-1-09: مغلق (2026-09-16) — التحقق جاء من مراجعة استخدام حي فعلي لا اختبار مقصود: كشف حساب عميل حقيقي (نور الرحمن للملابس) أظهر 4 عمليات مرتجع مرتبطة بـ 3 فواتير أصلية مختلفة (يومي 13–14 سبتمبر) بتسلسل رصيد متطابق بلا أي فجوة حسابية — Closed
 Ref: tests/processReturn.test.ts (8/8 green على Emulator)، tsc + build نظيفان
 
 BUG-P0-1
