@@ -1,5 +1,61 @@
 # دليل النشر (Deploy Runbook)
 
+## بيئة Staging (مشروع منفصل — 2.1)
+
+القاعدة: Staging مشروع Firebase **منفصل تمامًا** عن `casher-yasoo`
+الإنتاجي — نفس الكود والقواعد، بيانات وهمية فقط.
+
+الاسم المحجوز في `.firebaserc` هو `casher-yasoo-staging`
+(أي أمر `firebase use staging` يفشل حتى تُنشأ البيئة أدناه — هذا مقصود).
+
+### الإنشاء (مرة واحدة، من Firebase Console — بلا فيزا على Spark)
+
+1. Console → Add project → اسم `casher-yasoo-staging` → بدون Analytics.
+2. Authentication → Sign-in method → فعّل Email/Password.
+3. Firestore → Create database (نفس المنطقة إن أمكن) + فعّل Indexes كما في الإنتاج.
+4. Hosting → Get started (موقع staging الخاص).
+5. أنشئ مستخدم admin تجريبيًا (Authentication → Add user).
+6. محليًا:
+```bash
+firebase use staging
+firebase deploy --only firestore:rules,firestore:indexes --project staging
+```
+7. بيانات وهمية فقط (لن تلمس الإنتاج أبدًا — المشروع مختلف):
+```bash
+SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/seedTestProducts.mjs
+SEED_ADMIN_EMAIL=... SEED_ADMIN_PASSWORD=... node scripts/seedCustomers.mjs
+```
+8. النشر التجريبي:
+```bash
+npm run build && firebase deploy --only hosting --project staging
+```
+
+### معيار القبول (2.1)
+
+نشر تجريبي ناجح على رابط الـ staging + بيانات وهمية ظاهرة +
+`firebase use default` ما زال يشير للإنتاج (`casher-yasoo`).
+
+## تتبع الأخطاء (2.2-free — مجاني 100%، يعمل الآن)
+
+الوضع الحالي (نشط في الكود): أي عطل في التطبيق يُرسَل تلقائيًا إلى
+مجموعة `clientErrors` في نفس مشروع Firestore — بلا أي خدمة خارجية
+ولا فيزا ولا مفاتيح. الكتابة لأي مستخدم نشط بشكل صارم، والقراءة/الحذف
+للأدمن فقط (`firestore.rules` + `tests/clientErrorsRules.test.ts` 3/3).
+
+لرؤية الأعطال: Firebase Console → Firestore → `clientErrors`
+(message + stack + source + url + uid + createdAt).
+حماية الحصة: 10 تقارير / 10 دقائق لكل جلسة كحد أقصى
+(`services/monitoring.ts`) — عطل متكرر لا يلتهم كوتا Spark.
+
+> **مهم بعد أي تعديل في `firestore.rules`:** القاعدة الجديدة لمجموعة
+> `clientErrors` لن تعمل على الإنتاج حتى تنشرها:
+> `firebase deploy --only firestore:rules` (راجع حادثة INC-2026-09-12
+> في `docs/known-issues.md` — النشر الحي إلزامي).
+>
+> ترقية اختيارية لاحقًا (Sentry، خطة Developer مجانية): ثبّت
+> `@sentry/react` واستدعِ `setErrorReporter` في `index.tsx` —
+> `services/monitoring.ts` أبقى نقطة التكامل جاهزة.
+
 التسلسل الإلزامي أدناه ليس اختياريًا — نشر كود التطبيق قبل جهوزية فهارس Firestore
 يعرّض شاشة POS لخطأ صريح (`FAILED_PRECONDITION: missing index`) بدل القائمة العادية.
 

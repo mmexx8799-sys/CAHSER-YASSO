@@ -13,7 +13,6 @@ import {
     Timestamp,
     serverTimestamp,
     setDoc,
-    onSnapshot,
     getDocs,
     limit,
     startAfter,
@@ -22,7 +21,7 @@ import {
 import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { getDB, firebaseConfig } from './firebase';
 import { initializeApp, deleteApp } from "firebase/app";
-import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, Category, CartItem, Return, BackupData, User, AppSettings, UserRole, Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn } from '../types';
+import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, CartItem, Return, BackupData, AppSettings, UserRole, Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn } from '../types';
 import { toast } from 'react-hot-toast';
 import {
     createUserWithEmailAndPassword,
@@ -852,7 +851,7 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
     // Accepted Risk (قرار مالك 2026-09-13): نافذة سباق نظرية ضيقة بين هذه القراءة
     // وبدء الـ transaction مع عدد كاشيرين محدود — البديل الذري الكامل (TECH-P0-1b)
     // مسجّل في backlog. فشل القراءة يرفض العملية كاملة قبل أي كتابة (BR-2).
-    let priorMap = new Map<string, number>();
+    const priorMap = new Map<string, number>();
     if (linkedInvoiceId) {
         const returnsQuery = query(collection(db, 'returns'), where('originalInvoiceId', '==', linkedInvoiceId));
         const priorReturnsSnap = await getDocs(returnsQuery);
@@ -1015,10 +1014,10 @@ export const startNewDailyArchive = async (): Promise<DailyArchive> => {
         totalReturnsCash: 0,
         totalReturnsOnAccount: 0,
     };
-    // FIX: Destructure to avoid type conflict between client-side number and Firestore FieldValue
-    const { startTime, ...rest } = newArchiveForClient;
+    // FIX: spread-override keeps the client-side number for the return value
+    // while Firestore gets serverTimestamp() — no unused-var destructure.
     const newArchiveForFirestore = {
-        ...rest,
+        ...newArchiveForClient,
         startTime: serverTimestamp(),
     };
 

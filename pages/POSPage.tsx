@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2 } from 'lucide-react';
-import type { Product, CartItem, Customer, DailyArchive, Category } from '../types';
+import type { Product, Customer, DailyArchive, Category } from '../types';
 import { PaymentMethod } from '../types';
 import { getProductsPaginated, processSale, getOpenDailyArchive } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
@@ -12,7 +12,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import { usePosCartStore } from '../stores/posCartStore';
 import { FloatingCartButton } from '../components/FloatingCartButton';
 import { ProductSearch } from '../components/ProductSearch';
-import { orderBy, where } from 'firebase/firestore';
+import { orderBy } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 
 const ArchiveGuard: React.FC<{ type: 'sale' | 'return' }> = ({ type }) => {
@@ -422,7 +422,7 @@ const PaymentModal: React.FC<{
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const { addToCart, setCartModalOpen } = usePosCartStore();
+    const { addToCart } = usePosCartStore();
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [dailyArchive, setDailyArchive] = useState<DailyArchive | null>(null);

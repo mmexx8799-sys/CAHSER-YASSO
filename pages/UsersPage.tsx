@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, UserCog, X, UserX, UserCheck } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { Plus, Trash2, UserX, UserCheck } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { addUser, deleteUser, setUserDisabled } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
@@ -29,7 +28,7 @@ const UserFormModal: React.FC<{
             setEmail('');
             setPassword('');
             setRole(UserRole.Cashier);
-        } catch (e) {
+        } catch {
             // Error is already toasted by the API service
         }
         finally {

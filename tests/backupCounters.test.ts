@@ -32,7 +32,6 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  collection,
 } from 'firebase/firestore';
 import {
   signOut as firebaseSignOut,
@@ -120,7 +119,7 @@ async function seedSaleFixtures() {
   });
 }
 
-async function makeCashSale(db: any) {
+async function makeCashSale() {
   await processSale({
     items: [{
       id: 'prod-backup-1',
@@ -176,8 +175,8 @@ describe('BUG-P0-15: v2 backup/restore round-trip', () => {
     await signInAdmin();
     const db = getDB();
 
-    await makeCashSale(db);
-    await makeCashSale(db);
+    await makeCashSale();
+    await makeCashSale();
     expect(await getCounter(db, 'invoices')).toBe(2);
 
     const backup = await backupData();
@@ -195,7 +194,7 @@ describe('BUG-P0-15: v2 backup/restore round-trip', () => {
     // Next sale must be INV-000003 — never a duplicate of the restored range.
     await seedSaleFixtures();
     await signInAdmin();
-    await makeCashSale(getDB());
+    await makeCashSale();
     expect(await getCounter(getDB(), 'invoices')).toBe(3);
   });
 });

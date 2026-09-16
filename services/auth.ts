@@ -1,5 +1,4 @@
 import {
-    getAuth,
     signInWithEmailAndPassword,
     signOut as firebaseSignOut,
     onAuthStateChanged,

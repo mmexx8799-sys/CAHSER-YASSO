@@ -247,7 +247,7 @@ export default function SettingsPage() {
             try {
                 const archive = await getOpenDailyArchive();
                 setDailyArchive(archive);
-            } catch (err) {
+            } catch {
                 toast.error("فشل في التحقق من حالة اليومية.");
             } finally {
                 setIsDailyOpsLoading(false);
@@ -277,7 +277,7 @@ export default function SettingsPage() {
                     await closeDailyArchive(dailyArchive.id);
                     setDailyArchive(null);
                     toast.success('تم إغلاق اليومية بنجاح.');
-                } catch (error) {
+                } catch {
                     toast.error('فشل في إغلاق اليومية.');
                 }
             }

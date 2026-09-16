@@ -181,5 +181,31 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']));
       allow delete: if isAdmin();
     }
+
+    // 2.2-free: سجل أخطاء العميل — بديل Sentry المجاني 100% (بلا خدمة
+    // خارجية ولا فيزا: نفس مشروع Spark). أي مستخدم نشط يستطيع *إلحاق*
+    // تقرير عطل فقط (create بشكل صارم)؛ القراءة والحذف للأدمن فقط
+    // (تُفحص من Firebase Console → Firestore → clientErrors). لا update
+    // إطلاقًا — التقارير سجل ثابت مثل openingBalance (REQ-M8).
+    // حارس الشكل يمنع تحويلها لدردشة/تخزين عام: message قصيرة إجبارية
+    // والباقي حقول اختيارية مُسقوفة.
+    match /clientErrors/{docId} {
+      allow create: if isActiveUser()
+        && request.resource.data.keys().hasAll(['message', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['message', 'stack', 'source', 'url', 'createdAt', 'uid'])
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.createdAt is number
+        && (!('stack' in request.resource.data) || (request.resource.data.stack is string
+          && request.resource.data.stack.size() <= 2000))
+        && (!('source' in request.resource.data) || (request.resource.data.source is string
+          && request.resource.data.source.size() <= 100))
+        && (!('url' in request.resource.data) || (request.resource.data.url is string
+          && request.resource.data.url.size() <= 500))
+        && (!('uid' in request.resource.data) || (request.resource.data.uid is string
+          && request.resource.data.uid.size() <= 128));
+      allow read, delete: if isAdmin();
+    }
   }
 }

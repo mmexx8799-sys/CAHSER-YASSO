@@ -206,7 +206,7 @@ export default function CustomersPage() {
         toast.success('تمت إضافة العميل');
         loadCustomers(true);
       }
-    } catch (e) {
+    } catch {
       toast.error('فشلت عملية الحفظ');
     }
   }, [loadCustomers]);
@@ -226,7 +226,7 @@ export default function CustomersPage() {
         await deleteDocument('customers', customer.id);
         toast.success('تم حذف العميل');
         loadCustomers(true);
-      } catch (e) {
+      } catch {
         toast.error('فشل حذف العميل');
       }
     }

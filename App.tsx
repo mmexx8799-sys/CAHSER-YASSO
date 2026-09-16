@@ -30,19 +30,6 @@ const ReturnsPage = React.lazy(() => import('./pages/ReturnsPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const UsersPage = React.lazy(() => import('./pages/UsersPage'));
 
-const NavItem: React.FC<{ to: string; icon: React.ElementType; label: string }> = React.memo(({ to, icon: Icon, label }) => (
-    <NavLink
-        to={to}
-        className={({ isActive }) =>
-            `flex flex-col items-center justify-center space-y-1 w-full text-xs transition-colors duration-200 ${isActive ? 'text-primary-600 font-bold' : 'text-gray-500 hover:text-primary-500'
-            }`
-        }
-    >
-        <Icon className="w-6 h-6" />
-        <span>{label}</span>
-    </NavLink>
-));
-
 const Header = React.memo(() => {
     const { currentUser } = useAuth();
     const { appName } = useAppSettings();
@@ -195,7 +182,7 @@ const AndroidBackHandler = () => {
     const { isCartModalOpen: isReturnCartOpen, setCartModalOpen: setReturnCartOpen } = useReturnCartStore();
 
     useEffect(() => {
-        const handleBackButton = async (event: any) => {
+        const handleBackButton = async () => {
             if (isPosCartOpen) {
                 setPosCartOpen(false);
                 return;

@@ -1,6 +1,11 @@
 # Changelog — Nour-Elrahman
 
 ## Unreleased
+### Stage-2 — بنية الإنتاج (2026-09-16)
+- [2.4] سكريبتات `lint` (eslint.config.mjs — بوابة أخطاء فقط، التحذيرات توثق AUDIT-ARCH-1 ومسارات backlog) + `typecheck` (`tsc --noEmit`) — كلاهما ناجح + بناء إنتاجي سليم + تنظيف ~35 متغيرًا/استيرادًا ميتًا بلا أي تغيير سلوكي
+- [2.3] خط CI (`.github/workflows/ci.yml`): lint + typecheck + build + الـ 56 اختبارًا على المحاكيات (Java 21) لكل PR، ونشر `firestore:rules` فقط بعد الدمج في main + موافقة عبر environment — يحتاج 3 خطوات يدوية لمرة واحدة (branch protection + environment reviewers + سر FIREBASE_SERVICE_ACCOUNT) موثقة أعلى الملف
+- [2.2-free] تتبع أخطاء مجاني 100% ونشط الآن: مجموعة `clientErrors` (كتابة صارمة للنشطين، قراءة/حذف للأدمن — `firestore.rules`) + مُبلِّغ Firestore محدود الحصة في `services/monitoring.ts` مربوط بـ ErrorBoundary ومعالجات window — يُفحص من Console بلا أي خدمة خارجية؛ السويت أصبح 59 (3 قواعد جديدة) — ملاحظة: القاعدة الجديدة تحتاج `firebase deploy --only firestore:rules` لتعمل إنتاجيًا
+- [2.1] إعداد Staging: alias محجوز (`casher-yasoo-staging` في `.firebaserc`) + منافذ المحاكيات مثبتة في `firebase.json` + runbook إنشاء ونشر وبيانات وهمية في DEPLOY.md — إنشاء المشروع نفسه يتم من Console (لا يمكن من الكود)
 ### Added
 - [REQ-UI-1b] تمييز الفاتورة/المرتجع الآجل في الإيصال — "إيصال بيع آجل" (paymentMethod آجل) و"إيصال مرتجع آجل" (مرتبط بعميل) بلون أزرق مميز عن النقدي، ظاهر في كل الشاشات التي تستخدم نفس المودال (components/InvoiceDetailModal.tsx)
 - [REQ-UI-1] إعادة تصميم مودال الفاتورة/الإيصال — ألوان receipt theme-adaptive، شبكة Grid بمحاذاة دقيقة، شارة نوع العملية (بيع/شراء/مرتجع/مرتجع مورد) وشريحة رقم المستند monospace، إجمالي المرتجع بالأحمر (components/InvoiceDetailModal.tsx, tailwind.config.js)
@@ -16,6 +21,8 @@
 - [REQ-SEC1-8 Phase 0] تجميد openingBalance عن غير الأدمن (customers/suppliers) + حواجز رقمية خادمية (customerPayments/supplierPayments amount>0، invoices/purchaseInvoices/returns/supplierReturns total>=0) — بلا أي مساس بـ services/api.ts؛ الكتابة المنفردة لـ balance تبقى مخاطرة مقبولة موثقة باختبار (firestore.rules, tests/balanceOpeningFreeze.test.ts 9/9، كامل السويت 56/56)
 - [REQ-P0-4] منع فقدان البيانات عبر رفض الاستعادة من ملف ناقص/تالف قبل factoryReset
 - [REQ-SEC1-8 closeout] إغلاق نهائي: Phase 1/2 (Functions/Blaze) مرفوضة بقرار Ahmed (2026-09-16) — لا فوترة على Spark؛ كتابة balance المنفردة تبقى مفتوحة لغير الأدمن إلى أجل غير مسمى كوضع مقصود وموثق
+- [Stage-1 2026-09-16] بند 1.2: إعادة تدقيق npm audit برقم حقيقي (`npm audit --json`: 26 = 2 critical + 5 high + 19 moderate) + إثبات `npm audit fix --dry-run` أنه لا يوجد إصلاح non-breaking — بلا تغيير في package.json/lock — Ref: known-issues BUG-P0-6
+- [Stage-1 2026-09-16] بند 1.3: التحقق من history الـ git (وليس الكود الحالي فقط) — `git log -S private_key` فارغ + `git log --all -- *serviceAccount* *.keystore .env keystore.properties` فارغ + `git ls-files` بلا .env/serviceAccountKey/keystore/zips — لم يُكتشف أي مفتاح حقيقي مُسرّب؛ الوحيد في الـ history هو firebaseConfig (apiKey علني بطبيعته في Firebase Web — ليس سرًا) + سطر example email وهمي (izatadel007@gmail.com) أُزيل في 8e1f317؛ AUDIT-SEC-2b (env vars) و2c (key path عبر env + gitignored) ساريان في الكود الحالي
 ### Docs
 - [P0-6 follow-up] إغلاق بدليل حي + توثيق فجوة نشر firestore.rules كحادثة مغلقة وإضافة قاعدة منهجية دائمة (docs/req-template.md#7: أي REQ يلمس firestore.rules يجب أن يرفق `firebase deploy --only firestore:rules`)
 - [P0-2] توثيق BUG-P0-2 كمخاطرة مقبولة بقرار مالك المنتج (2026-09-12): المستخدمون موظفون موثوقون، الاستغلال يتطلب معرفة متعمدة، والإصلاح يكسر المسار الطبيعي — لا تغيير في الكود (firestore.rules أُعيد لحالته)

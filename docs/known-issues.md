@@ -50,12 +50,19 @@ Status: Fixed (REQ-P0-5 — 2026-09-12)
 BUG-P0-6
 Problem: ثغرات أمنية في التبعيات — قبل الإصلاح: 44 ثغرة (4 critical, 21 high, 16 moderate, 3 low) — بعد `npm audit fix` (بدون --force) في REQ-P0-6: 22 ثغرة متبقية (1 critical, 5 high, 16 moderate)
 Severity: High
-Status: Fixed — Partially Fixed (non-breaking only) — Verified Live (2026-09-12)
+Status: Fixed — Partially Fixed (non-breaking only) — Verified Live (2026-09-12) — Re-audited 2026-09-16: 26 ثغرة (2 critical, 5 high, 19 moderate) عبر `npm audit --json` (metadata.vulnerabilities — الرقم النهائي الموثق، لا تقرير وسيط)
 Details (2026-09-12):
 - تم تشغيل `npm audit fix` فقط (بدون --force، بدون تعديل يدوي لـ package.json) — package.json بدون أي semver-major، package-lock.json فقط تغيّر (480 إضافات/2721 حذف).
 - المتبقي 22: @capacitor/cli (tar → يحتاج 8.5.2 major)، vite (esbuild + path traversal → يحتاج 8.3.0 major)، exceljs (uuid → يقترح downgrade إلى 3.4.0 مرفوض — load-bearing لـ M10 Excel export)، react-router/react-router-dom (يحتاج 7.18.3 major)، sharp (libvips → لا يوجد fix)، @capacitor/assets + @trapezedev/project/xcode (لا يوجد fix)، بالإضافة لـ firebase/undici المتبقي (يتطلب تحديث firebase major لاحقًا).
 - المرفوض/المؤجل كمخاطرة مقبولة أو Backlog: @capacitor/cli, vite, exceljs, @capacitor/assets, sharp — سيتم إعادة التقييم عند ترقية major مخططة.
 - AC-06 — اختبار حي حقيقي (ليس محاكى بالبناء): تم تشغيل `firebase deploy --only firestore:rules` ثم اختبار فعلي على مشروع Firebase الحي — بيع نقدي: success، بيع آجل (customer): success — تم بعد نشر القواعد التي كانت معلّقة منذ REQ-P0-9/d5d7d0f وcounters rule. فجوة النشر السابقة موثّقة كحادثة مغلقة أدناه.
+Re-audit 2026-09-16 (المرحلة 1 — بند 1.2 — إغلاق نهائي، بلا أي تغيير في package.json/package-lock.json):
+- الأمر المرجعي: `npm audit --json` → metadata.vulnerabilities = {critical: 2, high: 5, moderate: 19, total: 26} — الزيادة 22→26 ليست تبعيات جديدة بل advisories جديدة نُشرت بعد 2026-09-12 (vitest UI RCE 9.8، sharp libheif، undici <6.28.0، tar GHSA-r292/vmf3/w8wr/23hp).
+- `npm audit fix --dry-run` أُعيد تشغيله: ما زال 26/26 — أي لا يوجد إصلاح non-breaking حقيقي (سطر "fix available via npm audit fix" بجانب undici مضلل: firebase المثبت 10.14.1 هو آخر 10.x وما زال داخل النطاق المتأثر 10.13.0–10.14.1، والإصلاح الحقيقي يتطلب firebase 11 major).
+- الحرجة (2): tar عبر @capacitor/cli 6.2.1 (أداة بناء فقط — الاستغلال يتطلب فك ضغط tar خبيث أثناء البناء؛ الإصلاح يتطلب @capacitor/cli 8.5.2 major → يكسر build الأندرويد الحالي v6 — مرفوض) + vitest UI RCE 9.8 (سيرفر اختبار dev فقط — لا يُفتح إطلاقًا في الإنتاج؛ الإصلاح يتطلب vitest 5 major — مرفوض).
+- العالية (5): undici عبر firebase 10.14.1 (يتطلب firebase 11 major — مرفوض؛ التطبيق لا يخاطب undici مباشرة بل عبر Firestore SDK، ولا مسار تسريب أسرار)، sharp عبر @capacitor/assets (توليد أيقونات فقط — لا كود إنتاج)، vite server.fs.deny bypass (dev server فقط — الإنتاج static على Firebase Hosting)، والباقي تبعي لنفس السلاسل.
+- exceljs 4.4.0 (uuid GHSA-w5hq): "No fix available" — load-bearing لتصدير M10، والاستغلال يتطلب تمرير buf يدويًا وهو ما لا يفعله التطبيق — يبقى كما هو.
+- القرار: لا --force، لا major bumps، لا downgrades — الوضع الحالي هو الحد الأقصى الآمن على هذا الـ stack، ويُعاد التقييم فقط عند ترقية major مخططة.
 
 BUG-P1-2
 Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإنتاج المبني فعليًا

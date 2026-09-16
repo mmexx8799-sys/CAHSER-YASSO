@@ -21,7 +21,7 @@
 ## Deferred / Accepted Risk (Owner Decision)
 - REQ-P0-2 — تضييق صلاحيات RBAC على مستوى الحقول — Partially mitigated (Phase 0 live 2026-09-16: تجميد openingBalance + حواجز amount/total — Ref: tests/balanceOpeningFreeze.test.ts) — قفل balance الكامل عبر Functions/Blaze: Declined — Owner Decision (Ahmed, 2026-09-16) — لا يُعاد فتحه إلا بقرار مالك جديد مكتوب.
   السبب: المستخدمون موظفون موثوقون، الاستغلال يتطلب معرفة تقنية متعمدة، والقفل الكامل لـ balance يكسر المسار الطبيعي (processSale/payment/return تصبح DENIED) ويحتاج Blaze/Functions — غير مبرر حاليًا. Ref: docs/known-issues.md (Accepted Risk) + docs/REQ-P0-2-baseline.md
-- REQ-P0-6 — ترقيات major مؤجلة — Deferred (2026-09-12): @capacitor/cli 8.5.2, vite 8.3.0, react-router-dom 7.18.3 تحتاج major bump؛ exceljs downgrade مرفوض (load-bearing)؛ @capacitor/assets/sharp لا يوجد fix — Ref: docs/known-issues.md BUG-P0-6
+- REQ-P0-6 — ترقيات major مؤجلة — Deferred (2026-09-12، أُعيد التدقيق 2026-09-16): @capacitor/cli 8.5.2, vite 8.3.0, react-router-dom 7.18.3 تحتاج major bump؛ exceljs downgrade مرفوض (load-bearing)؛ @capacitor/assets/sharp لا يوجد fix — Re-audit النهائي: 26 (2 critical, 5 high, 19 moderate) عبر `npm audit --json`، و`npm audit fix --dry-run` يثبت عدم وجود إصلاح non-breaking (undici يتطلب firebase 11 major) — Ref: docs/known-issues.md BUG-P0-6
 
 ## Done
 - REQ-SEC1-8 — تخفيف BUG-P0-2 (Phase 0 حية ومثبتة) + رفض Phase 1/2 (Functions/Blaze) نهائيًا بقرار مالك (Ahmed, 2026-09-16)

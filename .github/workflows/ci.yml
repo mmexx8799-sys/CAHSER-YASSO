@@ -1,0 +1,78 @@
+# 2.3 — CI: lint + typecheck + build + الـ 56 اختبارًا على كل PR.
+# نشر الـ rules للإنتاج فقط بعد الدمج في main + موافقة (environment).
+#
+# خطوات يدوية لمرة واحدة (لا تُنفَّذ من الكود):
+#  1) Settings → Branches → Add rule لـ main: Require status checks
+#     (checks, tests) + Require pull request before merging.
+#  2) Settings → Environments → New environment باسم production →
+#     Required reviewers: (حسابك) — هذه هي "الموافقة" قبل نشر الـ rules.
+#  3) إنشاء Service Account (Firebase Console → Project Settings →
+#     Service Accounts → Generate New Private Key) بدور
+#     "Firebase Rules Admin" + "Firebase Viewer"، ثم
+#     Settings → Secrets → New repository secret باسم
+#     FIREBASE_SERVICE_ACCOUNT يحمل محتوى ملف JSON كاملًا.
+#     (المفتاح لا يُحفَظ في الكود إطلاقًا — راجع بند 1.3.)
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: lint + typecheck + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+
+  tests:
+    name: emulator suite (56 tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm install -g firebase-tools
+      # tests/setup.ts يربط singletons المحاكيات (8080/9099) — بلا أي
+      # بيانات اعتماد أو اتصال بالإنتاج.
+      - run: npm run test:rules
+
+  deploy-rules:
+    name: deploy firestore.rules (production, approval-gated)
+    needs: [checks, tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install -g firebase-tools
+      - run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$HOME/firebase-sa.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - run: firebase deploy --only firestore:rules --project casher-yasoo --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ format('{0}/firebase-sa.json', env.HOME) }}

@@ -207,7 +207,7 @@ export default function SuppliersPage() {
         toast.success('تمت إضافة المورد');
         loadSuppliers(true);
       }
-    } catch (e) {
+    } catch {
       toast.error('فشلت عملية الحفظ');
     }
   }, [loadSuppliers]);
@@ -227,7 +227,7 @@ export default function SuppliersPage() {
         await deleteDocument('suppliers', supplier.id);
         toast.success('تم حذف المورد');
         loadSuppliers(true);
-      } catch (e) {
+      } catch {
         toast.error('فشل حذف المورد');
       }
     }
