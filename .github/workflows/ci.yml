@@ -1,8 +1,8 @@
-# 2.3 — CI: lint + typecheck + build + الـ 56 اختبارًا على كل PR.
-# نشر الـ rules للإنتاج فقط بعد الدمج في main + موافقة (environment).
+# 2.3 — CI: lint + typecheck + build + الـ 59 اختبارًا على كل PR.
+# نشر الـ rules للإنتاج فقط بعد الدمج في master + موافقة (environment).
 #
 # خطوات يدوية لمرة واحدة (لا تُنفَّذ من الكود):
-#  1) Settings → Branches → Add rule لـ main: Require status checks
+#  1) Settings → Branches → Add rule لـ master: Require status checks
 #     (checks, tests) + Require pull request before merging.
 #  2) Settings → Environments → New environment باسم production →
 #     Required reviewers: (حسابك) — هذه هي "الموافقة" قبل نشر الـ rules.
@@ -12,13 +12,15 @@
 #     Settings → Secrets → New repository secret باسم
 #     FIREBASE_SERVICE_ACCOUNT يحمل محتوى ملف JSON كاملًا.
 #     (المفتاح لا يُحفَظ في الكود إطلاقًا — راجع بند 1.3.)
+# ملاحظة: وظيفة النشر تتخطى نفسها (Skipped) حتى تضيف السر في الخطوة 3 —
+# هذا مقصود حتى لا تحمر على الفرع الرئيسي قبل اكتمال الإعداد.
 
 name: CI
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [master]
 
 permissions:
   contents: read
@@ -60,7 +62,9 @@ jobs:
   deploy-rules:
     name: deploy firestore.rules (production, approval-gated)
     needs: [checks, tests]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # يعمل فقط على دفع master، ويُتخطى تمامًا حتى تضيف
+    # سر FIREBASE_SERVICE_ACCOUNT (الخطوة 3 أعلاه).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.FIREBASE_SERVICE_ACCOUNT != ''
     runs-on: ubuntu-latest
     environment: production
     steps:
