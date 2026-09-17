@@ -1,8 +1,39 @@
 // REQ-BARCODE: ماسح الباركود بالكاميرا.
 // getUserMedia + requestVideoFrameCallback + detector.detect + حارسا cooldown/leave.
 // المحرك محلي (zxing wasm من public/) — لا طلب شبكي بعد أول تحميل (AC-10).
+//
+// درس 2026-09-18 (عطل "فيديو حي بلا رصد"): نسخ الـwasm إلى public/ وحده لا
+// يكفي — barcode-detector يجلب الـwasm افتراضيًا من jsDelivr CDN (موثق في
+// zxing-wasm/share.d.ts)، وهذا الجلب محجوب على الإنتاج بواسطة CSP
+// (connect-src بلا jsdelivr) ويخرق AC-10 أصلًا. الإصلاح: prepareZXingModule
+// يوجّه locateFile للملف المحلي قبل أول detect().
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+
+/** مسار محرك المسح المحلي (public/zxing_reader.wasm يُقدَّم من جذر الموقع). */
+export const LOCAL_ZXING_WASM_URL = '/zxing_reader.wasm';
+
+/**
+ * دالة locateFile للمحرك — خالصة وقابلة للاختبار: ملف الـwasm يُحل محليًا،
+ * وأي مسار آخر يُترك كما هو (سلوك emscripten الافتراضي).
+ */
+export const resolveZxingWasmUrl = (path: string): string =>
+  path.endsWith('.wasm') ? LOCAL_ZXING_WASM_URL : path;
+
+// مطابقة المشروع المرجعي العامل (G:\Marketappfinal — نفس barcode-detector@3.2.2):
+// تهيئة مرة واحدة عبر prepareZXingModule قبل أول detect(). idempotent.
+let zxingWasmConfigured = false;
+
+const configureLocalZXingWasm = (
+  prepareZXingModule: (options: { overrides: { locateFile: (path: string) => string } }) => unknown,
+): void => {
+  if (zxingWasmConfigured) return;
+  zxingWasmConfigured = true;
+  prepareZXingModule({ overrides: { locateFile: resolveZxingWasmUrl } });
+};
+
+// مطابقة المرجع: نفس قائمة الصيغ حرفيًا (بلا qr_code).
+const SCAN_FORMATS = ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e'];
 
 /**
  * حارس منع التكرار (AC-04): نفس الباركود في نفس الإطار لا يُمرَّر أكثر من
@@ -53,7 +84,7 @@ export class BarcodeDeduper {
   }
 }
 
-export type ScannerError = 'permission' | 'nodriver' | 'generic' | null;
+export type ScannerError = 'permission' | 'nodriver' | 'engine' | 'generic' | null;
 
 interface UseBarcodeScannerOptions {
   /** فعّال فقط عندما يكون المودال مفتوحًا. */
@@ -92,6 +123,12 @@ export const useBarcodeScanner = ({
     let rafId = 0;
     let rvcbHandle: number | null = null;
     let scanning = false;
+    // عدّاد إخفاقات detect() المتتالية: المحرك الميت (wasm لم يُحمَّل) يرمي
+    // في كل إطار — بعد العتبة نُظهر خطأ 'engine' بدل فيديو صامت (درس 2026-09-18).
+    // النتائج الفارغة [] طبيعية (لا باركود في الإطار) ولا تُحتسب.
+    let detectErrorStreak = 0;
+    let engineErrorShown = false;
+    const DETECT_ERROR_THRESHOLD = 15;
     const videoEl = videoRef.current;
     deduper.reset();
 
@@ -110,6 +147,7 @@ export const useBarcodeScanner = ({
       try {
         const results = await detector.detect(video as any);
         if (cancelled) return;
+        detectErrorStreak = 0;
         if (results && results.length > 0) {
           const code = String((results[0] as any).rawValue ?? '').trim();
           if (code && deduper.shouldEmit(code)) {
@@ -120,6 +158,12 @@ export const useBarcodeScanner = ({
         }
       } catch {
         // رصد متقطع (إطار ضبابي) — نتجاهل ونكمل الحلقة، لا نكسر المسح.
+        // لكن الفشل المتتالي المنهجي = محرك ميت → خطأ مرئي لا صمت.
+        detectErrorStreak += 1;
+        if (!engineErrorShown && detectErrorStreak >= DETECT_ERROR_THRESHOLD && !cancelled) {
+          engineErrorShown = true;
+          setError('engine');
+        }
       } finally {
         scanning = false;
       }
@@ -142,8 +186,22 @@ export const useBarcodeScanner = ({
           if (!cancelled) setError('nodriver');
           return;
         }
+        // مطابقة المرجع العامل: تهيئة المحرك المحلي أولًا، ثم الكاميرا، ثم
+        // إنشاء الماسح بعد video.play() — نفس الترتيب حرفيًا.
+        const { BarcodeDetector, prepareZXingModule } =
+          await import('barcode-detector/ponyfill');
+        configureLocalZXingWasm(prepareZXingModule);
+        if (cancelled) return;
+        // درس 2026-09-18 (دقة VGA لا تكفي): iOS Safari يعطي 480x640 افتراضيًا
+        // بلا قيود — قضبان Code128 الرفيعة تقع تحت البكسل الواحد فلا تُفك أبدًا
+        // رغم وضوحها للعين. طلب 720p صراحة (ideal = تفضيل لا إجبار، بلا كسر
+        // على الأجهزة الأضعف).
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: {
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
           audio: false,
         });
         if (cancelled) {
@@ -152,17 +210,17 @@ export const useBarcodeScanner = ({
         }
         const video = videoRef.current;
         if (!video) return;
-        // استيراد كسول: لا يُحمَّل wasm إلا عند فتح الكاميرا فعلًا.
-        const { BarcodeDetector } = await import('barcode-detector/ponyfill');
+        video.srcObject = stream;
+        await video.play().catch(() => undefined);
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
         }
-        const detector = new BarcodeDetector({
-          formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'qr_code'],
-        } as any);
-        video.srcObject = stream;
-        await video.play().catch(() => undefined);
+        const detector = new BarcodeDetector({ formats: [...SCAN_FORMATS] } as any);
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
         if (!cancelled) {
           setIsScanning(true);
           scheduleNext(detector);

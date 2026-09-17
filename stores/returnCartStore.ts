@@ -18,7 +18,7 @@ interface ReturnCartState {
   total: number;
   isCartModalOpen: boolean;
   pricingMethod: PaymentMethod;
-  addToReturnCart: (product: Product) => void;
+  addToReturnCart: (product: Product) => boolean;
   updateItem: (itemId: string, newQuantity: number, newPrice?: number) => void;
   removeItem: (itemId: string) => void;
   clearCart: () => void;
@@ -52,7 +52,12 @@ export const useReturnCartStore = create<ReturnCartState>((set) => ({
   pricingMethod: PaymentMethod.Cash, // explicit Cash/Credit toggle drives pricing — never inferred from the linked customer
   setCartModalOpen: (isOpen) => set({ isCartModalOpen: isOpen }),
 
-  addToReturnCart: (product) => set((state) => {
+  // REQ-B: تُرجع boolean نجاح/فشل الإضافة الفعلية — نفس نمط posCartStore
+  // (متغير مُلتقَط داخل updater المتزامن). الرفض الداخلي (سقف المخزون
+  // المؤقت) يُرجع false ليمنع auto-open للكاميرا/السلة.
+  addToReturnCart: (product) => {
+    let added = false;
+    set((state) => {
     const existingItem = state.returnCart.find(item => item.id === product.id);
     let newCart: CartItem[];
     if (existingItem) {
@@ -65,14 +70,18 @@ export const useReturnCartStore = create<ReturnCartState>((set) => ({
       newCart = state.returnCart.map(item =>
         item.id === product.id ? { ...item, buyQuantity: item.buyQuantity + 1 } : item
       );
+      added = true;
     } else {
       newCart = [...state.returnCart, { ...product, buyQuantity: 1, priceType: 'retail' as const, price: resolvePrice(product, 'retail', state.pricingMethod) }];
+      added = true;
     }
     return {
       returnCart: newCart,
       total: calculateTotal(newCart),
     };
-  }),
+    });
+    return added;
+  },
 
   updateItem: (itemId, newQuantity, newPrice) => set((state) => {
     const item = state.returnCart.find(i => i.id === itemId);

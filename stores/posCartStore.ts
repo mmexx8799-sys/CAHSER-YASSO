@@ -7,7 +7,7 @@ interface PosCartState {
   cart: CartItem[];
   subtotal: number;
   isCartModalOpen: boolean;
-  addToCart: (product: Product, priceType?: PriceType) => void;
+  addToCart: (product: Product, priceType?: PriceType) => boolean;
   updateItem: (itemId: string, newQuantity: number, newPrice: number) => void;
   removeItem: (itemId: string) => void;
   clearCart: () => void;
@@ -43,7 +43,12 @@ export const usePosCartStore = create<PosCartState>((set) => ({
   isCartModalOpen: false,
   setCartModalOpen: (isOpen) => set({ isCartModalOpen: isOpen }),
 
-  addToCart: (product, priceType = 'retail') => set((state) => {
+  // REQ-A (AUTOCART): تُرجع boolean نجاح/فشل الإضافة الفعلية — عبر متغير
+  // مُلتقَط (closure) يُحدَّث داخل updater المتزامن (بلا get() وبلا تفرّع
+  // خارجي). الرفض الداخلي (تجاوز المخزون) يُرجع false ليمنع auto-open.
+  addToCart: (product, priceType = 'retail') => {
+    let added = false;
+    set((state) => {
     const existingItem = state.cart.find(item => item.id === product.id);
     let newCart: CartItem[];
     if (existingItem) {
@@ -51,6 +56,7 @@ export const usePosCartStore = create<PosCartState>((set) => ({
         newCart = state.cart.map(item =>
           item.id === product.id ? { ...item, buyQuantity: item.buyQuantity + 1 } : item
         );
+        added = true;
         if (existingItem.priceType === 'retail' && existingItem.buyQuantity + 1 >= 12) {
           // Suggestion only — no automatic switch.
           toast('الكمية في السلة ≥ 12 — يمكن التحويل لسعر الجملة من السلة', { icon: '💡' });
@@ -61,12 +67,15 @@ export const usePosCartStore = create<PosCartState>((set) => ({
       }
     } else {
       newCart = [...state.cart, { ...product, buyQuantity: 1, priceType, price: resolvePrice(product, priceType, PaymentMethod.Cash) }];
+      added = true;
     }
     return {
       cart: newCart,
       subtotal: calculateSubtotal(newCart),
     };
-  }),
+    });
+    return added;
+  },
 
   updateItem: (itemId, newQuantity, newPrice) => set((state) => {
     const itemToUpdate = state.cart.find(item => item.id === itemId);

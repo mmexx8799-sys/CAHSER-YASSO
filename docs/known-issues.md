@@ -117,6 +117,18 @@ Discovery: اكتُشفت بمراجعة الكود لا بالاختبار — 
 Severity: Medium (Toast مضلّل + بيع متعذّر لمنتج موجود — بلا فقدان بيانات)
 Status: Fixed (REQ-BARCODE-FIX-1 — 2026-09-17): getProductByBarcodeCloud في services/api.ts كخطوة ثانية عند miss محلي فقط + حارس isResolvingBarcode + رسالة شبكة مميزة + نفس getScanBlockReason على النتيجة السحابية — Ref: tests/posBarcodeCloudFallback.test.ts (7/7 green)، tsc + build نظيفان
 
+REQ-BARCODE camera-dead (محرك المسح لا يرصد — فيديو حي بلا نتيجة — 2026-09-18)
+Problem: نسخ zxing_reader.wasm إلى public/ وحده لا يكفي — barcode-detector يجلب الـwasm افتراضيًا من jsDelivr CDN (موثق في zxing-wasm/share.d.ts)، وهذا الجلب محجوب إنتاجيًا بواسطة CSP (connect-src بلا jsdelivr) ويخرق AC-10 أصلًا. كل detect() كان يرمي NotSupportedError كل إطار والـcatch يبتلعه → فيديو يعمل بلا رصد وبلا رسالة. الملصق المطبوع نفسه سليم (CODE128 صحيح).
+Discovery: بلاغ ميداني + صور (فيديو يعمل، لا تفاعل) — شخص بـ locateFile الافتراضي في node_modules/barcode-detector/dist/es/zxing-exported.js (سطر CDN).
+Severity: High (ميزة المسح بالكاميرا معطلة بالكامل — مسار USB/يدوي غير متأثر)
+Status: Fixed (REQ-BARCODE-FIX-2 — 2026-09-18): prepareZXingModule({overrides:{locateFile}}) مرة واحدة (مطابقة المشروع المرجعي العامل) + إنشاء الماسح بعد video.play() + صيغ بلا qr_code + خطأ 'engine' مرئي بعد 15 إخفاق detect() متتالٍ + اختبارا انحدار على resolveZxingWasmUrl (لا jsdelivr) — Ref: tests/posBarcodeSearch.test.ts (16/16 green)، tsc + build نظيفان
+Update FIX-2b (دقة VGA — 2026-09-18): التشخيص الميداني (SCANDBG-v2) أثبت المحرك يعمل (518 إطار @22ms بلا أخطاء) لكن video=480x640 — قضبان Code128 تحت البكسل. الإصلاح: width/height ideal=1280x720 في getUserMedia.
+Update FIX-3 (استقرار — 2026-09-18): بلاغ "تعليق بعد عدة مبيعات يُحل بإعادة دخول الصفحة" — السبب: استعلام سحابي معلّق (شبكة متقطعة) يُبقي isResolvingBarcodeRef=true للأبد فتُسقط كل المسحات بصمت. الإصلاح: مهلة 8s (withCloudTimeout → cloud-error صريح) + حذف صندوق DEBUG-SCAN (كان يعيد رسم المودال كل ثانية) — Ref: اختبار التعليق في tests/posBarcodeCloudFallback.test.ts.
+
+REQ-BARCODE-AUTOCART + REQ-BARCODE-RETURNS (2026-09-18)
+Problem: بعد نجاح المسح كانت الكاميرا تبقى مفتوحة والسلة لا تُفتح (خطوة يدوية زائدة)؛ وصفحة المرتجعات بلا مسح باركود أصلًا (مستبعدة صراحة من REQ-BARCODE الأول).
+Status: Shipped — REQ-A: إغلاق الكاميرا + فتح سلة البيع تلقائيًا عند إضافة فعلية فقط (نتيجة boolean من الـstore تمنع الفتح عند رفض المخزون الداخلي + isCameraOpenRef يمنع الفتح بعد إغلاق يدوي أثناء fallback معلّق + مسار USB بلا auto-open). REQ-B: حقل مسح (يدوي/USB + كاميرا) دائم الظهور في المرتجعات (كتالوج + فاتورة مربوطة) عبر utils/barcodeResolution.ts المشتركة، بلا حارسي نفاد/بيع (الإرجاع شرعي)، وقواعد ربط الفاتورة تُطبَّق من handleAddToReturnCart نفسها. Ref: tests/cartAddResult.test.ts (5/5)، tsc + build نظيفان — UAT ميداني مطلوب لكل AC قبل الإغلاق
+
 ## حوادث مغلقة — دروس منهجية (Closed Incidents — Methodology)
 
 INC-2026-09-12 — فجوة نشر firestore.rules

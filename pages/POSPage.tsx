@@ -7,7 +7,8 @@ import { PaymentMethod } from '../types';
 import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
-import { findProductByBarcode, buildBarcodeIndex, getScanBlockReason, type ScanBlockReason } from '../utils/findProductByBarcode';
+import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByBarcode';
+import { resolveBarcodeScan, withCloudTimeout } from '../utils/barcodeResolution';
 import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
@@ -421,41 +422,6 @@ const PaymentModal: React.FC<{
 };
 
 
-// REQ-BARCODE-FIX-1: منطق مسح الباركود المستخرج والقابل للاختبار.
-// العقد: `code` غير فارغ (المتصل يتجاهل الفارغ قبل الاستدعاء).
-// localLookup: البحث المحلي (الفهرس + المصفوفة المحمّلة جزئيًا) —
-// cloudLookup: الاستعلام السحابي الاحتياطي عند miss محلي فقط (pagination gap).
-export type BarcodeScanOutcome =
-    | { status: 'found'; product: Product }
-    | { status: 'blocked'; reason: Exclude<ScanBlockReason, 'not-found'>; product: Product }
-    | { status: 'not-found' }
-    | { status: 'cloud-error' };
-
-export const resolveBarcodeScan = async (
-    code: string,
-    localLookup: (normalized: string) => Product | undefined,
-    cloudLookup: (normalized: string) => Promise<Product | null>,
-): Promise<BarcodeScanOutcome> => {
-    const normalized = (code ?? '').trim();
-    const local = localLookup(normalized);
-    const localReason = getScanBlockReason(local);
-    if (localReason === null) return { status: 'found', product: local! };
-    if (localReason !== 'not-found') return { status: 'blocked', reason: localReason, product: local! };
-    // miss محلي → خطوة ثانية سحابية قبل الحكم بـ"غير موجود" (FIX-1 AC-2)
-    let cloud: Product | null;
-    try {
-        cloud = await cloudLookup(normalized);
-    } catch {
-        return { status: 'cloud-error' };
-    }
-    // AC-5: نفس الحارس على النتيجة السحابية — لا منطق موازٍ
-    const cloudReason = getScanBlockReason(cloud ?? undefined);
-    if (cloudReason === null) return { status: 'found', product: cloud! };
-    if (cloudReason === 'not-found') return { status: 'not-found' };
-    return { status: 'blocked', reason: cloudReason, product: cloud! };
-};
-
-
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -474,6 +440,11 @@ export default function POSPage() {
     const [barcodeInput, setBarcodeInput] = useState('');
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+    // REQ-A EC-1: مرآة الكاميرا لحظة اكتمال المسح (تُزامَن عبر useEffect)
+    const isCameraOpenRef = useRef(false);
+    useEffect(() => {
+        isCameraOpenRef.current = isCameraOpen;
+    }, [isCameraOpen]);
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const observer = useRef<IntersectionObserver | null>(null);
@@ -558,8 +529,8 @@ export default function POSPage() {
         };
     }, []);
 
-    const handleAddToCart = useCallback((product: Product) => {
-        addToCart(product);
+    const handleAddToCart = useCallback((product: Product): boolean => {
+        return addToCart(product);
     }, [addToCart]);
 
     // REQ-BARCODE: فهرس محلي من المنتجات المحمّلة أصلًا — بحث فوري بلا شبكة.
@@ -570,6 +541,9 @@ export default function POSPage() {
     const [isResolvingBarcode, setIsResolvingBarcode] = useState(false);
     const isResolvingBarcodeRef = useRef(false);
 
+    // REQ-A EC-1: انظر isCameraOpenRef (يُزامَن مع isCameraOpen أعلاه) — يُقرأ
+    // بعد await فيُحسم الإغلاق اليدوي أثناء fallback معلّق، ويميز مسار
+    // الكاميرا عن USB/اليدوي (الأخير كاميرته مغلقة أصلًا فلا auto-open).
     // REQ-BARCODE AC-03 + FIX-1 AC-2: مسار الباركود (يدوي/USB/كاميرا) يستدعي
     // نفس handleAddToCart المستخدمة للمسار اليدوي — لا مسار مزدوج للمنطق.
     // async بسبب الـfallback السحابي عند miss محلي (pagination gap).
@@ -583,10 +557,17 @@ export default function POSPage() {
             const outcome = await resolveBarcodeScan(
                 normalized,
                 (c) => barcodeIndex.get(c) ?? findProductByBarcode(products, c),
-                getProductByBarcodeCloud,
+                (c) => withCloudTimeout(getProductByBarcodeCloud(c)),
             );
             if (outcome.status === 'found') {
-                handleAddToCart(outcome.product);
+                // REQ-A AC-1/AC-3: إغلاق الكاميرا + فتح السلة فقط عند إضافة
+                // فعلية (added===true). الرفض الداخلي (مخزون) أو إغلاق يدوي
+                // أثناء الانتظار (EC-1) يُبقيان الكاميرا كما هي بلا فتح سلة.
+                const added = handleAddToCart(outcome.product);
+                if (added && isCameraOpenRef.current) {
+                    setIsCameraOpen(false);
+                    usePosCartStore.getState().setCartModalOpen(true);
+                }
                 return;
             }
             // AC-4: رسالة شبكة مميزة — لا نفس "غير موجود" المضلّلة

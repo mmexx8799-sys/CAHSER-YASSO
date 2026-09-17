@@ -33,9 +33,11 @@ export const BarcodeCameraModal: React.FC<BarcodeCameraModalProps> = ({
       ? 'تم رفض صلاحية الكاميرا. اسمح بالوصول من إعدادات المتصفح ثم حاول مرة أخرى.'
       : error === 'nodriver'
         ? 'لا توجد كاميرا متاحة على هذا الجهاز. استخدم قارئ USB أو الإدخال اليدوي.'
-        : error === 'generic'
-          ? 'تعذّر تشغيل الكاميرا. حاول مرة أخرى.'
-          : null;
+        : error === 'engine'
+          ? 'تعذّر تحميل محرك المسح — تحقق من الاتصال ثم حاول مرة أخرى.'
+          : error === 'generic'
+            ? 'تعذّر تشغيل الكاميرا. حاول مرة أخرى.'
+            : null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">

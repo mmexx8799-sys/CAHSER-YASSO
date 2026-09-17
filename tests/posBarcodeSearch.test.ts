@@ -10,6 +10,7 @@ import {
   getScanBlockReason,
 } from '../utils/findProductByBarcode';
 import { BarcodeDeduper } from '../hooks/useBarcodeScanner';
+import { resolveZxingWasmUrl, LOCAL_ZXING_WASM_URL } from '../hooks/useBarcodeScanner';
 import type { Product } from '../types';
 
 afterEach(() => {
@@ -135,3 +136,16 @@ describe('REQ-BARCODE AC-04: حارس منع التكرار BarcodeDeduper', () 
     expect(cart).toEqual(['a']);
   });
 });
+
+describe('REQ-BARCODE-FIX-2 (2026-09-18): محرك المسح محلي لا CDN', () => {
+  it('ملف الـwasm يُحل للمسار المحلي — لا jsdelivr إطلاقًا', () => {
+    expect(resolveZxingWasmUrl('zxing_reader.wasm')).toBe(LOCAL_ZXING_WASM_URL);
+    expect(resolveZxingWasmUrl('zxing_reader.wasm')).not.toContain('jsdelivr');
+    expect(resolveZxingWasmUrl('zxing_reader.wasm')).not.toContain('http');
+  });
+
+  it('المسارات غير-wasm تُترك كما هي (سلوك emscripten الافتراضي)', () => {
+    expect(resolveZxingWasmUrl('something.data')).toBe('something.data');
+  });
+});
+

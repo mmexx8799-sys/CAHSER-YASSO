@@ -3,7 +3,8 @@
 // المستخرج الذي يستخدمه handleBarcodeScan في POSPage حرفيًا — بحقن
 // localLookup/cloudLookup وهميين، لا نسخة موازية للمنطق.
 import { describe, it, expect, vi } from 'vitest';
-import { resolveBarcodeScan } from '../pages/POSPage';
+import { resolveBarcodeScan } from '../utils/barcodeResolution';
+import { withCloudTimeout } from '../utils/barcodeResolution';
 import type { Product } from '../types';
 
 const mkProduct = (id: string, barcode: string, quantity = 10, extra: Record<string, unknown> = {}): Product => ({
@@ -97,4 +98,13 @@ describe('REQ-BARCODE-FIX-1: fallback سحابي عند miss محلي', () => {
     expect(outcome.status).toBe('blocked');
     if (outcome.status === 'blocked') expect(outcome.reason).toBe('not-sellable');
   });
+
+  it('FIX-3: استعلام سحابي معلّق للأبد → cloud-error بعد المهلة (لا تجميد للمسح)', async () => {
+    const hanging = vi.fn((): Promise<Product | null> => new Promise(() => {}));
+    const outcome = await resolveBarcodeScan('MKTNOPE00000000', localLookup, () =>
+      withCloudTimeout(hanging()),
+    );
+    expect(hanging).toHaveBeenCalledTimes(1);
+    expect(outcome.status).toBe('cloud-error');
+  }, 15000);
 });

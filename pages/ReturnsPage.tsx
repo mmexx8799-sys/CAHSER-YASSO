@@ -1,12 +1,15 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, X, Trash2, Undo2, AlertCircle, Settings, Loader2, FileText, Link2 } from 'lucide-react';
+import { Search, X, Trash2, Undo2, AlertCircle, Settings, Loader2, FileText, Link2, ScanBarcode, Camera } from 'lucide-react';
 import type { Product, DailyArchive, Category, Customer, Invoice, Return } from '../types';
 import { PaymentMethod } from '../types';
-import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated } from '../services/api';
+import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated, getProductByBarcodeCloud } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
+import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByBarcode';
+import { resolveBarcodeScan, withCloudTimeout } from '../utils/barcodeResolution';
+import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
 import { orderBy, where, collection, getDocs, query } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
@@ -434,6 +437,17 @@ export default function ReturnsPage() {
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+    // REQ-B: مسح باركود المرتجعات — نفس نمط POS (حقل يدوي/USB + كاميرا)
+    const [barcodeInput, setBarcodeInput] = useState('');
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const barcodeInputRef = useRef<HTMLInputElement | null>(null);
+    const [isResolvingBarcode, setIsResolvingBarcode] = useState(false);
+    const isResolvingBarcodeRef = useRef(false);
+    const isCameraOpenRef = useRef(false);
+    useEffect(() => {
+        isCameraOpenRef.current = isCameraOpen;
+    }, [isCameraOpen]);
+
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const observer = useRef<IntersectionObserver | null>(null);
     const lastProductElementRef = useCallback((node: HTMLDivElement) => {
@@ -570,28 +584,72 @@ export default function ReturnsPage() {
         }
     }, [selectedInvoice]);
 
-    const handleAddToReturnCart = useCallback((product: Product) => {
+    const handleAddToReturnCart = useCallback((product: Product): boolean => {
         // REQ-P0-1: إذا كانت السلة مرتبطة بفاتورة، لا تسمح بإضافة صنف غير موجود في الفاتورة أو بكمية تتجاوز المتبقي
         if (selectedInvoice) {
             const invItem = selectedInvoice.items.find(i => i.id === product.id);
             if (!invItem) {
                 toast.error('هذا الصنف غير موجود في الفاتورة المختارة');
-                return;
+                return false;
             }
             const remaining = remainingMap.get(product.id) ?? invItem.buyQuantity;
             if (remaining <= 0) {
                 toast.error('لا توجد كمية متبقية لهذا الصنف في الفاتورة');
-                return;
+                return false;
             }
             const existing = returnCart.find(i => i.id === product.id);
             const cartQty = existing ? existing.buyQuantity : 0;
             if (cartQty + 1 > remaining) {
                 toast.error(`الكمية المتبقية لهذا الصنف في الفاتورة هي ${remaining} فقط`);
-                return;
+                return false;
             }
         }
-        addToReturnCart(product);
+        // REQ-B: تمرير نتيجة الـstore (رفضه الداخلي لسقف المخزون = false)
+        return addToReturnCart(product);
     }, [addToReturnCart, selectedInvoice, remainingMap, returnCart]);
+
+    // REQ-B: فهرس باركود محلي من منتجات المرتجعات المحمّلة + مسار المسح.
+    // ملاحظة مقصودة: نتيجتا found وblocked تُمرَّران معًا لـhandleAddToReturnCart
+    // — حارسا النفاد/البيع لا ينطبقان على المرتجع (إرجاع صنف نافد شرعي، والمخزون
+    // يزيد أصلًا)، والحراس الحقيقيون هنا هم قواعد ربط الفاتورة داخل الدالة.
+    const barcodeIndex = useMemo(() => buildBarcodeIndex(products), [products]);
+
+    const handleBarcodeScan = useCallback(async (code: string) => {
+        const normalized = (code ?? '').trim();
+        if (!normalized) return;
+        if (isResolvingBarcodeRef.current) return;
+        isResolvingBarcodeRef.current = true;
+        setIsResolvingBarcode(true);
+        try {
+            const outcome = await resolveBarcodeScan(
+                normalized,
+                (c) => barcodeIndex.get(c) ?? findProductByBarcode(products, c),
+                (c) => withCloudTimeout(getProductByBarcodeCloud(c)),
+            );
+            if (outcome.status === 'found' || outcome.status === 'blocked') {
+                const added = handleAddToReturnCart(outcome.product);
+                if (added && isCameraOpenRef.current) {
+                    setIsCameraOpen(false);
+                    setCartModalOpen(true);
+                }
+                return;
+            }
+            if (outcome.status === 'cloud-error') {
+                toast.error('تعذّر التحقق من الباركود — تحقق من الاتصال');
+                return;
+            }
+            toast.error('الباركود غير موجود بالمخزون');
+        } finally {
+            isResolvingBarcodeRef.current = false;
+            setIsResolvingBarcode(false);
+        }
+    }, [barcodeIndex, products, handleAddToReturnCart, setCartModalOpen]);
+
+    const handleBarcodeSubmit = useCallback(() => {
+        handleBarcodeScan(barcodeInput);
+        setBarcodeInput('');
+        barcodeInputRef.current?.focus();
+    }, [barcodeInput, handleBarcodeScan]);
 
     // فلترة فواتير حسب بحث رقم الفاتورة/التاريخ — قبل أي early return لضمان ترتيب Hooks ثابت (يمنع React #310)
     const filteredInvoices = useMemo(() => {
@@ -694,6 +752,45 @@ export default function ReturnsPage() {
                 )}
             </div>
 
+            {/* REQ-B: حقل مسح باركود المرتجع — ظاهر دائمًا (كتالوج + فاتورة مربوطة).
+                البحث في الفهرس الكامل ثم سحابيًا؛ قواعد الفاتورة تُطبَّق داخل
+                handleAddToReturnCart فلا تسريب لصنف أجنبي. */}
+            <div className="flex gap-2">
+                <div className="relative flex-1">
+                    <label htmlFor="return-barcode" className="sr-only">مسح باركود المنتج المرتجع</label>
+                    <input
+                        id="return-barcode"
+                        name="return-barcode"
+                        ref={barcodeInputRef}
+                        type="text"
+                        dir="ltr"
+                        placeholder="امسح الباركود هنا…"
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleBarcodeSubmit();
+                            }
+                        }}
+                        autoComplete="off"
+                        disabled={isResolvingBarcode}
+                        className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-full shadow-sm text-lg text-left font-mono focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50"
+                    />
+                    <ScanBarcode className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={22} aria-hidden="true" />
+                </div>
+                <button
+                    onClick={() => setIsCameraOpen(true)}
+                    aria-label="مسح بالكاميرا"
+                    title="مسح بالكاميرا"
+                    disabled={isResolvingBarcode}
+                    className="shrink-0 inline-flex items-center gap-2 py-3 px-4 bg-teal-600 text-white rounded-full shadow hover:bg-teal-700 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Camera size={20} aria-hidden="true" />
+                    <span className="hidden sm:inline">مسح</span>
+                </button>
+            </div>
+
             {selectedInvoice ? (
                 <div className="space-y-3">
                     <div className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-200">
@@ -755,6 +852,12 @@ export default function ReturnsPage() {
             )}
 
             <ReturnCartModal dailyArchive={dailyArchive} categories={categories} originalInvoiceId={selectedInvoice ? selectedInvoice.id : null} />
+
+            <BarcodeCameraModal
+                isOpen={isCameraOpen}
+                onClose={() => setIsCameraOpen(false)}
+                onDetected={handleBarcodeScan}
+            />
         </div>
     );
 }
