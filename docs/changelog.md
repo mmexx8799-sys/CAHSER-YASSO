@@ -44,3 +44,4 @@
 - منع البيع/الإرجاع على يومية مقفولة (P0-9)
 ### Security
 - تقييد إعادة فتح يومية مقفولة على الأدمن فقط (P0-9، firestore.rules)
+### Verification — 2026-09-17: testing production approval gate after bypass removal
