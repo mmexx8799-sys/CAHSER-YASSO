@@ -387,6 +387,7 @@ const ReturnCartModal: React.FC<{
                         <span className="text-2xl font-bold text-red-700 dark:text-red-300">{total.toFixed(2)} ج.م</span>
                     </div>
                     <button
+                        data-testid="return-confirm"
                         onClick={handleProcessReturn}
                         disabled={returnCart.length === 0 || !dailyArchive || dailyArchive.status === 'closed' || isProcessing}
                         className="w-full py-3 px-4 bg-red-600 text-white rounded-lg font-bold text-lg shadow-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center space-x-2 space-x-reverse"

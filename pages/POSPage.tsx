@@ -408,7 +408,7 @@ const PaymentModal: React.FC<{
                     <button onClick={() => !isProcessing && onClose()} disabled={isProcessing} className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         إلغاء
                     </button>
-                    <button onClick={handleSubmit} disabled={isProcessing} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <button data-testid="pos-confirm-payment" onClick={handleSubmit} disabled={isProcessing} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                         {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
                         <span>{isProcessing ? 'جارٍ التنفيذ...' : 'تأكيد الدفع'}</span>
                     </button>

@@ -1,6 +1,10 @@
 # Changelog — Nour-Elrahman
 
 ## Unreleased
+### Stage-3 — اختبارات (2026-09-17)
+- [3.1] E2E حقيقي (Playwright/Chromium): `e2e/happy-path.spec.ts` — دخول → فتح أرشيف → بيع → مرتجع → إغلاق أرشيف → نسخ (download) → استرجاع (filechooser) — ضد المحاكيات فقط عبر `VITE_USE_EMULATORS=1` (services/firebase.ts) + `npm run test:e2e` — مع `tests/e2eJourney.test.ts` (نفس الرحلة خدميًا: مرتجع مربوط + v2 round-trip + INV-000002 بلا تكرار — يعمل في CI بلا متصفح) — خطافات `data-testid` على الدخول/اليومية/الدفع/الإرجاع/التأكيد (بلا تغيير سلوكي)
+- [3.2] تزامن عالٍ موسّع (BUG-P0-14): `tests/concurrentSalesHigh.test.ts` — N=10 same-tick ≥8/10، N=12 متموج ≥10/12، N=15 ضغط ≥10/15، N=10 متعدد المنتجات ≥8/10 — كلها بثوابت صارمة (عدّاد/فرادة/مخزون/أرشيف) — السويت الكلي 59→64
+- [3.3] تحديث `docs/current-state-map.md` (التاريخ 2026-09-17 + جرد الاختبارات الحقيقي 64 + حالتي E2E والتزامن) + أرقام CI (64)
 ### Stage-2 — بنية الإنتاج (2026-09-16)
 - [2.4] سكريبتات `lint` (eslint.config.mjs — بوابة أخطاء فقط، التحذيرات توثق AUDIT-ARCH-1 ومسارات backlog) + `typecheck` (`tsc --noEmit`) — كلاهما ناجح + بناء إنتاجي سليم + تنظيف ~35 متغيرًا/استيرادًا ميتًا بلا أي تغيير سلوكي
 - [2.3] خط CI (`.github/workflows/ci.yml`): lint + typecheck + build + الـ 56 اختبارًا على المحاكيات (Java 21) لكل PR، ونشر `firestore:rules` فقط بعد الدمج في main + موافقة عبر environment — يحتاج 3 خطوات يدوية لمرة واحدة (branch protection + environment reviewers + سر FIREBASE_SERVICE_ACCOUNT) موثقة أعلى الملف

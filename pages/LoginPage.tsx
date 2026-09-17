@@ -110,7 +110,7 @@ export default function LoginPage() {
                     </p>
                 </div>
 
-                <form className="space-y-5 sm:space-y-6" onSubmit={isCreateMode ? handleCreateAccount : handleLogin}>
+                <form data-testid="login-form" className="space-y-5 sm:space-y-6" onSubmit={isCreateMode ? handleCreateAccount : handleLogin}>
                     <div>
                         <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">البريد الإلكتروني</label>
                         <input
@@ -156,7 +156,7 @@ export default function LoginPage() {
                         </div>
                     )}
                     <div>
-                        <button type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50">
+                        <button data-testid="login-submit" type="submit" disabled={isLoading} className="w-full flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50">
                             {isLoading ? 'جاري التنفيذ...' : (
                                 isCreateMode ? <><UserPlus className="mr-2" size={20} /> إنشاء حساب</> : <><LogIn className="mr-2" size={20} /> تسجيل الدخول</>
                             )}

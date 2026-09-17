@@ -1,12 +1,13 @@
 
 import { initializeApp, FirebaseApp } from "firebase/app";
-import { 
-  initializeFirestore, 
-  persistentLocalCache, 
+import {
+  initializeFirestore,
+  persistentLocalCache,
   persistentMultipleTabManager,
-  Firestore 
+  connectFirestoreEmulator,
+  Firestore
 } from "firebase/firestore";
-import { getAuth, Auth } from "firebase/auth";
+import { getAuth, connectAuthEmulator, Auth } from "firebase/auth";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDkP4sNYxHkVffXADVdunXU0iDxlXAWuDE",
@@ -37,6 +38,22 @@ try {
   });
 
   auth = getAuth(app);
+
+  // E2E-ONLY (Stage-3 3.1): wire the running app to the local emulators when
+  // explicitly opted in via VITE_USE_EMULATORS=1 (dev/E2E only — never set in
+  // production builds). Without this flag the app always talks to production.
+  // Playwright run: VITE_USE_EMULATORS=1 vite + firebase emulators:start.
+  // NOTE: (import.meta as any) — the repo has no vite/client types wired
+  // (no vite-env.d.ts); this keeps `tsc --noEmit` green without new globals.
+  const viteEnv = (import.meta as any).env || {};
+  if (viteEnv.DEV && viteEnv.VITE_USE_EMULATORS === '1') {
+    try {
+      connectFirestoreEmulator(db, '127.0.0.1', 8080);
+    } catch { /* already connected (HMR) — fine */ }
+    try {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+    } catch { /* already connected (HMR) — fine */ }
+  }
 
 } catch (error) {
     console.error("Firebase initialization failed:", error);

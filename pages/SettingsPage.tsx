@@ -40,12 +40,12 @@ const DailyOpsSection = memo(({
                 <div className="space-y-2">
                     <p className="text-base text-gray-600 dark:text-gray-300">
                         الحالة الحالية:
-                        <span className="font-bold text-green-700 dark:text-green-300">
+                        <span data-testid="archive-status" className="font-bold text-green-700 dark:text-green-300">
                             {` يومية ${dailyArchive.id} مفتوحة`}
                         </span>
                     </p>
                     <div className="flex pt-2">
-                        <button onClick={onEndDay} className="flex items-center space-x-2 bg-red-700 text-white py-2 px-4 rounded-lg shadow hover:bg-red-800 transition-colors">
+                        <button data-testid="archive-close" onClick={onEndDay} className="flex items-center space-x-2 bg-red-700 text-white py-2 px-4 rounded-lg shadow hover:bg-red-800 transition-colors">
                             <Sunset size={20} />
                             <span className="font-semibold">إغلاق اليومية</span>
                         </button>
@@ -55,12 +55,12 @@ const DailyOpsSection = memo(({
                 <div className="space-y-2">
                     <p className="text-base text-gray-600 dark:text-gray-300">
                         الحالة الحالية:
-                        <span className="font-bold text-gray-700 dark:text-gray-200">
+                        <span data-testid="archive-status" className="font-bold text-gray-700 dark:text-gray-200">
                             جميع اليوميات مغلقة
                         </span>
                     </p>
                     <div className="flex pt-2">
-                        <button onClick={onStartDay} className="flex items-center space-x-2 bg-green-700 text-white py-2 px-4 rounded-lg shadow hover:bg-green-800 transition-colors">
+                        <button data-testid="archive-start" onClick={onStartDay} className="flex items-center space-x-2 bg-green-700 text-white py-2 px-4 rounded-lg shadow hover:bg-green-800 transition-colors">
                             <Sunrise size={20} />
                             <span className="font-semibold">بدء يومية جديدة</span>
                         </button>
@@ -196,6 +196,7 @@ const DataManagementSection = memo(({
             <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">إدارة البيانات</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
+                    data-testid="backup-create"
                     onClick={onBackup}
                     disabled={isBusy}
                     className="bg-blue-100 text-blue-800 p-4 rounded-lg flex flex-col items-center justify-center space-y-2 hover:bg-blue-200 disabled:opacity-50 transition-colors"
@@ -204,6 +205,7 @@ const DataManagementSection = memo(({
                     <span className="font-semibold text-lg">نسخ احتياطي</span>
                 </button>
                 <button
+                    data-testid="restore-trigger"
                     onClick={onRestore}
                     disabled={isBusy}
                     className="bg-green-100 text-green-800 p-4 rounded-lg flex flex-col items-center justify-center space-y-2 hover:bg-green-200 disabled:opacity-50 transition-colors"
@@ -214,6 +216,7 @@ const DataManagementSection = memo(({
             </div>
             <div className="mt-6 border-t pt-4">
                 <button
+                    data-testid="factory-reset"
                     onClick={onFactoryReset}
                     disabled={isBusy}
                     className="w-full flex items-center justify-center space-x-2 bg-red-100 text-red-800 py-3 px-4 rounded-lg shadow-sm hover:bg-red-200 disabled:opacity-50 transition-colors"

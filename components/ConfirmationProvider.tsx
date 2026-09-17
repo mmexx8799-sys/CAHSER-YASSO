@@ -29,10 +29,10 @@ const ConfirmModal: React.FC<{
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 mb-6 text-lg">{options.message}</p>
                 <div className="flex justify-end space-x-2 space-x-reverse">
-                    <button onClick={onCancel} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold">
+                    <button data-testid="confirm-cancel" onClick={onCancel} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold">
                         إلغاء
                     </button>
-                    <button onClick={onConfirm} className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold">
+                    <button data-testid="confirm-accept" onClick={onConfirm} className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold">
                         تأكيد
                     </button>
                 </div>

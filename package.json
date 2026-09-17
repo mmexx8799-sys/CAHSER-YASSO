@@ -8,6 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test:rules": "firebase emulators:exec --only firestore,auth \"npx vitest run --fileParallelism=false\"",
+    "test:e2e": "firebase emulators:exec --only firestore,auth \"npx playwright test\"",
+    "test:e2e:seed-check": "firebase emulators:exec --only firestore,auth \"npx playwright test --list\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "android:build": "npm run build && npx cap sync && cd android && gradlew assembleRelease"
@@ -36,6 +38,7 @@
     "@capacitor/cli": "^6.0.0",
     "@eslint/js": "^10.0.1",
     "@firebase/rules-unit-testing": "^3.0.4",
+    "@playwright/test": "^1.55.0",
     "@types/node": "^20.12.7",
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",

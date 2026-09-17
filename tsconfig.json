@@ -21,5 +21,8 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["./**/*.ts", "./**/*.tsx"],
-  "exclude": ["node_modules", "dist", "android"]
+  // e2e/ + playwright.config.ts: نوع مختلف (runner المتصفح) — Playwright
+  // يفحص أنواعها وقت التشغيل (Stage-3 3.1). إبقاؤها هنا كان سيكسر
+  // `tsc && vite build` لكل من لا يثبّت @playwright/test محليًا.
+  "exclude": ["node_modules", "dist", "android", "e2e", "playwright.config.ts"]
 }
