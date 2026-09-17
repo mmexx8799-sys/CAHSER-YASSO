@@ -62,21 +62,34 @@ jobs:
   deploy-rules:
     name: deploy firestore.rules (production, approval-gated)
     needs: [checks, tests]
-    # يعمل فقط على دفع master، ويُتخطى تمامًا حتى تضيف
-    # سر FIREBASE_SERVICE_ACCOUNT (الخطوة 3 أعلاه).
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && secrets.FIREBASE_SERVICE_ACCOUNT != ''
+    # يعمل فقط على دفع master. ملاحظة: سياق secrets ممنوع في
+    # شرط الـ job نفسه (يفسد ملف الـ workflow كله — راجع
+    # fix: move secrets check from job-level if to step-level)،
+    # لذلك توفر السر يُفحص في أول step بالداخل.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - id: check
+        name: check-secret — is FIREBASE_SERVICE_ACCOUNT configured?
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -n "$SA" ]; then echo "configured=true" >> "$GITHUB_OUTPUT"; else echo "configured=false" >> "$GITHUB_OUTPUT"; fi
       - uses: actions/checkout@v4
+        if: steps.check.outputs.configured == 'true'
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.configured == 'true'
         with:
           node-version: 22
           cache: npm
       - run: npm install -g firebase-tools
+        if: steps.check.outputs.configured == 'true'
       - run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$HOME/firebase-sa.json"
+        if: steps.check.outputs.configured == 'true'
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       - run: firebase deploy --only firestore:rules --project casher-yasoo --non-interactive
+        if: steps.check.outputs.configured == 'true'
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ format('{0}/firebase-sa.json', env.HOME) }}
