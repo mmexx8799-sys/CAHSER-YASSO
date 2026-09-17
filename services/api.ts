@@ -4,6 +4,7 @@ import {
     addDoc,
     updateDoc,
     deleteDoc,
+    deleteField,
     doc,
     query,
     where,
@@ -205,7 +206,7 @@ export const saveProduct = async (
     const {
         code, name, categoryId, quantity, minQuantity,
         price, retailCashPrice, retailCreditPrice,
-        wholesaleCashPrice, wholesaleCreditPrice,
+        wholesaleCashPrice, wholesaleCreditPrice, barcode,
     } = data;
 
     const text = (v: any, field: string): string => {
@@ -241,6 +242,14 @@ export const saveProduct = async (
     for (const [field, value] of Object.entries(priceFields)) {
         const n = num(value, field, false);
         if (n !== undefined) clean[field] = n;
+    }
+    // REQ-BARCODE: barcode اختياري — سلسلة مُقلّمة فقط، لا تدخل searchableIndex.
+    // (addProduct/updateProduct المذكورة في REQ هي saveProduct هنا — مسار الحفظ الوحيد.)
+    // مسح الحقل صراحة (سلسلة فارغة) يحذفه من المستند حتى لا يبقى باركود قديم.
+    if (barcode !== undefined && barcode !== null && String(barcode).trim() !== '') {
+        clean.barcode = String(barcode).trim();
+    } else if ('id' in data && data.id && 'barcode' in data) {
+        clean.barcode = deleteField();
     }
     clean.searchableIndex = buildSearchableIndex(clean.name, clean.code);
 
@@ -280,6 +289,37 @@ export const addCategory = async (name: string): Promise<string> => {
         console.error("Error adding category: ", e);
         throw new Error("Failed to add category");
     }
+};
+
+// REQ-BARCODE: فحص وجود سحابي لباركود مرشّح قبل الحفظ (يُستدعى فقط عند
+// التصادم المحلي — نادر جدًا). مساواة على حقل واحد: لا فهرس مركّب مطلوب.
+export const checkBarcodeExistsCloud = async (code: string): Promise<boolean> => {
+    try {
+        const q = query(collection(db, 'products'), where('barcode', '==', code), limit(1));
+        const snap = await getDocs(q);
+        return !snap.empty;
+    } catch (e) {
+        console.error("Error checking barcode existence:", e);
+        // عند فشل الشبكة: لا نمنع الحفظ — التفرّد المحلي كافٍ كحد أدنى
+        // (مخاطرة التصادم موثّقة كمقبولة أدنى في REQ-BARCODE).
+        return false;
+    }
+};
+
+// REQ-BARCODE-FIX-1 (AC-1): جلب منتج بباركوده سحابيًا — احتياطي مسار المسح
+// في POS عند miss محلي (pagination gap: المنتج موجود لكنه خارج أول 30
+// محمّلًا). نفس نمط checkBarcodeExistsCloud تمامًا (مساواة على حقل واحد +
+// limit(1) — لا فهرس مركّب)، لكنه يُرجع المستند نفسه لا boolean.
+// ملاحظة مقصودة: بلا try/catch — فشل الشبكة يجب أن يصل للمتصل (POSPage)
+// ليُظهر رسالة "تعذّر التحقق" المميزة عن "غير موجود" (AC-4).
+export const getProductByBarcodeCloud = async (code: string): Promise<Product | null> => {
+    const normalized = (code ?? '').trim();
+    if (!normalized) return null;
+    const q = query(collection(db, 'products'), where('barcode', '==', normalized), limit(1));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { id: d.id, ...d.data() } as Product;
 };
 
 // Generic function to delete a document

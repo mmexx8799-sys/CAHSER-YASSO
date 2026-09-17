@@ -22,6 +22,7 @@ export interface Product {
   categoryId: string;
   createdAt: number;
   searchableIndex: string[];
+  barcode?: string; // REQ-BARCODE: باركود داخلي اختياري (MKT…) منفصل عن code — لا Migration للبيانات القديمة
 }
 
 export interface Customer {

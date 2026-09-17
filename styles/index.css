@@ -19,3 +19,41 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* REQ-BARCODE: طباعة ملصقات المنتج فقط — مقيّدة بـ .barcode-print-sheet
+   ومنفصلة تمامًا عن أي CSS طباعة إيصال/فاتورة (ممنوعة في هذا REQ).
+   الشاشة: الورقة مخفية. الطباعة: كل الصفحة مخفية عدا الورقة. */
+.barcode-print-sheet {
+  display: none;
+}
+
+@media print {
+  body > *:not(.barcode-print-sheet) {
+    display: none !important;
+  }
+  .barcode-print-no {
+    display: none !important;
+  }
+  .barcode-print-sheet {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .barcode-print-sheet .barcode-label {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+    width: 208px;
+    max-width: 208px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .barcode-print-sheet svg {
+    width: 100%;
+    height: auto;
+  }
+}

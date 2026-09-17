@@ -1,10 +1,12 @@
 
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
-import { Plus, Edit, Trash2, Search, X, FolderCog } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
+import { Plus, Edit, Trash2, Search, X, FolderCog, Barcode, Printer, RefreshCw } from 'lucide-react';
 import type { Product, Category } from '../types';
-import { getProductsPaginated, saveProduct, deleteDocument, addCategory } from '../services/api';
+import { getProductsPaginated, saveProduct, deleteDocument, addCategory, checkBarcodeExistsCloud } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
+import { generateUniqueBarcode } from '../utils/generateBarcode';
+import { BarcodeLabelSheet } from '../components/BarcodeLabelSheet';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { orderBy } from 'firebase/firestore';
@@ -91,10 +93,13 @@ const ProductFormModal: React.FC<{
   onSave: (product: Omit<Product, 'id' | 'createdAt' | 'searchableIndex'> | Product) => void;
   product?: Product | null;
   categories: Category[];
-}> = ({ isOpen, onClose, onSave, product, categories }) => {
+  existingBarcodes: string[];
+}> = ({ isOpen, onClose, onSave, product, categories, existingBarcodes }) => {
+  const { confirm } = useConfirmation();
   const initialFormState = {
     code: '',
     name: '',
+    barcode: '',
     price: 0,
     retailCashPrice: 0,
     retailCreditPrice: 0,
@@ -106,6 +111,8 @@ const ProductFormModal: React.FC<{
   };
 
   const [formData, setFormData] = useState(initialFormState);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [sheetProduct, setSheetProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -113,6 +120,7 @@ const ProductFormModal: React.FC<{
         setFormData({
           code: product.code,
           name: product.name,
+          barcode: product.barcode ?? '',
           price: product.price,
           retailCashPrice: product.retailCashPrice ?? product.price,
           retailCreditPrice: product.retailCreditPrice ?? product.price,
@@ -125,12 +133,57 @@ const ProductFormModal: React.FC<{
       } else {
         setFormData({ ...initialFormState, categoryId: categories[0]?.id || '' });
       }
+      setSheetProduct(null);
     }
   }, [product, isOpen, categories]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: ['price', 'quantity', 'minQuantity', 'retailCashPrice', 'retailCreditPrice', 'wholesaleCashPrice', 'wholesaleCreditPrice'].includes(name) ? Number(value) : value }));
+  };
+
+  // REQ-BARCODE AC-02: توليد باركود فريد 14 حرفًا — مع ConfirmDialog قبل
+  // الكتابة فوق قيمة موجودة، وفحص تفرّد محلي ثم سحابي.
+  const handleGenerateBarcode = async () => {
+    if (isGenerating) return;
+    if (formData.barcode.trim() !== '') {
+      const overwrite = await confirm({
+        title: 'استبدال الباركود',
+        message: 'يوجد باركود لهذا المنتج بالفعل. هل تريد الكتابة فوقه بقيمة جديدة؟',
+      });
+      if (!overwrite) return;
+    }
+    setIsGenerating(true);
+    try {
+      // استبعاد باركود المنتج الحالي نفسه من مجموعة التصادم (وضع التعديل)
+      const others = new Set(existingBarcodes.filter((b) => b !== (product?.barcode ?? '')));
+      const code = await generateUniqueBarcode(others, checkBarcodeExistsCloud);
+      setFormData((prev) => ({ ...prev, barcode: code }));
+      toast.success('تم توليد باركود جديد');
+    } catch {
+      toast.error('تعذّر توليد باركود فريد — حاول مرة أخرى');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handlePrintLabel = () => {
+    const barcode = formData.barcode.trim();
+    if (!barcode) {
+      toast.error('ولّد باركود أولًا قبل طباعة الملصق');
+      return;
+    }
+    const base: Product = product ?? {
+      id: 'preview',
+      code: formData.code || '—',
+      name: formData.name || 'منتج جديد',
+      price: formData.retailCashPrice || 0,
+      quantity: formData.quantity || 0,
+      categoryId: formData.categoryId,
+      createdAt: Date.now(),
+      searchableIndex: [],
+    };
+    setSheetProduct({ ...base, name: formData.name || base.name, price: formData.retailCashPrice || base.price, barcode });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -161,6 +214,34 @@ const ProductFormModal: React.FC<{
           <div>
             <label htmlFor="prodCode" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">كود المنتج</label>
             <input id="prodCode" name="code" type="text" value={formData.code} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" required />
+          </div>
+          {/* REQ-BARCODE: حقل الباركود الداخلي — اختياري، منفصل عن الكود */}
+          <div>
+            <label htmlFor="prodBarcode" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الباركود (اختياري)</label>
+            <div className="flex gap-2">
+              <input id="prodBarcode" name="barcode" type="text" value={formData.barcode} onChange={handleChange} dir="ltr" placeholder="MKT…" autoComplete="off" className="flex-1 min-w-0 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg text-left font-mono" />
+              <button
+                type="button"
+                onClick={handleGenerateBarcode}
+                disabled={isGenerating}
+                aria-label="توليد باركود"
+                title="توليد باركود فريد"
+                className="shrink-0 inline-flex items-center gap-1 py-2 px-3 bg-teal-600 text-white rounded-md font-semibold hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw size={18} className={isGenerating ? 'animate-spin' : ''} aria-hidden="true" />
+                <span className="hidden sm:inline">{isGenerating ? 'جارٍ التوليد...' : 'توليد'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePrintLabel}
+                aria-label="طباعة ملصق الباركود"
+                title="طباعة ملصق الباركود"
+                className="shrink-0 inline-flex items-center gap-1 py-2 px-3 bg-indigo-600 text-white rounded-md font-semibold hover:bg-indigo-700"
+              >
+                <Printer size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">ملصق</span>
+              </button>
+            </div>
           </div>
           <div>
             <label htmlFor="prodCategory" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">التصنيف</label>
@@ -204,6 +285,9 @@ const ProductFormModal: React.FC<{
           </div>
         </form>
       </div>
+      {sheetProduct && (
+        <BarcodeLabelSheet products={[sheetProduct]} onClose={() => setSheetProduct(null)} />
+      )}
     </div>
   );
 };
@@ -213,14 +297,35 @@ const ProductCard: React.FC<{
   categoryName: string;
   onEdit: (product: Product) => void;
   onDelete: (id: string) => void;
-}> = ({ product, categoryName, onEdit, onDelete }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg">
+  onPrint: (product: Product) => void;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
+}> = ({ product, categoryName, onEdit, onDelete, onPrint, selected, onToggleSelect }) => (
+  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg ${selected ? 'ring-2 ring-primary-500' : ''}`}>
     <div>
-      <div className="flex justify-between items-start mb-2">
-        <h2 className="font-bold text-gray-800 dark:text-gray-100 text-xl">{product.name}</h2>
-        <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 font-semibold px-2 py-1 rounded-full">{categoryName}</span>
+      <div className="flex justify-between items-start mb-2 gap-2">
+        {/* REQ-BARCODE AC-09: منتج بلا باركود لا يظهر في قائمة التحديد الجماعي */}
+        {product.barcode ? (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(product.id)}
+            aria-label={`تحديد ${product.name} للطباعة الجماعية`}
+            className="mt-1 h-5 w-5 shrink-0 accent-primary-600"
+          />
+        ) : (
+          <span className="w-5 shrink-0" aria-hidden="true" />
+        )}
+        <h2 className="font-bold text-gray-800 dark:text-gray-100 text-xl flex-1">{product.name}</h2>
+        <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 font-semibold px-2 py-1 rounded-full whitespace-nowrap">{categoryName}</span>
       </div>
-      <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">الكود: {product.code}</p>
+      <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">الكود: {product.code}</p>
+      {product.barcode && (
+        <p dir="ltr" className="text-sm text-gray-600 dark:text-gray-300 mb-1 text-left font-mono flex items-center gap-1">
+          <Barcode size={14} aria-hidden="true" />
+          {product.barcode}
+        </p>
+      )}
     </div>
     <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3 space-y-2">
       <div className="flex justify-between text-base">
@@ -233,6 +338,11 @@ const ProductCard: React.FC<{
       </div>
     </div>
     <div className="flex justify-end space-x-2 space-x-reverse mt-4">
+      {product.barcode && (
+        <button onClick={() => onPrint(product)} aria-label={`طباعة ملصق ${product.name}`} title="طباعة ملصق الباركود" className="p-2 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-full transition-colors">
+          <Printer size={22} aria-hidden="true" />
+        </button>
+      )}
       <button onClick={() => onEdit(product)} aria-label={`تعديل ${product.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors">
         <Edit size={22} aria-hidden="true" />
       </button>
@@ -256,6 +366,9 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const { confirm } = useConfirmation();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  // REQ-BARCODE: تحديد جماعي لطباعة الملصقات + ورقة الطباعة
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [sheetProducts, setSheetProducts] = useState<Product[] | null>(null);
 
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -351,6 +464,34 @@ export default function ProductsPage() {
     return categories.find(c => c.id === categoryId)?.name || 'غير معروف';
   }, [categories]);
 
+  // REQ-BARCODE: كل الباركودات المحمّلة — لفحص التفرّد المحلي عند التوليد
+  const existingBarcodes = useMemo(
+    () => products.map((p) => p.barcode).filter((b): b is string => !!b),
+    [products],
+  );
+
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handlePrintSingle = useCallback((product: Product) => {
+    setSheetProducts([product]);
+  }, []);
+
+  const handlePrintSelected = useCallback(() => {
+    const selected = products.filter((p) => selectedIds.has(p.id) && p.barcode);
+    if (selected.length === 0) {
+      toast.error('حدّد منتجًا واحدًا على الأقل له باركود');
+      return;
+    }
+    setSheetProducts(selected);
+  }, [products, selectedIds]);
+
   return (
     <div className="p-4 pb-24">
       {/* Sticky Header with Search and Filters */}
@@ -414,6 +555,9 @@ export default function ProductsPage() {
                     categoryName={getCategoryName(product.categoryId)}
                     onEdit={handleEdit}
                     onDelete={handleDeleteProduct}
+                    onPrint={handlePrintSingle}
+                    selected={selectedIds.has(product.id)}
+                    onToggleSelect={handleToggleSelect}
                   />
                 );
                 if (products.length === index + 1) {
@@ -429,8 +573,31 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <ProductFormModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} onSave={handleSaveProduct} product={editingProduct} categories={categories} />
+      <ProductFormModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} onSave={handleSaveProduct} product={editingProduct} categories={categories} existingBarcodes={existingBarcodes} />
       <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} categories={categories} />
+      {sheetProducts && (
+        <BarcodeLabelSheet products={sheetProducts} onClose={() => setSheetProducts(null)} />
+      )}
+      {/* REQ-BARCODE: شريط الطباعة الجماعية الثابت */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 dark:bg-gray-700 text-white rounded-full shadow-xl py-2 px-5">
+          <span className="font-bold">المحدد: {selectedIds.size}</span>
+          <button
+            onClick={handlePrintSelected}
+            className="inline-flex items-center gap-1 bg-primary-600 hover:bg-primary-700 rounded-full py-1.5 px-4 font-semibold"
+          >
+            <Printer size={18} aria-hidden="true" />
+            طباعة الملصقات
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            aria-label="إلغاء التحديد"
+            className="text-gray-300 hover:text-white"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

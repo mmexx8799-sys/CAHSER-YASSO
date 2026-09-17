@@ -111,6 +111,12 @@ Severity: Critical (تكرار أرقام فواتير حقيقي، أخطر م�
 Status: Fixed — Verified via Emulator (2026-09-16) — tests/backupCounters.test.ts (4/4 green: v2 round-trip, v1 derivation, backward-protection, RBAC no-regression)
 Accepted Risk (قرار مالك 2026-09-15): القواعد لا تميز "admin أثناء restore" عن "admin يكتب يدويًا" — أي admin يستطيع ضبط العداد لأي قيمة عبر SDK. مقبول لأن الـ admin يملك أصلًا صلاحيات تدميرية أوسع (حذف اليوميات/المنتجات)، والتجاوز هو ما يجعل الاستعادة المرقمة ممكنة أصلًا.
 
+REQ-BARCODE pagination gap (ثغرة مسح منتج غير محمّل في POS — 2026-09-17)
+Problem: التنفيذ الأول لـ REQ-BARCODE كان يبحث بالباركود في المصفوفة المحمّلة جزئيًا فقط (getProductsPaginated — أول 30 + infinite scroll) بلا أي احتياطي سحابي — أي منتج موجود في Firestore لكن خارج الصفحة المحمّلة كان يُعطي Toast خاطئ "الباركود غير موجود بالمخزون".
+Discovery: اكتُشفت بمراجعة الكود لا بالاختبار — tests/posBarcodeSearch.test.ts فاتها لأنها تستخدم كتالوجًا ثابتًا صغيرًا كاملًا في الذاكرة لا يحاكي pagination (البحث المحلي ينجح دائمًا هناك، بينما يفشل إنتاجيًا للمنتجات خارج الصفحة المحمّلة).
+Severity: Medium (Toast مضلّل + بيع متعذّر لمنتج موجود — بلا فقدان بيانات)
+Status: Fixed (REQ-BARCODE-FIX-1 — 2026-09-17): getProductByBarcodeCloud في services/api.ts كخطوة ثانية عند miss محلي فقط + حارس isResolvingBarcode + رسالة شبكة مميزة + نفس getScanBlockReason على النتيجة السحابية — Ref: tests/posBarcodeCloudFallback.test.ts (7/7 green)، tsc + build نظيفان
+
 ## حوادث مغلقة — دروس منهجية (Closed Incidents — Methodology)
 
 INC-2026-09-12 — فجوة نشر firestore.rules

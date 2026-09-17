@@ -1,12 +1,14 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2 } from 'lucide-react';
+import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2, ScanBarcode, Camera } from 'lucide-react';
 import type { Product, Customer, DailyArchive, Category } from '../types';
 import { PaymentMethod } from '../types';
-import { getProductsPaginated, processSale, getOpenDailyArchive } from '../services/api';
+import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
+import { findProductByBarcode, buildBarcodeIndex, getScanBlockReason, type ScanBlockReason } from '../utils/findProductByBarcode';
+import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { usePosCartStore } from '../stores/posCartStore';
@@ -419,6 +421,41 @@ const PaymentModal: React.FC<{
 };
 
 
+// REQ-BARCODE-FIX-1: منطق مسح الباركود المستخرج والقابل للاختبار.
+// العقد: `code` غير فارغ (المتصل يتجاهل الفارغ قبل الاستدعاء).
+// localLookup: البحث المحلي (الفهرس + المصفوفة المحمّلة جزئيًا) —
+// cloudLookup: الاستعلام السحابي الاحتياطي عند miss محلي فقط (pagination gap).
+export type BarcodeScanOutcome =
+    | { status: 'found'; product: Product }
+    | { status: 'blocked'; reason: Exclude<ScanBlockReason, 'not-found'>; product: Product }
+    | { status: 'not-found' }
+    | { status: 'cloud-error' };
+
+export const resolveBarcodeScan = async (
+    code: string,
+    localLookup: (normalized: string) => Product | undefined,
+    cloudLookup: (normalized: string) => Promise<Product | null>,
+): Promise<BarcodeScanOutcome> => {
+    const normalized = (code ?? '').trim();
+    const local = localLookup(normalized);
+    const localReason = getScanBlockReason(local);
+    if (localReason === null) return { status: 'found', product: local! };
+    if (localReason !== 'not-found') return { status: 'blocked', reason: localReason, product: local! };
+    // miss محلي → خطوة ثانية سحابية قبل الحكم بـ"غير موجود" (FIX-1 AC-2)
+    let cloud: Product | null;
+    try {
+        cloud = await cloudLookup(normalized);
+    } catch {
+        return { status: 'cloud-error' };
+    }
+    // AC-5: نفس الحارس على النتيجة السحابية — لا منطق موازٍ
+    const cloudReason = getScanBlockReason(cloud ?? undefined);
+    if (cloudReason === null) return { status: 'found', product: cloud! };
+    if (cloudReason === 'not-found') return { status: 'not-found' };
+    return { status: 'blocked', reason: cloudReason, product: cloud! };
+};
+
+
 export default function POSPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -433,6 +470,10 @@ export default function POSPage() {
     const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    // REQ-BARCODE: مسح بالكاميرا أو قارئ USB (نفس حقل الإدخال)
+    const [barcodeInput, setBarcodeInput] = useState('');
+    const [isCameraOpen, setIsCameraOpen] = useState(false);
+    const barcodeInputRef = useRef<HTMLInputElement | null>(null);
 
     const debouncedSearchQuery = useDebounce(searchQuery, 300);
     const observer = useRef<IntersectionObserver | null>(null);
@@ -521,6 +562,60 @@ export default function POSPage() {
         addToCart(product);
     }, [addToCart]);
 
+    // REQ-BARCODE: فهرس محلي من المنتجات المحمّلة أصلًا — بحث فوري بلا شبكة.
+    const barcodeIndex = useMemo(() => buildBarcodeIndex(products), [products]);
+
+    // REQ-BARCODE-FIX-1 AC-3: حارس إعادة الإرسال أثناء الاستعلام السحابي —
+    // ref للمنع المتزامن (الـstate تتأخر دورة render) + state للتعطيل البصري.
+    const [isResolvingBarcode, setIsResolvingBarcode] = useState(false);
+    const isResolvingBarcodeRef = useRef(false);
+
+    // REQ-BARCODE AC-03 + FIX-1 AC-2: مسار الباركود (يدوي/USB/كاميرا) يستدعي
+    // نفس handleAddToCart المستخدمة للمسار اليدوي — لا مسار مزدوج للمنطق.
+    // async بسبب الـfallback السحابي عند miss محلي (pagination gap).
+    const handleBarcodeScan = useCallback(async (code: string) => {
+        const normalized = (code ?? '').trim();
+        if (!normalized) return;
+        if (isResolvingBarcodeRef.current) return; // AC-3: منع استعلامات متوازية
+        isResolvingBarcodeRef.current = true;
+        setIsResolvingBarcode(true);
+        try {
+            const outcome = await resolveBarcodeScan(
+                normalized,
+                (c) => barcodeIndex.get(c) ?? findProductByBarcode(products, c),
+                getProductByBarcodeCloud,
+            );
+            if (outcome.status === 'found') {
+                handleAddToCart(outcome.product);
+                return;
+            }
+            // AC-4: رسالة شبكة مميزة — لا نفس "غير موجود" المضلّلة
+            if (outcome.status === 'cloud-error') {
+                toast.error('تعذّر التحقق من الباركود — تحقق من الاتصال');
+                return;
+            }
+            if (outcome.status === 'not-found') {
+                toast.error('الباركود غير موجود بالمخزون');
+                return;
+            }
+            if (outcome.reason === 'not-sellable') {
+                toast.error(`المنتج "${outcome.product.name}" غير قابل للبيع`);
+                return;
+            }
+            toast.error(`المنتج "${outcome.product.name}" نافد من المخزون`);
+        } finally {
+            isResolvingBarcodeRef.current = false;
+            setIsResolvingBarcode(false);
+        }
+    }, [barcodeIndex, products, handleAddToCart]);
+
+    const handleBarcodeSubmit = useCallback(() => {
+        handleBarcodeScan(barcodeInput);
+        setBarcodeInput('');
+        // إبقاء التركيز للحفاظ على تدفق قارئ USB المتتالي
+        barcodeInputRef.current?.focus();
+    }, [barcodeInput, handleBarcodeScan]);
+
     if (isArchiveLoading) {
         return (
             <div className="flex justify-center items-center h-full relative">
@@ -535,6 +630,44 @@ export default function POSPage() {
 
     return (
         <div className="p-4 pb-24">
+            {/* REQ-BARCODE: حقل مسح الباركود — قارئ USB يكتب هنا كنص + Enter
+                (AC-07: بلا كاميرا)، وزر الكاميرا لنفس المسار */}
+            <div className="flex gap-2 mb-4">
+                <div className="relative flex-1">
+                    <label htmlFor="pos-barcode" className="sr-only">مسح باركود المنتج</label>
+                    <input
+                        id="pos-barcode"
+                        name="pos-barcode"
+                        ref={barcodeInputRef}
+                        type="text"
+                        dir="ltr"
+                        placeholder="امسح الباركود هنا…"
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleBarcodeSubmit();
+                            }
+                        }}
+                        autoComplete="off"
+                        disabled={isResolvingBarcode}
+                        className="w-full p-3 pr-10 border border-gray-300 dark:border-gray-600 rounded-full shadow-sm text-lg text-left font-mono focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:opacity-50"
+                    />
+                    <ScanBarcode className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={22} aria-hidden="true" />
+                </div>
+                <button
+                    onClick={() => setIsCameraOpen(true)}
+                    aria-label="مسح بالكاميرا"
+                    title="مسح بالكاميرا"
+                    disabled={isResolvingBarcode}
+                    className="shrink-0 inline-flex items-center gap-2 py-3 px-4 bg-teal-600 text-white rounded-full shadow hover:bg-teal-700 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <Camera size={20} aria-hidden="true" />
+                    <span className="hidden sm:inline">مسح</span>
+                </button>
+            </div>
+
             <ProductSearch
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -560,6 +693,12 @@ export default function POSPage() {
                 dailyArchive={dailyArchive}
                 categories={categories}
                 onSaleComplete={() => loadProducts(true)}
+            />
+
+            <BarcodeCameraModal
+                isOpen={isCameraOpen}
+                onClose={() => setIsCameraOpen(false)}
+                onDetected={handleBarcodeScan}
             />
         </div>
     );
