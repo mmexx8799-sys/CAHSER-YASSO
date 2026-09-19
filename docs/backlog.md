@@ -1,8 +1,8 @@
 # Backlog — Nour-Elrahman
 
 ## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
-- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **In Progress**
-- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — Pending (⛔ STOP حتى توقيع G0)
+- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**
+- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done code+tests 2026-09-19 (b926b6d) — معتمد فنيًا من المراجع، ⛔ W0 موقوف حتى جرد users الإنتاج (AC-04 فيتو)**
 - REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — Pending
 - REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر (utils/permissions.ts) — Pending
 - REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` (dry-run افتراضي + rollback) — Pending
@@ -13,6 +13,7 @@
 - (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
+- Known Gap (pre-existing, out of RBAC scope — مراجعة R1 2026-09-19): `products.create` بلا حراسة سعر عند الإنشاء — `firestore.rules:62-63` تتحقق `quantity >=0` فقط؛ حراسة BUG-P0-3 (`price`/`retailCashPrice`…) موجودة فقط في `update` (سطر 69-73). أي `isStaff()` يستطيع تحديد سعر تعسفي عند إنشاء منتج جديد ثم لا يستطيع تعديله. ليس انحدار R1 — AC-09 نص "منطق BUG-P0-3 بلا تغيير" — يُسجل هنا للمتابعة لاحقًا، لا يُفتح له REQ الآن.
 - سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)
 - TECH-P0-1b — قفل نافذة TOCTOU race في processReturn (دفعة 2026-09-13): الخيار A الحالي يقرأ المرتجعات السابقة عبر getDocs() خارج الـ transaction — الحل المقترح: تخزين returnedQuantities داخل مستند الفاتورة نفسها وتحديثه ذريًا داخل نفس الـ transaction بدل الاعتماد على القراءة الخارجية (يُعاد التقييم عند نمو عدد الكاشيرين المتزامنين)
 - رسالة خطأ خاطئة في processReturn (تجميلي — لا يُصلَح الآن): رفض اليومية المقفولة يقول "لا يمكن تسجيل عملية بيع على يومية غير مفتوحة" (services/api.ts:664) — copy-paste من processSale (:518) — الصحيح "عملية إرجاع"
