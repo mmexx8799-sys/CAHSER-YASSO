@@ -22,9 +22,16 @@ body {
 
 /* REQ-BARCODE: طباعة ملصقات المنتج فقط — مقيّدة بـ .barcode-print-sheet
    ومنفصلة تمامًا عن أي CSS طباعة إيصال/فاتورة (ممنوعة في هذا REQ).
-   الشاشة: الورقة مخفية. الطباعة: كل الصفحة مخفية عدا الورقة. */
+   الشاشة: الورقة مخفية. الطباعة: كل الصفحة مخفية عدا الورقة.
+   REQ-BARCODE-BULK-A4 / T4: تخطيط A4 صريح — Grid ثابت بمقاسات mm + @page. */
 .barcode-print-sheet {
   display: none;
+}
+
+/* T4: مقاس الورق والهوامش بالمليمتر — خاص بملصقات الباركود فقط */
+@page {
+  size: A4;
+  margin: 10mm;
 }
 
 @media print {
@@ -35,20 +42,26 @@ body {
     display: none !important;
   }
   .barcode-print-sheet {
-    display: flex !important;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
+    display: grid !important;
+    /* T4: A4 صافي 190mm بعد هوامش 10mm — 3×60mm + 2×4mm = 188mm. T7-fix/A: تمركز للعدد القليل */
+    grid-template-columns: repeat(auto-fit, 60mm);
+    justify-content: center;
+    gap: 4mm;
+    padding: 0;
+    margin: 0;
     background: #ffffff !important;
     color: #000000 !important;
   }
   .barcode-print-sheet .barcode-label {
     background: #ffffff !important;
     color: #000000 !important;
-    border: 1px solid #000000 !important;
-    width: 208px;
-    max-width: 208px;
+    border: 0.3mm solid #000000 !important;
+    border-radius: 2mm;
+    padding: 3mm;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 38mm;
+    /* T4: الملصق لا ينقص بين صفحتين — محفوظ من التنفيذ الأصلي */
     page-break-inside: avoid;
     break-inside: avoid;
   }

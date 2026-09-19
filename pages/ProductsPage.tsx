@@ -7,6 +7,7 @@ import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { generateUniqueBarcode } from '../utils/generateBarcode';
 import { BarcodeLabelSheet } from '../components/BarcodeLabelSheet';
+import { BulkBarcodePrintModal } from '../components/BulkBarcodePrintModal';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { orderBy } from 'firebase/firestore';
@@ -369,6 +370,8 @@ export default function ProductsPage() {
   // REQ-BARCODE: تحديد جماعي لطباعة الملصقات + ورقة الطباعة
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sheetProducts, setSheetProducts] = useState<Product[] | null>(null);
+  // REQ-BARCODE-BULK-A4 T1: مودال الطباعة الشاملة (مسار جديد بجانب Checkbox القديم — T7)
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
 
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
@@ -507,6 +510,10 @@ export default function ProductsPage() {
               <FolderCog size={20} aria-hidden="true" />
               <span className="hidden sm:inline">إدارة التصنيفات</span>
             </button>
+            <button onClick={() => setIsBulkModalOpen(true)} aria-label="طباعة باركودات الكل" className="flex items-center space-x-2 space-x-reverse bg-indigo-600 text-white py-2 px-4 rounded-lg shadow hover:bg-indigo-700">
+              <Printer size={20} aria-hidden="true" />
+              <span className="hidden sm:inline">باركودات الكل</span>
+            </button>
           </div>
         </div>
         <div className="relative">
@@ -577,6 +584,9 @@ export default function ProductsPage() {
       <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} categories={categories} />
       {sheetProducts && (
         <BarcodeLabelSheet products={sheetProducts} onClose={() => setSheetProducts(null)} />
+      )}
+      {isBulkModalOpen && (
+        <BulkBarcodePrintModal categories={categories} onClose={() => setIsBulkModalOpen(false)} />
       )}
       {/* REQ-BARCODE: شريط الطباعة الجماعية الثابت */}
       {selectedIds.size > 0 && (

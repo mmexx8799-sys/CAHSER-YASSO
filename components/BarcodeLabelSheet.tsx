@@ -2,7 +2,7 @@
 // الرسم بـ jsbarcode (CODE128 SVG) بعرض فيزيائي ثابت ~208px مهما كان طول القيمة.
 // الملصق دائمًا بخلفية بيضاء صريحة حتى في الوضع الداكن (ضرورة فنية للمسح).
 
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Printer } from 'lucide-react';
 import * as JsBarcodeNS from 'jsbarcode';
@@ -68,6 +68,41 @@ export const BarcodeLabelSheet: React.FC<BarcodeLabelSheetProps> = ({ products, 
   const printable = useMemo(() => products.filter((p) => p.barcode && p.barcode.trim() !== ''), [products]);
   const excludedCount = products.length - printable.length;
 
+  // REQ-BARCODE-BULK-A4 / T6: رندر تدريجي (chunked) — دفعات 60 ملصق لكل إطار
+  // عبر requestAnimationFrame (يسقط لـ setTimeout في WebView القديم)، لتفادي تجميد
+  // الواجهة عند رسم مئات الـ SVG دفعة واحدة. زرار الطباعة معطّل حتى اكتمال كل الدفعات
+  // حتى لا تُطبع ورقة ناقصة لو ضغط المستخدم مبكرًا.
+  const CHUNK_INITIAL = 60;
+  const CHUNK_SIZE = 60;
+  const [visibleCount, setVisibleCount] = useState(() => Math.min(CHUNK_INITIAL, printable.length));
+
+  useEffect(() => {
+    setVisibleCount(Math.min(CHUNK_INITIAL, printable.length));
+  }, [printable.length]);
+
+  useEffect(() => {
+    if (visibleCount >= printable.length) return;
+    let raf = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const advance = () => {
+      setVisibleCount((prev) => Math.min(printable.length, prev + CHUNK_SIZE));
+    };
+    if (typeof requestAnimationFrame !== 'undefined') {
+      raf = requestAnimationFrame(() => {
+        advance();
+      });
+    } else {
+      timer = setTimeout(advance, 0);
+    }
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (timer) clearTimeout(timer);
+    };
+  }, [visibleCount, printable.length]);
+
+  const visible = useMemo(() => printable.slice(0, visibleCount), [printable, visibleCount]);
+  const isComplete = visibleCount >= printable.length;
+
   const handlePrint = () => {
     window.print();
   };
@@ -92,14 +127,22 @@ export const BarcodeLabelSheet: React.FC<BarcodeLabelSheetProps> = ({ products, 
             </p>
           )}
 
+          {!isComplete && printable.length > 0 && (
+            <p className="mb-4 p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-md font-semibold">
+              جاري تجهيز الملصقات {visibleCount} من {printable.length}...
+            </p>
+          )}
+
           {printable.length === 0 ? (
             <p className="text-center text-gray-600 dark:text-gray-300 p-8 text-lg">
               لا توجد منتجات بباركود للطباعة.
             </p>
           ) : (
             <div className="flex flex-wrap gap-4 justify-center bg-gray-100 dark:bg-gray-900 p-4 rounded-lg">
-              {printable.map((p) => (
-                <LabelCard key={p.id} product={p} />
+              {/* T5-fix: مفاتيح فريدة تدعم تكرار نفس المنتج بعدد نسخه (REQ-BARCODE-BULK-A4) */}
+              {/* T6: عرض تدريجي — visible فقط، والمفاتيح مطابقة للأندكس الأصلي (slice من 0) */}
+              {visible.map((p, idx) => (
+                <LabelCard key={`${p.id}-${idx}`} product={p} />
               ))}
             </div>
           )}
@@ -113,7 +156,8 @@ export const BarcodeLabelSheet: React.FC<BarcodeLabelSheetProps> = ({ products, 
             </button>
             <button
               onClick={handlePrint}
-              disabled={printable.length === 0}
+              disabled={printable.length === 0 || !isComplete}
+              title={!isComplete ? 'انتظر اكتمال تجهيز كل الملصقات قبل الطباعة' : undefined}
               className="inline-flex items-center gap-2 py-2 px-5 bg-primary-600 text-white rounded-md font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               <Printer size={20} />
@@ -126,8 +170,10 @@ export const BarcodeLabelSheet: React.FC<BarcodeLabelSheetProps> = ({ products, 
       {/* ورقة الطباعة المعزولة — تُعرض فقط في @media print */}
       {createPortal(
         <div className="barcode-print-sheet" aria-hidden="true">
-          {printable.map((p) => (
-            <LabelCard key={p.id} product={p} />
+          {/* T5-fix: نفس المفاتيح الفريدة لورقة الطباعة الفعلية */}
+          {/* T6: نفس الـ visible التدريجي — الطباعة معطّلة حتى اكتماله فلا ورقة ناقصة */}
+          {visible.map((p, idx) => (
+            <LabelCard key={`${p.id}-${idx}`} product={p} />
           ))}
         </div>,
         document.body,
