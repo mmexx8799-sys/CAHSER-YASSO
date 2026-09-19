@@ -204,23 +204,40 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Summary cards */}
+      {/* Summary cards — production: فصل تام للنقدي عن التحويلات */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-green-500">
           <p className="text-sm text-gray-600 dark:text-gray-300">إجمالي المبيعات</p>
           <p className="text-xl font-bold text-green-700 dark:text-green-300">{currentSummary.totalSales.toFixed(2)} ج.م</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-red-500">
           <p className="text-sm text-gray-600 dark:text-gray-300">إجمالي المرتجعات</p>
           <p className="text-xl font-bold text-red-700 dark:text-red-300">{currentSummary.totalReturns.toFixed(2)} ج.م</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-300">صافي النقدية</p>
-          <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{currentSummary.netCash.toFixed(2)} ج.م</p>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-emerald-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">إجمالي النقدي</p>
+          <p className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{currentSummary.totalCash.toFixed(2)} ج.م</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">قبل خصم مرتجع الكاش</p>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-blue-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">صافي النقدية بالدرج</p>
+          <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{currentSummary.netCash.toFixed(2)} ج.م</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">نقدي فقط − مرتجع نقدي (بدون فودافون/انستا)</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-purple-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">فودافون كاش</p>
+          <p className="text-xl font-bold text-purple-700 dark:text-purple-300">{currentSummary.totalVodafoneCash.toFixed(2)} ج.م</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">تحويلات منفصلة</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-teal-600">
+          <p className="text-sm text-gray-600 dark:text-gray-300">انستا باي</p>
+          <p className="text-xl font-bold text-teal-700 dark:text-teal-300">{currentSummary.totalInstapay.toFixed(2)} ج.م</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">تحويلات منفصلة</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow text-center border-t-4 border-gray-400">
           <p className="text-sm text-gray-600 dark:text-gray-300">أيام العمل</p>
           <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{currentSummary.workingDays}</p>
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">أرشيف مغلق</p>
         </div>
       </div>
 
