@@ -22,15 +22,30 @@ import {
 import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import { getDB, firebaseConfig } from './firebase';
 import { initializeApp, deleteApp } from "firebase/app";
-import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, CartItem, Return, BackupData, AppSettings, UserRole, Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn } from '../types';
+import type { Product, Customer, Invoice, CustomerPayment, DailyArchive, CartItem, Return, BackupData, AppSettings, Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn } from '../types';
+import { UserRole } from '../types';
 import { toast } from 'react-hot-toast';
 import {
     createUserWithEmailAndPassword,
     getAuth
 } from "firebase/auth";
+import { can } from '../utils/permissions';
 
 
 const db = getDB();
+
+// RBAC-2026-09 R2: Preflight — يتحقق من القدرة قبل أي حذف (AC-01) — يرمي خطأ عربي واضح قبل أول حذف
+async function assertCan(capability: Parameters<typeof can>[1]): Promise<void> {
+  const auth = getAuth();
+  const uid = auth.currentUser?.uid;
+  if (!uid) throw new Error("يجب تسجيل الدخول أولاً");
+  const snap = await getDoc(doc(db, 'users', uid));
+  if (!snap.exists()) throw new Error("حساب المستخدم غير موجود");
+  const role = (snap.data() as any).role;
+  if (!can(role, capability)) {
+    throw new Error("ليس لديك صلاحية لتنفيذ هذه العملية");
+  }
+}
 
 // --- App Settings API ---
 const APP_SETTINGS_ID = 'main';
@@ -56,6 +71,10 @@ export const checkIfUsersExist = async (): Promise<boolean> => {
 
 // FIX: Implement addUser to create a new user account and associated user document in firestore.
 export const addUser = async (email: string, password: string, role: UserRole): Promise<void> => {
+    // RBAC-2026-09 R2 AC-04: تحقق أن role ضمن UserRole قبل الإنشاء
+    if (!Object.values(UserRole).includes(role)) {
+        throw new Error("دور المستخدم غير صالح");
+    }
     // A secondary app is used to create a user without signing out the current admin user.
     const tempApp = initializeApp(firebaseConfig, `secondary-auth-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
@@ -1092,19 +1111,20 @@ export const closeDailyArchive = async (id: string) => {
 // factoryReset wiped counters while invoices were restored with existing
 // numbers) → duplicate invoiceNumbers after restore. Counters are tiny
 // (2 fixed docs: invoices, purchaseInvoices) so backup cost is negligible.
+// RBAC-2026-09 R2 AC-03: ترتيب حذف fail-fast — المجموعات التي ستصبح owner-only في R5 أولًا، بحيث أي رفض قواعدي يقع في أول دفعة
 const BUSINESS_DATA_COLLECTIONS = [
-    'categories',
-    'customers',
-    'products',
     'dailyArchives',
     'invoices',
     'returns',
     'customerPayments',
-    'suppliers',
     'supplierPayments',
     'purchaseInvoices',
     'supplierReturns',
-    'counters'
+    'counters',
+    'customers',
+    'suppliers',
+    'products',
+    'categories'
 ] as const;
 
 // Collections present in schema v1 backups (pre-BUG-P0-15, no 'counters').
@@ -1207,6 +1227,7 @@ const deleteCollection = async (collectionPath: string) => {
 
 
 export const factoryReset = async () => {
+    await assertCan('data.reset');
     // Only reset business data
     for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
         await deleteCollection(collectionName);
@@ -1216,6 +1237,7 @@ export const factoryReset = async () => {
 export const restoreData = async (backupData: any) => {
     // Validate BEFORE any destructive operation
     validateBackupStructure(backupData);
+    await assertCan('data.restore');
 
     // BUG-P0-15: delete only collections present in the backup. A v1 backup
     // has no 'counters' field, so live counters are not wiped here — they

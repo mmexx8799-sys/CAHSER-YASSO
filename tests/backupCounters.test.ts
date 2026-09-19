@@ -78,9 +78,9 @@ async function signInAdmin() {
   try { await firebaseSignOut(fbAuth); } catch { /* not signed in */ }
   await signInWithEmailAndPassword(fbAuth, ADMIN_EMAIL, ADMIN_PASSWORD);
   const uid = fbAuth.currentUser!.uid;
-  // users/{uid} create is admin-only → seed with rules disabled.
+  // RBAC-2026-09 R2: restore now requires owner (preflight) — seed as owner to keep backup/restore tests green
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), { email: ADMIN_EMAIL, role: 'admin' });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: ADMIN_EMAIL, role: 'owner' });
   });
   return uid;
 }

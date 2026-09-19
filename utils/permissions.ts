@@ -47,10 +47,10 @@ const MATRIX: Record<Capability, Record<UserRole, boolean>> = {
   'settings.write':    { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
   'archive.open':      { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: true,  [UserRole.Cashier]: false, [UserRole.Accountant]: false },
   'archive.close':     { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
-  // R1: لا تشديد إلى owner بعد — يبقى isAdmin()؛ R5 ينقل إلى owner فقط (BR-09)
+  // R1: ledger.delete يبقى isAdmin()؛ R5 ينقل إلى owner فقط (BR-09) — لكن data.restore/reset تشدد بالـ Preflight من R2 (قبل القواعد)
   'ledger.delete':     { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
-  'data.restore':      { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
-  'data.reset':        { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
+  'data.restore':      { [UserRole.Owner]: true,  [UserRole.Admin]: false, [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
+  'data.reset':        { [UserRole.Owner]: true,  [UserRole.Admin]: false, [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
   // UI فقط — لا فرض بالقواعد
   'backup.export':     { [UserRole.Owner]: true,  [UserRole.Admin]: false, [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false }, // D-3 موافقة: الأدمن غير المالك يفقد التصدير (يُطبق في R3/R5؛ هنا القيمة النهائية)
   'users.manage':      { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false }, // R1: admin يستطيع؛ R5: owner فقط

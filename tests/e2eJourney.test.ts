@@ -91,8 +91,9 @@ async function signInAdmin() {
   try { await firebaseSignOut(fbAuth); } catch { /* not signed in */ }
   await signInWithEmailAndPassword(fbAuth, ADMIN_EMAIL, ADMIN_PASSWORD);
   const uid = fbAuth.currentUser!.uid;
+  // RBAC-2026-09 R2: restore/factoryReset now requires owner — seed as owner to keep journey green
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), { email: ADMIN_EMAIL, role: 'admin' });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: ADMIN_EMAIL, role: 'owner' });
   });
 }
 
