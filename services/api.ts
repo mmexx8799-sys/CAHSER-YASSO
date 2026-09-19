@@ -322,6 +322,15 @@ export const getProductByBarcodeCloud = async (code: string): Promise<Product | 
     return { id: d.id, ...d.data() } as Product;
 };
 
+// FIX-REQ-DASHBOARD-09: جلب مباشر بالـ id — لا يستخدم searchableIndex إطلاقًا
+export const getProductById = async (id: string): Promise<Product | null> => {
+    const trimmed = (id ?? '').trim();
+    if (!trimmed) return null;
+    const snap = await getDoc(doc(db, 'products', trimmed));
+    if (!snap.exists()) return null;
+    return { id: snap.id, ...snap.data() } as Product;
+};
+
 // Generic function to delete a document
 export const deleteDocument = async (collectionPath: string, id: string) => {
     try {

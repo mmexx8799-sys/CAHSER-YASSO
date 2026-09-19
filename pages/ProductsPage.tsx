@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, X, FolderCog, Barcode, Printer, RefreshCw } from 'lucide-react';
 import type { Product, Category } from '../types';
-import { getProductsPaginated, saveProduct, deleteDocument, addCategory, checkBarcodeExistsCloud } from '../services/api';
+import { getProductsPaginated, saveProduct, deleteDocument, addCategory, checkBarcodeExistsCloud, getProductById } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { generateUniqueBarcode } from '../utils/generateBarcode';
@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { orderBy } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
+import { useSearchParams } from 'react-router-dom';
 
 
 const CategoryManagerModal: React.FC<{
@@ -365,6 +366,41 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchParams] = useSearchParams();
+
+  // FIX-REQ-DASHBOARD-09: جلب مباشر بالـ id — لا يلمس searchQuery إطلاقًا
+  const focusId = searchParams.get('focus')?.trim() || null;
+  const [focusedProduct, setFocusedProduct] = useState<Product | null>(null);
+  const [focusedLoading, setFocusedLoading] = useState(false);
+  const [focusedError, setFocusedError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!focusId) {
+      setFocusedProduct(null);
+      setFocusedError(null);
+      setFocusedLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setFocusedLoading(true);
+    setFocusedError(null);
+    setFocusedProduct(null);
+    getProductById(focusId)
+      .then((p) => {
+        if (cancelled) return;
+        if (!p) setFocusedError('المنتج غير موجود — قد يكون محذوفًا');
+        else setFocusedProduct(p);
+      })
+      .catch(() => {
+        if (!cancelled) setFocusedError('تعذّر تحميل المنتج المطلوب');
+      })
+      .finally(() => {
+        if (!cancelled) setFocusedLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [focusId]);
   const { confirm } = useConfirmation();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   // REQ-BARCODE: تحديد جماعي لطباعة الملصقات + ورقة الطباعة
@@ -544,6 +580,37 @@ export default function ProductsPage() {
           ))}
         </select>
       </div>
+
+      {/* FIX-REQ-DASHBOARD-09: بطاقة المنتج المحدد — منفصلة تمامًا عن البحث النصي */}
+      {focusId && (
+        <div className="mt-6">
+          {focusedLoading ? (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-blue-200 dark:border-blue-800 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-300">جاري تحميل المنتج المطلوب...</p>
+            </div>
+          ) : focusedError ? (
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg shadow border border-red-200 dark:border-red-800 text-center">
+              <p className="text-sm font-semibold text-red-700 dark:text-red-300">{focusedError}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">المعرّف: {focusId}</p>
+            </div>
+          ) : focusedProduct ? (
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow border-2 border-primary-400 dark:border-primary-600">
+              <p className="text-sm font-bold text-primary-700 dark:text-primary-300 mb-3">المنتج المطلوب من لوحة التحكم</p>
+              <div className="max-w-sm mx-auto">
+                <MemoizedProductCard
+                  product={focusedProduct}
+                  categoryName={getCategoryName(focusedProduct.categoryId)}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteProduct}
+                  onPrint={handlePrintSingle}
+                  selected={selectedIds.has(focusedProduct.id)}
+                  onToggleSelect={handleToggleSelect}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Product Grid Section with proper spacing */}
       <div className="mt-8">

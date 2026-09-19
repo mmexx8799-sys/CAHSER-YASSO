@@ -8,6 +8,7 @@ import { Timestamp, orderBy, where } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { calculateNetCash } from '../utils/archiveCalculations';
+import { computeStockAlerts } from '../utils/stockAlerts';
 
 const FinancialSummary: React.FC<{ archive: DailyArchive | null }> = ({ archive }) => {
     if (!archive) return null;
@@ -109,19 +110,7 @@ export default function ReportsPage() {
 
     const selectedArchive = useMemo(() => archives.find(a => a.id === selectedArchiveId), [archives, selectedArchiveId]);
 
-    const stockAlerts = useMemo(() => {
-        const DEFAULT_MIN_QUANTITY = 5;
-        return products
-            .filter(p => p.quantity === 0 || (p.quantity > 0 && p.quantity <= (p.minQuantity ?? DEFAULT_MIN_QUANTITY)))
-            .sort((a, b) => {
-                // نافد أولًا، بعدين بالأقرب للنفاد
-                const minA = a.minQuantity ?? DEFAULT_MIN_QUANTITY;
-                const minB = b.minQuantity ?? DEFAULT_MIN_QUANTITY;
-                const ratioA = a.quantity === 0 ? -1 : a.quantity / Math.max(minA, 1);
-                const ratioB = b.quantity === 0 ? -1 : b.quantity / Math.max(minB, 1);
-                return ratioA - ratioB;
-            });
-    }, [products]);
+    const stockAlerts = useMemo(() => computeStockAlerts(products), [products]);
 
     const groupedInvoices = useMemo(() => {
         return invoices.reduce((acc, invoice) => {
@@ -189,9 +178,8 @@ export default function ReportsPage() {
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow mb-4">
                     <h2 className="font-bold text-lg mb-3 text-gray-900 dark:text-gray-100">تنبيهات المخزون</h2>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {stockAlerts.map(product => {
-                            const min = product.minQuantity ?? 5;
-                            const out = product.quantity === 0;
+                        {stockAlerts.map(({ product, status, min }) => {
+                            const out = status === 'out';
                             return (
                                 <div
                                     key={product.id}

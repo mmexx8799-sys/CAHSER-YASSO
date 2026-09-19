@@ -1,7 +1,7 @@
 
 import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck } from 'lucide-react';
+import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck, LayoutDashboard } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -29,6 +29,7 @@ const ArchivePage = React.lazy(() => import('./pages/ArchivePage'));
 const ReturnsPage = React.lazy(() => import('./pages/ReturnsPage'));
 const LoginPage = React.lazy(() => import('./pages/LoginPage'));
 const UsersPage = React.lazy(() => import('./pages/UsersPage'));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
 
 const Header = React.memo(() => {
     const { currentUser } = useAuth();
@@ -66,6 +67,7 @@ const useNavItems = () => {
     return useMemo(() => {
         const items = [
             { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
+            { to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
             { to: "/customers", icon: Users, label: "العملاء" },
             { to: "/suppliers", icon: Truck, label: "الموردين" },
             { to: "/returns", icon: Undo2, label: "المرتجعات" },
@@ -259,6 +261,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/suppliers" element={<SuppliersPage />} />
                     <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
                     <Route path="/returns" element={<ReturnsPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/archive" element={<ArchivePage />} />
