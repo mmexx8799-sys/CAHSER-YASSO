@@ -72,7 +72,18 @@ export function getRangeBounds(preset: RangePreset, now = Date.now()): RangeBoun
 export function filterArchivesByRange(archives: DailyArchive[], startMs: number, endMs: number): DailyArchive[] {
   return archives.filter((a) => {
     const t = a.startTime;
-    return t >= startMs && t <= endMs;
+    // primary: startTime inside range
+    if (t >= startMs && t <= endMs) return true;
+    // fallback: id is YYYY-MM-DD — covers case where open archive spans days (startTime old but sales today go to same archive)
+    const idTime = Date.parse(a.id);
+    if (!Number.isNaN(idTime) && idTime >= startMs && idTime <= endMs) return true;
+    // also include the single currently-open archive even if its id/startTime is just before range (today's sales still land there until closed)
+    if (a.status === 'open') {
+      // if range includes today, keep the latest open archive
+      const now = Date.now();
+      if (now >= startMs && now <= endMs) return true;
+    }
+    return false;
   });
 }
 
