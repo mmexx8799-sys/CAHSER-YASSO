@@ -17,6 +17,13 @@
 - **المصدر:** مراجعة «خطة العرض على الخبير» مقابل الكود عند `e24fe3e` — الأساس المفحوص E-01…E-16.
 - **الأثر:** R1 يقبل `owner` في `isAdmin()`/`isStaff()`؛ R5 ينقل `users.manage` + حذف دفتري إلى `isOwner()` فقط بعد تعيين المالك في R4؛ `balance`/الكميات تبقى Accepted Risk (backlog:22).
 
+## AC-04 Follow-up — Roleless test accounts (2026-09-19)
+
+- `ramypro0120@gmail.com` (uid: `s162boAmSEbgaLDmRNG2SoisoN23`) — بلا `role` عمدًا، حساب تجريبي غير مستخدَم، مجدول للحذف بعد اكتمال الإنتاج النهائي. محروم من كل كتابة (Default-deny — BR-01) — لا أثر تشغيلي.
+- `mmexx8799@gmail.com` (uid: `OQTdQOxDCAbMld06A8oT1Yhm7hC3`) — نفس الحالة، نفس السبب.
+- إجراء الحذف (Auth ثم Firestore) يُنفَّذ يدويًا بعد انتهاء دورة RBAC بالكامل — لا يُنسى.
+- الجرد النهائي AC-04 (2026-09-19): 4 حسابات فعّالة بلا تأثر (izatadel007@gmail.com `admin→owner`، mexx.maxx104@hotmail.com `admin`، abdelrhmanyasoo@gmail.com `admin`، esraa.man104@gmail.com `cashier`) + حسابان أعلاه بلا دور عمدًا (الأكثر أمانًا لحساب غير مستخدَم — القواعد تمنعه تلقائيًا).
+
 ## مفتوحة (Open)
 
 Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)
