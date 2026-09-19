@@ -88,10 +88,14 @@ export enum PaymentMethod {
   Instapay = 'انستا باي',
 }
 
-// FIX: Add and export UserRole enum to be used for user management.
+// RBAC-2026-09 R1: five fixed roles (owner ⊇ admin ⊇ supervisor ⊇ cashier; accountant read-only)
+// G0 decisions: D-1 owner izatadel007@gmail.com, D-2 (أ) product.create = isStaff, D-4 الآن (supervisor+accountant قواعد+واجهة بلا حسابات)
 export enum UserRole {
+    Owner = 'owner',
     Admin = 'admin',
+    Supervisor = 'supervisor',
     Cashier = 'cashier',
+    Accountant = 'accountant',
 }
 
 export interface User {

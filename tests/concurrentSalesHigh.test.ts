@@ -82,7 +82,7 @@ async function signInAppUser() {
   await signInWithEmailAndPassword(fbAuth, TEST_EMAIL, TEST_PASSWORD);
   const uid = fbAuth.currentUser!.uid;
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL, role: 'cashier' });
   });
 }
 

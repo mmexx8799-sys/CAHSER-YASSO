@@ -10,21 +10,40 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // Legacy read helper — kept for isActiveUser() reads (no change in read paths)
     function isActiveUser() {
       return isAuthenticated() && (!('disabled' in getUserData()) || getUserData().disabled != true);
     }
 
+    // RBAC-2026-09 R1: single-get helpers (SR-09: one get() per helper via let)
+    function hasRole(roles) {
+      let u = getUserData();
+      return isAuthenticated() && (!('disabled' in u) || u.disabled != true) && u.role in roles;
+    }
+    function isOwner() {
+      return hasRole(['owner']);
+    }
     function isAdmin() {
-      return isActiveUser() && getUserData().role == 'admin';
+      return hasRole(['owner', 'admin']);
+    }
+    function isStaff() {
+      return hasRole(['owner', 'admin', 'supervisor', 'cashier']);
+    }
+    function canOpenDay() {
+      return hasRole(['owner', 'admin', 'supervisor']);
     }
     
     match /users/{userId} {
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      // Only admins can change role or disabled fields. A user can update their own non-sensitive fields.
-      allow update: if isAdmin() || (request.auth.uid == userId
-                       && !('role' in request.resource.data.diff(resource.data).affectedKeys())
-                       && !('disabled' in request.resource.data.diff(resource.data).affectedKeys()));
-      allow create, delete: if isAdmin();
+      // R1: owner guard + permissions field protection (SR-01/02, BR-06)
+      // create: owner can create any role; admin can create non-owner; others cannot
+      allow create: if isOwner() || (isAdmin() && request.resource.data.role != 'owner');
+      // update: owner cannot be disabled via rules; admin cannot touch owner doc nor escalate to owner; self can update non-sensitive fields only
+      allow update: if (isOwner() && !(resource.data.role == 'owner' && request.resource.data.get('disabled', false) == true))
+                || (isAdmin() && resource.data.role != 'owner' && request.resource.data.role != 'owner')
+                || (request.auth.uid == userId
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'disabled', 'permissions']));
+      allow delete: if isAdmin() && resource.data.role != 'owner';
     }
     
     match /appSettings/{settingsId} {
@@ -38,21 +57,15 @@ service cloud.firestore {
     }
     
     // BUG-P0-3: non-admin users may never change product prices directly.
-    // App transaction paths (processSale/processPurchase/processReturn in
-    // services/api.ts) write quantity only, so freezing price fields for
-    // cashiers breaks nothing legitimate. create is split from update on
-    // purpose: diff() needs an existing doc (resource.data), so a first-time
-    // create carries no price check at all (there is no "old price").
     match /products/{docId} {
       allow read: if isActiveUser();
-      allow create: if isActiveUser()
+      allow create: if isStaff()
         && request.resource.data.quantity >= 0;
-      allow update: if isActiveUser()
+      allow update: if isStaff()
         && request.resource.data.quantity >= 0
         && (
           isAdmin()
           ||
-          // Cashier: every price field must stay untouched.
           (!('price' in request.resource.data.diff(resource.data).affectedKeys())
             && !('retailCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
             && !('retailCreditPrice' in request.resource.data.diff(resource.data).affectedKeys())
@@ -62,133 +75,99 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // REQ-SEC1-8 Phase 0: openingBalance is immutable history (REQ-M8) — no
-    // legitimate path ever changes it after create (addCustomer/addSupplier
-    // set it once; updateCustomerProfile/updateSupplierProfile write
-    // name/phone/address only; all six balance transactions write balance
-    // only). Freezing it for non-admins breaks nothing legitimate. balance
-    // itself stays writable (BUG-P0-2 residual — rules evaluate each write
-    // independently and cannot link a balance delta to a sibling
-    // invoice/payment doc; full fix needs Cloud Functions/Blaze).
+    // REQ-SEC1-8 Phase 0: openingBalance freeze — R1: isStaff() instead of isActiveUser() for non-admin path
     match /customers/{docId} {
-      allow read, create: if isActiveUser();
-      allow update: if isAdmin() || (isActiveUser()
+      allow read: if isActiveUser();
+      allow create: if isStaff();
+      allow update: if isAdmin() || (isStaff()
         && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
       allow delete: if isAdmin();
     }
     
-    // REQ-SEC1-8 Phase 0: numeric guard mirrors the client-side P0-12 check
-    // (services/api.ts) at Rules level. Rejects junk totals written directly
-    // via SDK; cannot stop a "plausible" forged total — Blaze/Functions
-    // needed for the full fix.
     match /invoices/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.total >= 0;
+      allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
-    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /returns/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.total >= 0;
+      allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
-    // REQ-SEC1-8 Phase 0: payments must be strictly positive (mirrors the
-    // client-side amount>0 check in addCustomerPayment). Rejects negative /
-    // zero payments written directly via SDK.
     match /customerPayments/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.amount > 0;
+      allow update: if isAdmin()
         && request.resource.data.amount > 0;
       allow delete: if isAdmin();
     }
 
-    // REQ-SEC1-8 Phase 0: same openingBalance freeze as customers (see note
-    // above — updateSupplierProfile writes name/phone/address only).
     match /suppliers/{docId} {
-      allow read, create: if isActiveUser();
-      allow update: if isAdmin() || (isActiveUser()
+      allow read: if isActiveUser();
+      allow create: if isStaff();
+      allow update: if isAdmin() || (isStaff()
         && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
       allow delete: if isAdmin();
     }
 
-    // REQ-SEC1-8 Phase 0: same strictly-positive guard as customerPayments
-    // (mirrors addSupplierPayment).
     match /supplierPayments/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.amount > 0;
+      allow update: if isAdmin()
         && request.resource.data.amount > 0;
       allow delete: if isAdmin();
     }
 
-    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /purchaseInvoices/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.total >= 0;
+      allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
 
-    // REQ-SEC1-8 Phase 0: same numeric-guard pattern as invoices above.
     match /supplierReturns/{docId} {
       allow read: if isActiveUser();
-      allow create, update: if isActiveUser()
+      allow create: if isStaff()
+        && request.resource.data.total >= 0;
+      allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isAdmin();
     }
     
     match /dailyArchives/{docId} {
       allow read: if isActiveUser();
-      allow create: if isActiveUser();
-      allow update: if isActiveUser() && (
-        !('status' in request.resource.data.diff(resource.data).affectedKeys())
-        || resource.data.status != 'closed'
-        || isAdmin()
-      );
+      allow create: if canOpenDay();
+      allow update: if (isStaff() && resource.data.status == 'open'
+                    && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
+                || isAdmin();
       allow delete: if isAdmin();
     }
 
-    // BUG-P0-13: counters may only ever advance by exactly +1 (atomic numbering).
-    // Legitimate path (processSale/processPurchase in services/api.ts) reads
-    // lastNumber inside a transaction and writes lastNumber+1 — or creates the
-    // doc with lastNumber=1 on first use. Any direct write with an arbitrary
-    // value (or delete by a non-admin) is denied.
-    // Residual risk (documented, same style as docs/REQ-P0-2-baseline.md):
-    // rules evaluate each write independently and cannot verify that a +1
-    // happened "inside the same transaction that creates the invoice" — a
-    // rogue client can still bump by +1 (numbering gaps only; never duplicates
-    // or collisions, since numbering stays read-then-write in a retried
-    // transaction). Owner decision pending on this note.
-    // BUG-P0-15: admins bypass the +1/create==1 checks so backup restore
-    // (batch.set of arbitrary lastNumber) works. Cashiers stay on the strict
-    // path. Restore/factoryReset already require admin in practice (they
-    // delete dailyArchives, which is admin-only delete).
-    // Accepted Risk (owner decision 2026-09-15): rules cannot distinguish
-    // "admin during restore" from "admin writing by hand", so any admin can
-    // set a counter to any value via SDK directly. Accepted because admins
-    // already hold wider destructive powers (delete archives/products), and
-    // the bypass is what makes numbered-restore possible at all.
+    // BUG-P0-13/15: counters — R1: isStaff() for non-admin path (was isActiveUser)
     match /counters/{docId} {
       allow read: if isActiveUser();
-      allow create: if isAdmin() || (isActiveUser()
+      allow create: if isAdmin() || (isStaff()
         && request.resource.data.lastNumber == 1
         && request.resource.data.keys().hasOnly(['lastNumber']));
-      allow update: if isAdmin() || (isActiveUser()
+      allow update: if isAdmin() || (isStaff()
         && request.resource.data.lastNumber == resource.data.lastNumber + 1
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']));
       allow delete: if isAdmin();
     }
 
-    // 2.2-free: سجل أخطاء العميل — بديل Sentry المجاني 100% (بلا خدمة
-    // خارجية ولا فيزا: نفس مشروع Spark). أي مستخدم نشط يستطيع *إلحاق*
-    // تقرير عطل فقط (create بشكل صارم)؛ القراءة والحذف للأدمن فقط
-    // (تُفحص من Firebase Console → Firestore → clientErrors). لا update
-    // إطلاقًا — التقارير سجل ثابت مثل openingBalance (REQ-M8).
-    // حارس الشكل يمنع تحويلها لدردشة/تخزين عام: message قصيرة إجبارية
-    // والباقي حقول اختيارية مُسقوفة.
+    // 2.2-free: clientErrors — unchanged (isActiveUser for create, isAdmin for read/delete)
     match /clientErrors/{docId} {
       allow create: if isActiveUser()
         && request.resource.data.keys().hasAll(['message', 'createdAt'])

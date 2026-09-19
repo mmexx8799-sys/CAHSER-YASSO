@@ -57,7 +57,7 @@ async function signInTestUser() {
  */
 async function seedUserDocWithRulesDisabled(env: RulesTestEnvironment, uid: string) {
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL, role: 'cashier' });
   });
 }
 

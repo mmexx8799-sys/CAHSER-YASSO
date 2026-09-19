@@ -83,8 +83,9 @@ afterAll(async () => {
 async function seedActiveUser(uid: string, role?: string) {
   // users/{uid} create is admin-only in the rules → seed with rules disabled
   // (mirrors how a real admin provisions accounts before first use).
+  // RBAC-2026-09: default to cashier when no role passed (legacy tests assumed active user without role)
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), role ? { email: uid + '@t.local', role } : { email: uid + '@t.local' });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: uid + '@t.local', role: role ?? 'cashier' });
   });
 }
 
@@ -94,7 +95,7 @@ async function signInAppUser() {
   await signInWithEmailAndPassword(fbAuth, TEST_EMAIL, TEST_PASSWORD);
   const uid = fbAuth.currentUser!.uid;
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: TEST_EMAIL, role: 'cashier' });
   });
   return uid;
 }

@@ -46,8 +46,9 @@ afterAll(async () => {
 });
 
 async function seedActiveUser(uid: string, role?: string) {
+  // RBAC-2026-09: default to cashier when no role passed
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'users', uid), role ? { email: uid + '@t.local', role } : { email: uid + '@t.local' });
+    await setDoc(doc(ctx.firestore(), 'users', uid), { email: uid + '@t.local', role: role ?? 'cashier' });
   });
 }
 

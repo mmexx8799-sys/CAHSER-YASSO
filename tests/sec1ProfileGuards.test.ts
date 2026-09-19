@@ -74,11 +74,10 @@ async function signInCashier() {
   try { await firebaseSignOut(fbAuth); } catch { /* not signed in */ }
   await signInWithEmailAndPassword(fbAuth, CASHIER_EMAIL, CASHIER_PASSWORD);
   const uid = fbAuth.currentUser!.uid;
-  // users/{uid} create is admin-only → seed with rules disabled. Plain
-  // cashier (no role): even stronger — proves a NON-admin cannot inject.
+  // RBAC-2026-09: seed as cashier (was plain no-role, now default-deny would block the legitimate profile update)
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
-    await setDoc(doc(db, 'users', uid), { email: CASHIER_EMAIL });
+    await setDoc(doc(db, 'users', uid), { email: CASHIER_EMAIL, role: 'cashier' });
   });
   return uid;
 }
