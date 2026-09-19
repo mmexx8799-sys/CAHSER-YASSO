@@ -67,7 +67,6 @@ const useNavItems = () => {
     return useMemo(() => {
         const items = [
             { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
-            { to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
             { to: "/customers", icon: Users, label: "العملاء" },
             { to: "/suppliers", icon: Truck, label: "الموردين" },
             { to: "/returns", icon: Undo2, label: "المرتجعات" },
@@ -76,6 +75,7 @@ const useNavItems = () => {
             { to: "/archive", icon: Archive, label: "الأرشيف" },
         ];
         if (isAdmin) {
+            items.push({ to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" });
             items.push({ to: "/settings", icon: Settings, label: "الإعدادات" });
             items.push({ to: "/users", icon: Users, label: "المستخدمين" });
         }
@@ -261,7 +261,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/suppliers" element={<SuppliersPage />} />
                     <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
                     <Route path="/returns" element={<ReturnsPage />} />
-                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/dashboard" element={<AdminRoute><DashboardPage /></AdminRoute>} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<ReportsPage />} />
                     <Route path="/archive" element={<ArchivePage />} />
