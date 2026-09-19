@@ -303,23 +303,26 @@ const ProductCard: React.FC<{
   selected: boolean;
   onToggleSelect: (id: string) => void;
 }> = ({ product, categoryName, onEdit, onDelete, onPrint, selected, onToggleSelect }) => (
-  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg ${selected ? 'ring-2 ring-primary-500' : ''}`}>
-    <div>
-      <div className="flex justify-between items-start mb-2 gap-2">
-        {/* REQ-BARCODE AC-09: منتج بلا باركود لا يظهر في قائمة التحديد الجماعي */}
-        {product.barcode ? (
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect(product.id)}
-            aria-label={`تحديد ${product.name} للطباعة الجماعية`}
-            className="mt-1 h-5 w-5 shrink-0 accent-primary-600"
-          />
-        ) : (
-          <span className="w-5 shrink-0" aria-hidden="true" />
-        )}
-        <h2 className="font-bold text-gray-800 dark:text-gray-100 text-xl flex-1">{product.name}</h2>
-        <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 font-semibold px-2 py-1 rounded-full whitespace-nowrap">{categoryName}</span>
+  <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-shadow duration-200 hover:shadow-lg overflow-hidden ${selected ? 'ring-2 ring-primary-500' : ''}`}>
+    <div className="min-w-0">
+      {/* FIX-RADICAL: حل جذري لتقطيع الحروف على iOS - فصل الاسم والشارة عمودياً بدل 3 أعمدة في صف واحد ضيق */}
+      <div className="flex flex-col gap-1.5 mb-2 min-w-0">
+        <div className="flex items-start gap-2 min-w-0">
+          {/* REQ-BARCODE AC-09: منتج بلا باركود لا يظهر في قائمة التحديد الجماعي */}
+          {product.barcode ? (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(product.id)}
+              aria-label={`تحديد ${product.name} للطباعة الجماعية`}
+              className="mt-1 h-5 w-5 shrink-0 accent-primary-600"
+            />
+          ) : (
+            <span className="w-5 shrink-0" aria-hidden="true" />
+          )}
+          <h2 className="font-bold text-gray-800 dark:text-gray-100 text-base sm:text-xl min-w-0 leading-tight whitespace-normal" style={{ wordBreak: 'normal', overflowWrap: 'normal' }}>{product.name}</h2>
+        </div>
+        <span className="text-[11px] sm:text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-800 dark:text-primary-300 font-semibold px-2 py-1 rounded-full whitespace-nowrap self-start mr-7 max-w-full truncate overflow-hidden">{categoryName}</span>
       </div>
       <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">الكود: {product.code}</p>
       {product.barcode && (
