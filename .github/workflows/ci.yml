@@ -41,7 +41,7 @@ jobs:
       - run: npm run build
 
   tests:
-    name: emulator suite (64 tests)
+    name: emulator suite (130 tests — was 64 before G0 re-measurement 2026-09-19)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,7 +1,16 @@
 # Backlog — Nour-Elrahman
 
-## In Progress
-- (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b)
+## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
+- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **In Progress**
+- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — Pending (⛔ STOP حتى توقيع G0)
+- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — Pending
+- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر (utils/permissions.ts) — Pending
+- REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` (dry-run افتراضي + rollback) — Pending
+- REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق (users + حذف دفتري → owner-only + Live smoke B) — Pending
+- **تنبيه صريح:** REQ-P0-2 (قفل `balance` الكامل) **يبقى Declined بقرار المالك (Ahmed 2026-09-16 + تأكيد 2026-09-19)** — هذه الدورة RBAC لا تمسّ `balance`/الكميات/إجماليات اليومية؛ المحاسب فقط هو الممنوع من الكتابة. لا يُعاد فتحه إلا بقرار مالك مكتوب جديد (known-issues BUG-P0-2 + backlog:22).
+
+## In Progress (سابق — مغلق)
+- (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
 - سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)

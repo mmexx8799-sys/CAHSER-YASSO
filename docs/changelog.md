@@ -1,6 +1,9 @@
 # Changelog — Nour-Elrahman
 
-## Unreleased
+## Unreleased — RBAC-2026-09 G0 (2026-09-19)
+- **REQ-RBAC-0 — Owner decisions + measured baseline (no code change):** تسجيل قرارات G0 (D-1: izatadel007@gmail.com owner, D-2:(أ) D-3:موافقة D-4:الآن D-5:Deferred D-6:يبقى D-7:لاحقًا) في `docs/known-issues.md` + قياس خط الأساس الخام: `tsc --noEmit` نظيف · `build` نظيف (938kB) · `test:rules` **130/130 أخضر (18/18)** بدل «64» القديم (تصحيح E-15) + `concurrentSalesHigh` خط الأساس: N=10 10/10, N=12 12/12, N=15 15/15, متعدد 10/10 + E-16: `android/` موجود (ليس محذوفًا) + تحديث `backlog.md` (In Progress RBAC-0…5) و`current-state-map.md` — ⛔ STOP قبل R1 لمراجعة Claude.
+
+## Unreleased (سابق)
 ### Stage-3 — اختبارات (2026-09-17)
 - [3.1] E2E حقيقي (Playwright/Chromium): `e2e/happy-path.spec.ts` — دخول → فتح أرشيف → بيع → مرتجع → إغلاق أرشيف → نسخ (download) → استرجاع (filechooser) — ضد المحاكيات فقط عبر `VITE_USE_EMULATORS=1` (services/firebase.ts) + `npm run test:e2e` — مع `tests/e2eJourney.test.ts` (نفس الرحلة خدميًا: مرتجع مربوط + v2 round-trip + INV-000002 بلا تكرار — يعمل في CI بلا متصفح) — خطافات `data-testid` على الدخول/اليومية/الدفع/الإرجاع/التأكيد (بلا تغيير سلوكي)
 - [3.2] تزامن عالٍ موسّع (BUG-P0-14): `tests/concurrentSalesHigh.test.ts` — N=10 same-tick ≥8/10، N=12 متموج ≥10/12، N=15 ضغط ≥10/15، N=10 متعدد المنتجات ≥8/10 — كلها بثوابت صارمة (عدّاد/فرادة/مخزون/أرشيف) — السويت الكلي 59→64
