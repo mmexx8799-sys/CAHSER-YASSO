@@ -1,7 +1,8 @@
 // tests/navGolden.test.ts — Golden قبل/بعد لإعادة الهيكلة (REQ-PERM-3:5) — node only
 import { describe, it, expect } from 'vitest';
 import { UserRole } from '../types';
-import { buildNavItems, resolveLanding } from '../utils/nav';
+import { buildNavItems, resolveLanding, ROUTE_CAPS } from '../utils/nav';
+import { effectiveCan } from '../utils/permissions';
 
 // المخرج الحالي قبل التعديل سُجل هنا كـ Golden — أي انحراف غير مقصود يفشل.
 // بلا تجاوزات: الأصل App.tsx 73-107 (القديم: بلا دور => كل شيء). الجديد: بلا دور => 5 أساسية.
@@ -35,6 +36,23 @@ describe('navGolden — buildNavItems (no overrides)', () => {
     }
     // ممنوع من كل شيء: accountant + deny reports/archive => يبقى customers
     expect(resolveLanding(UserRole.Accountant, { denies: ['report.view','archive.view'] } as any, { disabled: false })).toBe('/customers');
+  });
+  it('عقد ROUTE_CAPS: resolveLanding يعيد مسارًا مسموحًا يجتاز حارسه', () => {
+    const roles: any[] = [UserRole.Owner, UserRole.Admin, UserRole.Supervisor, UserRole.Cashier, UserRole.Accountant, null];
+    const variantOverrides: any[] = [null, { denies: ['sell'] }, { denies: ['return'] }, { grants: ['product.price'] }, { denies: ['report.view','archive.view'] }];
+    for (const r of roles) for (const o of variantOverrides) {
+      const landing = resolveLanding(r, o, { disabled: false });
+      expect(landing).toBeTruthy();
+      const cap = (ROUTE_CAPS as any)[landing];
+      if (cap) {
+        expect(effectiveCan(r, cap, o, { disabled: false }), `landing \${landing} blocked for \${r} \${JSON.stringify(o)}`).toBe(true);
+      } else {
+        // customers/suppliers always
+        expect(['/customers','/suppliers']).toContain(landing);
+      }
+    }
+    expect(resolveLanding(null, null, { disabled: false })).toBe('/customers');
+    expect(resolveLanding(undefined as any, null, { disabled: false })).toBe('/customers');
   });
   it('فصل archive.view عن report.view', () => {
     expect(buildNavItems(UserRole.Cashier, { denies: ['report.view'] } as any).map(i=>i.to)).toEqual(['/','/customers','/suppliers','/returns','/products','/archive']);

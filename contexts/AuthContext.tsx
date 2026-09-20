@@ -4,7 +4,7 @@ import type { User as AppUser } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getDB } from '../services/firebase';
-import { decideSnapshotAction } from '../utils/authState';
+import { decideSnapshotAction, shouldFlagUnresolved } from '../utils/authState';
 
 interface AuthContextType {
     currentUser: AppUser | null;
@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const authUnsub = onAuthStateChangedListener((user: FirebaseUser | null) => {
             gen += 1;
             const myGen = gen;
-            if (innerUnsub) { try { innerUnsub(); } catch {} innerUnsub = null; }
+            if (innerUnsub) { try { innerUnsub(); } catch { /* ignore */ } innerUnsub = null; }
             if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
             hasServerSnapshot = false;
 
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const userDocRef = doc(getDB(), 'users', user.uid);
             timeoutId = setTimeout(() => {
                 if (myGen !== gen) return;
-                if (!hasServerSnapshot) {
+                if (shouldFlagUnresolved({ hasServerSnapshot, hasResolvedUser: !!lastUserRef.current })) {
                     setIsUnresolved(true);
                     setIsLoading(false);
                 }
@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (action === 'wait') return;
                 if (action === 'signOut') {
                     if (!fromCache) {
-                        signOut().catch(()=>{});
+                        signOut().catch(()=>{ /* ignore signOut race */ });
                         const next: AppUser | null = null;
                         if (!equalUser(lastUserRef.current, next)) { lastUserRef.current = next; setCurrentUser(next); }
                         setIsLoading(false);
@@ -111,8 +111,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         return () => {
-            if (innerUnsub) try { innerUnsub(); } catch {}
-            try { authUnsub(); } catch {}
+            if (innerUnsub) try { innerUnsub(); } catch { /* ignore */ }
+            try { authUnsub(); } catch { /* ignore */ }
             if (timeoutId) clearTimeout(timeoutId);
         };
     }, [retryTick]);

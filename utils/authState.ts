@@ -13,24 +13,10 @@ export function decideSnapshotAction(exists: boolean, fromCache: boolean): Snaps
   return fromCache ? 'wait' : 'signOut';
 }
 
-export type AuthPhase = 'wait' | 'ready' | 'unresolved' | 'signOut';
-
 /**
- * جدول حالات أول تحميل (يُستخدم في الـtimeout 8s):
- * - إن وصلت لقطة server (fromCache=false) → ready/signOut حسب exists
- * - إن بقيت فقط لقطات cache لـ8s → unresolved
- * - إن حدث error قبل أي لقطة server → unresolved
+ * هل نُظهر unresolved بعد مهلة 8s؟
+ * لا تُظهر إذا كان لدينا مستخدم مستقر من cache بالفعل.
  */
-export function decideInitialPhase(opts: {
-  hasServerSnapshot: boolean;
-  lastExists: boolean | null;
-  lastFromCache: boolean | null;
-  hasError: boolean;
-}): AuthPhase {
-  if (opts.hasServerSnapshot) {
-    // server snapshot is authoritative
-    return opts.lastExists ? 'ready' : 'signOut';
-  }
-  if (opts.hasError) return 'unresolved';
-  return 'wait';
+export function shouldFlagUnresolved(opts: { hasServerSnapshot: boolean; hasResolvedUser: boolean }): boolean {
+  return !opts.hasServerSnapshot && !opts.hasResolvedUser;
 }

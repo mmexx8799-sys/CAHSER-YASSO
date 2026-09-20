@@ -17,6 +17,18 @@ const NAV_ORDER: Array<{ to: string; label: string; cap?: Capability; always?: b
   { to: '/users', label: 'المستخدمين', cap: 'users.manage' },
 ];
 
+// Single source for route guards — App.tsx must use this
+export const ROUTE_CAPS: Record<string, Capability> = {
+  '/': 'sell',
+  '/returns': 'return',
+  '/products': 'product.create',
+  '/reports': 'report.view',
+  '/archive': 'archive.view',
+  '/dashboard': 'dashboard.view',
+  '/settings': 'settings.write',
+  '/users': 'users.manage',
+};
+
 export interface Overrides { grants?: unknown; denies?: unknown; }
 
 export function buildNavItems(
@@ -26,7 +38,6 @@ export function buildNavItems(
 ): NavItem[] {
   const disabled = opts?.disabled === true;
   if (disabled) return [];
-  // بلا دور و ready → 5 أساسية فقط (REQ-PERM-3:7)
   const hasValidRole = !!role && (Object.values(UserRole) as string[]).includes(role as string);
   if (!hasValidRole) {
     return [
@@ -49,14 +60,22 @@ export function buildNavItems(
 
 /**
  * أول مسار مسموح — لا تعيد أبدًا مسارًا ممنوعًا.
- * fallback آمن: /customers (موجود دائمًا لغير المعطّل)
+ * بلا دور → /customers (حتى لو كانت / في قائمة الملاحة، فهي محروسة بـsell)
  */
 export function resolveLanding(
   role: string | null | undefined,
   overrides?: Overrides | null,
   opts?: { disabled?: boolean },
 ): string {
+  const hasValidRole = !!role && (Object.values(UserRole) as string[]).includes(role as string);
+  if (!hasValidRole) return '/customers';
   const items = buildNavItems(role, overrides, opts);
   if (items.length === 0) return '/customers';
-  return items[0].to;
+  // تأكد أن الأول ليس محجوبًا (للحسابات المحظورة)
+  for (const it of items) {
+    const cap = ROUTE_CAPS[it.to];
+    if (!cap) return it.to;
+    if (effectiveCan(role, cap, overrides as any, opts)) return it.to;
+  }
+  return '/customers';
 }

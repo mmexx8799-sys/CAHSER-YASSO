@@ -1,4 +1,3 @@
-
 import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck, LayoutDashboard } from 'lucide-react';
@@ -63,27 +62,19 @@ const Header = React.memo(() => {
 });
 
 // Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
-// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts — via utils/nav.ts pure
 const useNavItems = () => {
     const { currentUser } = useAuth();
-    const { can: canCap } = usePermissions();
-    const role = currentUser?.role;
-    const disabled = currentUser?.disabled === true;
-    const grants = (currentUser as any)?.capGrants;
-    const denies = (currentUser as any)?.capDenies;
     return useMemo(() => {
-        // مفوضة للدالة النقية (capGrants/capDenies تؤثر)
-        return buildNavItems(role as any, { grants, denies } as any, { disabled }).map(it => {
+        return buildNavItems((currentUser as any)?.role as any, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true }).map(it => {
             const iconMap: any = { '/': ShoppingCart, '/customers': Users, '/suppliers': Truck, '/returns': Undo2, '/products': Package, '/reports': BarChart2, '/archive': Archive, '/dashboard': LayoutDashboard, '/settings': Settings, '/users': Users };
             return { to: it.to, icon: iconMap[it.to], label: it.label };
         });
-    }, [role, disabled, JSON.stringify(grants), JSON.stringify(denies)]);
+    }, [currentUser]);
 };
 
 const BottomNav = React.memo(() => {
     const navItems = useNavItems();
 
-    // CHANGED: Added pb-[env(safe-area-inset-bottom)] for modern phones. lg:hidden — replaced by Sidebar on lg+.
     return (
         <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
             <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
@@ -105,8 +96,6 @@ const BottomNav = React.memo(() => {
     );
 });
 
-// Sidebar — desktop navigation (lg+). Same navItems, same active-state styling as BottomNav.
-// Built fixed from the start (lesson R2-01: sticky unreliable on iOS Safari — never use it here).
 const Sidebar = React.memo(() => {
     const navItems = useNavItems();
     return (
@@ -140,12 +129,9 @@ const PageLoader: React.FC = () => (
 
 const RequireCapability: React.FC<{ capability: Capability; children: React.ReactNode }> = ({ capability, children }) => {
     const { can: canCap, role } = usePermissions() as any;
-    const { isUnresolved, currentUser } = useAuth() as any;
+    const { currentUser } = useAuth() as any;
     const navigate = useNavigate();
     const location = useLocation();
-    if (isUnresolved) {
-        return <div className="p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
-    }
     useEffect(() => {
         if (!canCap(capability)) {
             const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
@@ -158,16 +144,13 @@ const RequireCapability: React.FC<{ capability: Capability; children: React.Reac
     if (!canCap(capability)) return null;
     return <>{children}</>;
 };
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Backwards compat: old AdminRoute now maps to settings.write — uses landing resolver
     const { can: canCap, role } = usePermissions() as any;
-    const { isUnresolved, currentUser } = useAuth() as any;
+    const { currentUser } = useAuth() as any;
     const navigate = useNavigate();
     const location = useLocation();
     const allowed = canCap('settings.write' as Capability);
-    if (isUnresolved) {
-        return <div className="p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
-    }
     useEffect(() => {
         if (!allowed) {
             const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
@@ -185,7 +168,6 @@ const AppLayout = React.memo(() => {
     return (
         <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Header />
-            {/* Mobile: pb clears BottomNav. lg+: BottomNav hidden — only small breathing pb remains (no dead 5rem space) */}
             <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6 lg:pr-64">
                 <div className="max-w-screen-2xl w-full mx-auto">
                 <Suspense fallback={<PageLoader />}>
@@ -231,7 +213,7 @@ const AndroidBackHandler = () => {
 };
 
 const LandingRedirect: React.FC = () => {
-    const { can: _c, role } = usePermissions() as any;
+    const { role } = usePermissions() as any;
     const { currentUser } = useAuth() as any;
     const to = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
     return <Navigate to={to} replace />;
@@ -240,10 +222,6 @@ const LandingRedirect: React.FC = () => {
 const AppRoutes: React.FC = () => {
     const { currentUser, isLoading, isUnresolved, retry } = useAuth() as any;
 
-    // BUG-P0-5: side effects (signOut + toast) must not run in the render
-    // body — they fired on every render. Guard is keyed on uid (not a plain
-    // boolean) so a *different* disabled user signing in later in the same
-    // browser tab still gets exactly one toast.
     const disabledToastShownForUid = useRef<string | null>(null);
     useEffect(() => {
         if (currentUser?.disabled === true && disabledToastShownForUid.current !== currentUser.uid) {
@@ -288,12 +266,12 @@ const AppRoutes: React.FC = () => {
             <AndroidBackHandler />
             <Routes>
                 <Route element={<AppLayout />}>
-                    <Route path="/" element={<POSPage />} />
+                    <Route path="/" element={<RequireCapability capability="sell"><POSPage /></RequireCapability>} />
                     <Route path="/customers" element={<CustomersPage />} />
                     <Route path="/customers/:id" element={<CustomerAccountPage />} />
                     <Route path="/suppliers" element={<SuppliersPage />} />
                     <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
-                    <Route path="/returns" element={<ReturnsPage />} />
+                    <Route path="/returns" element={<RequireCapability capability="return"><ReturnsPage /></RequireCapability>} />
                     <Route path="/dashboard" element={<RequireCapability capability="dashboard.view"><DashboardPage /></RequireCapability>} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<RequireCapability capability="report.view"><ReportsPage /></RequireCapability>} />
