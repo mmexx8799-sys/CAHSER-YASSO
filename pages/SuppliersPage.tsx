@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { useDebounce } from '../hooks/useDebounce';
+import { usePermissions } from '../hooks/usePermissions';
 
 const SupplierFormModal: React.FC<{
   isOpen: boolean;
@@ -79,6 +80,7 @@ const SupplierCard: React.FC<{
   onDelete: (supplier: Supplier) => void;
   onAddPayment: (supplier: Supplier) => void;
 }> = ({ supplier, onEdit, onDelete, onAddPayment }) => {
+  const { can } = usePermissions();
   const balance = supplier.balance || 0;
   const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
   const balanceText = balance > 0 ? 'له مديونية علينا (دائن)' : balance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري';
@@ -94,9 +96,9 @@ const SupplierCard: React.FC<{
         <p className={`font-bold text-xl ${balanceColor}`}>{Math.abs(balance).toFixed(2)} ج.م</p>
       </div>
       <div className="flex justify-end space-x-2 space-x-reverse mt-2">
-        <button onClick={() => onAddPayment(supplier)} title="إضافة دفعة" aria-label={`إضافة دفعة لـ ${supplier.name}`} className="p-2 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>
-        <button onClick={() => onEdit(supplier)} title="تعديل" aria-label={`تعديل ${supplier.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>
-        <button onClick={() => onDelete(supplier)} title="حذف" aria-label={`حذف ${supplier.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>
+        {can('supplier.ops') && <button onClick={() => onAddPayment(supplier)} title="إضافة دفعة" aria-label={`إضافة دفعة لـ ${supplier.name}`} className="p-2 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>}
+        {can('supplier.write') && <button onClick={() => onEdit(supplier)} title="تعديل" aria-label={`تعديل ${supplier.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>}
+        {can('supplier.write') && <button onClick={() => onDelete(supplier)} title="حذف" aria-label={`حذف ${supplier.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>}
       </div>
     </div>
   );
@@ -138,6 +140,7 @@ const SuppliersList = memo(({
 });
 
 export default function SuppliersPage() {
+  const { can } = usePermissions();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -248,10 +251,12 @@ export default function SuppliersPage() {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">إدارة الموردين</h1>
+        {can('supplier.write') && (
         <button onClick={() => { setSelectedSupplier(null); setIsFormModalOpen(true); }} className="flex items-center space-x-2 bg-primary-600 text-white py-2 px-4 rounded-lg shadow hover:bg-primary-700">
           <Plus size={20} />
           <span>مورد جديد</span>
         </button>
+        )}
       </div>
       <div className="mb-4">
         <div className="relative mb-6">

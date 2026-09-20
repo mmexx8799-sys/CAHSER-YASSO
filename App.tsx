@@ -14,7 +14,9 @@ import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsConte
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { usePosCartStore } from './stores/posCartStore';
 import { useReturnCartStore } from './stores/returnCartStore';
-import { UserRole } from './types';
+import { usePermissions } from './hooks/usePermissions';
+import { can } from './utils/permissions';
+import type { Capability } from './utils/permissions';
 
 // Lazy load pages
 const POSPage = React.lazy(() => import('./pages/POSPage'));
@@ -61,26 +63,47 @@ const Header = React.memo(() => {
 });
 
 // Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
+// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts
 const useNavItems = () => {
     const { currentUser } = useAuth();
-    const isAdmin = currentUser?.role === UserRole.Admin && currentUser?.disabled !== true;
+    const role = currentUser?.role;
+    const disabled = currentUser?.disabled === true;
     return useMemo(() => {
-        const items = [
-            { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
-            { to: "/customers", icon: Users, label: "العملاء" },
-            { to: "/suppliers", icon: Truck, label: "الموردين" },
-            { to: "/returns", icon: Undo2, label: "المرتجعات" },
-            { to: "/products", icon: Package, label: "المنتجات" },
-            { to: "/reports", icon: BarChart2, label: "التقارير" },
-            { to: "/archive", icon: Archive, label: "الأرشيف" },
-        ];
-        if (isAdmin) {
+        const items: Array<{ to: string; icon: any; label: string }> = [];
+        if (disabled || !role) {
+            // Offline/missing role fallback — show all base (rules are enforcer)
+            items.push(
+                { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
+                { to: "/customers", icon: Users, label: "العملاء" },
+                { to: "/suppliers", icon: Truck, label: "الموردين" },
+                { to: "/returns", icon: Undo2, label: "المرتجعات" },
+                { to: "/products", icon: Package, label: "المنتجات" },
+                { to: "/reports", icon: BarChart2, label: "التقارير" },
+                { to: "/archive", icon: Archive, label: "الأرشيف" },
+            );
+        } else {
+            if (can(role, 'sell' as Capability)) items.push({ to: "/", icon: ShoppingCart, label: "نقطة البيع" });
+            // Customers/Suppliers visible to all active roles (read) — accountant sees them read-only per spec
+            items.push({ to: "/customers", icon: Users, label: "العملاء" });
+            items.push({ to: "/suppliers", icon: Truck, label: "الموردين" });
+            if (can(role, 'return' as Capability)) items.push({ to: "/returns", icon: Undo2, label: "المرتجعات" });
+            if (can(role, 'product.create' as Capability)) items.push({ to: "/products", icon: Package, label: "المنتجات" });
+            if (can(role, 'report.view' as Capability)) {
+                items.push({ to: "/reports", icon: BarChart2, label: "التقارير" });
+                items.push({ to: "/archive", icon: Archive, label: "الأرشيف" });
+            }
+        }
+        if (!disabled && can(role, 'dashboard.view' as Capability)) {
             items.push({ to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" });
+        }
+        if (!disabled && can(role, 'settings.write' as Capability)) {
             items.push({ to: "/settings", icon: Settings, label: "الإعدادات" });
+        }
+        if (!disabled && can(role, 'users.manage' as Capability)) {
             items.push({ to: "/users", icon: Users, label: "المستخدمين" });
         }
         return items;
-    }, [isAdmin]);
+    }, [role, disabled]);
 };
 
 const BottomNav = React.memo(() => {
@@ -141,21 +164,32 @@ const PageLoader: React.FC = () => (
     </div>
 );
 
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { currentUser } = useAuth();
+const RequireCapability: React.FC<{ capability: Capability; children: React.ReactNode }> = ({ capability, children }) => {
+    const { can: canCap } = usePermissions();
     const navigate = useNavigate();
     const location = useLocation();
-
     useEffect(() => {
-        if (!currentUser || currentUser.role !== UserRole.Admin || currentUser.disabled === true) {
+        if (!canCap(capability)) {
             toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
             navigate("/", { replace: true });
         }
-    }, [currentUser, navigate, location.pathname]);
-
-    if (!currentUser || currentUser.role !== UserRole.Admin || currentUser.disabled === true) {
-        return null;
-    }
+    }, [canCap, capability, navigate, location.pathname]);
+    if (!canCap(capability)) return null;
+    return <>{children}</>;
+};
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    // Backwards compat: old AdminRoute now maps to settings.write (dashboard/settings were admin) — users route uses users.manage directly
+    const { can: canCap } = usePermissions();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const allowed = canCap('settings.write' as Capability);
+    useEffect(() => {
+        if (!allowed) {
+            toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
+            navigate("/", { replace: true });
+        }
+    }, [allowed, navigate, location.pathname]);
+    if (!allowed) return null;
     return <>{children}</>;
 };
 
@@ -261,12 +295,12 @@ const AppRoutes: React.FC = () => {
                     <Route path="/suppliers" element={<SuppliersPage />} />
                     <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
                     <Route path="/returns" element={<ReturnsPage />} />
-                    <Route path="/dashboard" element={<AdminRoute><DashboardPage /></AdminRoute>} />
+                    <Route path="/dashboard" element={<RequireCapability capability="dashboard.view"><DashboardPage /></RequireCapability>} />
                     <Route path="/products" element={<ProductsPage />} />
-                    <Route path="/reports" element={<ReportsPage />} />
-                    <Route path="/archive" element={<ArchivePage />} />
-                    <Route path="/settings" element={<AdminRoute><SettingsPage /></AdminRoute>} />
-                    <Route path="/users" element={<AdminRoute><UsersPage /></AdminRoute>} />
+                    <Route path="/reports" element={<RequireCapability capability="report.view"><ReportsPage /></RequireCapability>} />
+                    <Route path="/archive" element={<RequireCapability capability="report.view"><ArchivePage /></RequireCapability>} />
+                    <Route path="/settings" element={<RequireCapability capability="settings.write"><SettingsPage /></RequireCapability>} />
+                    <Route path="/users" element={<RequireCapability capability="users.manage"><UsersPage /></RequireCapability>} />
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

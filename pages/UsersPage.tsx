@@ -8,6 +8,19 @@ import type { User } from '../types';
 import { UserRole } from '../types';
 import { orderBy } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
+import { usePermissions } from '../hooks/usePermissions';
+
+const ROLE_LABELS: Record<string, string> = {
+  owner: 'مالك',
+  admin: 'مدير',
+  supervisor: 'مشرف وردية',
+  cashier: 'كاشير',
+  accountant: 'محاسب',
+};
+const ROLE_COLOR: Record<string, string> = {
+  owner: 'text-purple-700 dark:text-purple-300',
+  admin: 'text-blue-700 dark:text-blue-300',
+};
 
 const UserFormModal: React.FC<{
     isOpen: boolean;
@@ -16,7 +29,7 @@ const UserFormModal: React.FC<{
 }> = ({ isOpen, onClose, onSave }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState<UserRole>(UserRole.Cashier);
+    const [role, setRole] = useState<UserRole>('cashier' as UserRole);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +62,11 @@ const UserFormModal: React.FC<{
                     <input id="newUserPassword" name="password" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" required autoComplete="new-password" />
                     <label htmlFor="newUserRole" className="sr-only">دور المستخدم</label>
                     <select id="newUserRole" name="role" value={role} onChange={(e) => setRole(e.target.value as UserRole)} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">
-                        <option value={UserRole.Cashier}>كاشير</option>
-                        <option value={UserRole.Admin}>مدير</option>
+                        <option value="owner">مالك</option>
+                        <option value="admin">مدير</option>
+                        <option value="supervisor">مشرف وردية</option>
+                        <option value="cashier">كاشير</option>
+                        <option value="accountant">محاسب</option>
                     </select>
                     <div className="flex justify-end space-x-2 space-x-reverse">
                         <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded" disabled={isLoading}>إلغاء</button>
@@ -166,28 +182,34 @@ export default function UsersPage() {
                             <div key={user.uid} className={`p-4 flex justify-between items-center lg:border-b lg:border-gray-200 lg:dark:border-gray-700 ${user.disabled ? 'bg-gray-50 dark:bg-gray-900 opacity-60' : ''}`}>
                                 <div>
                                     <p className="font-semibold text-gray-900 dark:text-gray-100">{user.email}</p>
-                                    <p className={`text-sm font-semibold ${user.role === 'admin' ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'}`}>
-                                        {user.role === 'admin' ? 'مدير' : 'كاشير'}
+                                    <p className={`text-sm font-semibold ${ROLE_COLOR[user.role as string] ?? 'text-gray-700 dark:text-gray-300'}`}>
+                                        {ROLE_LABELS[user.role as string] ?? user.role ?? '—'}
                                         {user.disabled && ' - مُعطَّل'}
                                     </p>
                                 </div>
                                 <div className="flex items-center space-x-2 space-x-reverse">
-                                    <button
-                                        onClick={() => handleToggleDisabled(user)}
-                                        className={`p-2 rounded ${user.disabled ? 'text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-orange-600 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
-                                        title={user.disabled ? "تفعيل المستخدم" : "تعطيل المستخدم"}
-                                        aria-label={user.disabled ? `تفعيل ${user.email}` : `تعطيل ${user.email}`}
-                                    >
-                                        {user.disabled ? <UserCheck size={18} /> : <UserX size={18} />}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteUser(user)}
-                                        className="text-red-700 dark:text-red-300 hover:text-red-800 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
-                                        title="حذف نهائي"
-                                        aria-label={`حذف ${user.email} نهائياً`}
-                                    >
-                                        <Trash2 size={18} />
-                                    </button>
+                                    {user.role !== UserRole.Owner ? (
+                                        <>
+                                            <button
+                                                onClick={() => handleToggleDisabled(user)}
+                                                className={`p-2 rounded ${user.disabled ? 'text-green-700 dark:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/20' : 'text-orange-600 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
+                                                title={user.disabled ? "تفعيل المستخدم" : "تعطيل المستخدم"}
+                                                aria-label={user.disabled ? `تفعيل ${user.email}` : `تعطيل ${user.email}`}
+                                            >
+                                                {user.disabled ? <UserCheck size={18} /> : <UserX size={18} />}
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(user)}
+                                                className="text-red-700 dark:text-red-300 hover:text-red-800 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                                                title="حذف نهائي"
+                                                aria-label={`حذف ${user.email} نهائياً`}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 px-2">محمي — Break-glass فقط</span>
+                                    )}
                                 </div>
                             </div>
                         ))}

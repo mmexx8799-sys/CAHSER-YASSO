@@ -8,6 +8,7 @@ import { addSupplierPayment, processPurchase, processSupplierReturn } from '../s
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
+import { usePermissions } from '../hooks/usePermissions';
 import ExcelJS from 'exceljs';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -24,6 +25,7 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export default function SupplierAccountPage() {
+    const { can } = usePermissions();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -485,6 +487,7 @@ export default function SupplierAccountPage() {
                         </p>
                     </div>
                 </div>
+                {can('supplier.ops') && (
                 <button
                     onClick={handleOpenPurchaseModal}
                     className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700"
@@ -492,6 +495,7 @@ export default function SupplierAccountPage() {
                     <ShoppingCart size={18} />
                     <span>فاتورة شراء جديدة</span>
                 </button>
+                )}
             </div>
 
             {/* Tabs bar — same fixed positioning pattern as customer account */}
@@ -702,6 +706,7 @@ export default function SupplierAccountPage() {
                 )}
                 {activeTab === 'returns' && (
                     <div className="space-y-2">
+                        {can('supplier.ops') && (
                         <button
                             onClick={() => setIsReturnModalOpen(true)}
                             className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700"
@@ -709,6 +714,7 @@ export default function SupplierAccountPage() {
                             <Undo2 size={18} />
                             <span>مرتجع مورد جديد</span>
                         </button>
+                        )}
                         {supplierReturns.length === 0 ? (
                             <p className="text-gray-600 dark:text-gray-300 text-center py-6 text-sm">لا توجد مرتجعات.</p>
                         ) : supplierReturns.map(ret => (
@@ -732,6 +738,7 @@ export default function SupplierAccountPage() {
             </div>
 
             {/* Add payment form — fixed above BottomNav, same positioning as customer account */}
+            {can('supplier.ops') && (
             <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 left-0 right-0 lg:right-64 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
                 <form onSubmit={handleSubmit} className="flex gap-2">
                     <div className="flex-1 min-w-0">
@@ -769,6 +776,7 @@ export default function SupplierAccountPage() {
                     </button>
                 </form>
             </div>
+            )}
 
             <PurchaseModal
                 isOpen={isPurchaseModalOpen}

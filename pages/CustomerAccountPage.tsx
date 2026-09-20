@@ -11,6 +11,7 @@ import ExcelJS from 'exceljs';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { usePermissions } from '../hooks/usePermissions';
 
 type TabId = 'overview' | 'statement' | 'payments' | 'invoices' | 'returns';
 
@@ -23,6 +24,7 @@ const TABS: { id: TabId; label: string }[] = [
 ];
 
 export default function CustomerAccountPage() {
+    const { can } = usePermissions();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -714,6 +716,7 @@ export default function CustomerAccountPage() {
 
             {/* Add payment form — fixed above BottomNav, same positioning pattern as BottomNav itself (C2-01 fix).
                 lg+ (REQ-XX): lg:right-64 stops the bar at the desktop Sidebar edge (App.tsx lg:pr-64 pattern), lg:bottom-0 removes the 4rem BottomNav gap (BottomNav is lg:hidden — live-measured 64px dead gap at 1280px). */}
+            {can('customer.payment') && (
             <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] lg:bottom-0 left-0 right-0 lg:right-64 z-30 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-[0_-2px_10px_rgba(0,0,0,0.08)] px-4 pt-3 pb-3">
                 <form onSubmit={handleSubmit} className="flex gap-2">
                     <div className="flex-1 min-w-0">
@@ -751,6 +754,7 @@ export default function CustomerAccountPage() {
                     </button>
                 </form>
             </div>
+            )}
 
             <InvoiceDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
         </div>

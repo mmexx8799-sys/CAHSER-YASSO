@@ -10,6 +10,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { usePosCartStore } from '../stores/posCartStore';
 import { useReturnCartStore } from '../stores/returnCartStore';
+import { usePermissions } from '../hooks/usePermissions';
 
 // --- Sub Components for Performance Isolation ---
 
@@ -191,10 +192,16 @@ const DataManagementSection = memo(({
     onFactoryReset: () => void;
     isBusy: boolean;
 }) => {
+    const { can } = usePermissions();
+    const canBackup = can('backup.export');
+    const canRestore = can('data.restore');
+    const canReset = can('data.reset');
+    if (!canBackup && !canRestore && !canReset) return null;
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h2 className="font-bold text-xl mb-4 border-b border-gray-200 dark:border-gray-700 pb-2 text-gray-900 dark:text-gray-100">إدارة البيانات</h2>
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {canBackup && (
                 <button
                     data-testid="backup-create"
                     onClick={onBackup}
@@ -204,6 +211,8 @@ const DataManagementSection = memo(({
                     {isBusy ? <Loader2 size={28} className="animate-spin text-blue-800" /> : <Download size={28} />}
                     <span className="font-semibold text-lg">نسخ احتياطي</span>
                 </button>
+                )}
+                {canRestore && (
                 <button
                     data-testid="restore-trigger"
                     onClick={onRestore}
@@ -213,7 +222,9 @@ const DataManagementSection = memo(({
                     {isBusy ? <Loader2 size={28} className="animate-spin text-green-800" /> : <Upload size={28} />}
                     <span className="font-semibold text-lg">استعادة البيانات</span>
                 </button>
+                )}
             </div>
+            {canReset && (
             <div className="mt-6 border-t pt-4">
                 <button
                     data-testid="factory-reset"
@@ -225,6 +236,7 @@ const DataManagementSection = memo(({
                     <span className="font-semibold text-base">ضبط مصنع للبيانات</span>
                 </button>
             </div>
+            )}
         </div>
     );
 });

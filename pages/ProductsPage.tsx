@@ -13,6 +13,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import { orderBy } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import { useSearchParams } from 'react-router-dom';
+import { usePermissions } from '../hooks/usePermissions';
 
 
 const CategoryManagerModal: React.FC<{
@@ -302,7 +303,9 @@ const ProductCard: React.FC<{
   onPrint: (product: Product) => void;
   selected: boolean;
   onToggleSelect: (id: string) => void;
-}> = ({ product, categoryName, onEdit, onDelete, onPrint, selected, onToggleSelect }) => (
+}> = ({ product, categoryName, onEdit, onDelete, onPrint, selected, onToggleSelect }) => {
+  const { can } = usePermissions();
+  return (
   <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-shadow duration-200 hover:shadow-lg overflow-hidden ${selected ? 'ring-2 ring-primary-500' : ''}`}>
     <div className="min-w-0">
       {/* FIX-RADICAL: حل جذري لتقطيع الحروف على iOS - فصل الاسم والشارة عمودياً بدل 3 أعمدة في صف واحد ضيق */}
@@ -348,15 +351,20 @@ const ProductCard: React.FC<{
           <Printer size={22} aria-hidden="true" />
         </button>
       )}
+      {can('product.price') && (
       <button onClick={() => onEdit(product)} aria-label={`تعديل ${product.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors">
         <Edit size={22} aria-hidden="true" />
       </button>
+      )}
+      {can('product.delete') && (
       <button onClick={() => onDelete(product.id)} aria-label={`حذف ${product.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors">
         <Trash2 size={22} aria-hidden="true" />
       </button>
+      )}
     </div>
   </div>
-);
+  );
+};
 const MemoizedProductCard = memo(ProductCard);
 
 
@@ -405,6 +413,7 @@ export default function ProductsPage() {
     };
   }, [focusId]);
   const { confirm } = useConfirmation();
+  const { can } = usePermissions();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   // REQ-BARCODE: تحديد جماعي لطباعة الملصقات + ورقة الطباعة
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -541,14 +550,18 @@ export default function ProductsPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إدارة المنتجات</h1>
           <div className="flex space-x-2 space-x-reverse">
+            {can('product.create') && (
             <button onClick={() => { setEditingProduct(null); setIsModalOpen(true); }} aria-label="منتج جديد" className="flex items-center space-x-2 space-x-reverse bg-primary-600 text-white py-2 px-4 rounded-lg shadow hover:bg-primary-700">
               <Plus size={20} aria-hidden="true" />
               <span className="hidden sm:inline">منتج جديد</span>
             </button>
+            )}
+            {can('category.write') && (
             <button onClick={() => setIsCategoryModalOpen(true)} aria-label="إدارة التصنيفات" className="flex items-center space-x-2 space-x-reverse bg-gray-600 dark:bg-gray-700 text-white py-2 px-4 rounded-lg shadow hover:bg-gray-700 dark:hover:bg-gray-600">
               <FolderCog size={20} aria-hidden="true" />
               <span className="hidden sm:inline">إدارة التصنيفات</span>
             </button>
+            )}
             <button onClick={() => setIsBulkModalOpen(true)} aria-label="طباعة باركودات الكل" className="flex items-center space-x-2 space-x-reverse bg-indigo-600 text-white py-2 px-4 rounded-lg shadow hover:bg-indigo-700">
               <Printer size={20} aria-hidden="true" />
               <span className="hidden sm:inline">باركودات الكل</span>
