@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -32,38 +32,99 @@ service cloud.firestore {
     function canOpenDay() {
       return hasRole(['owner', 'admin', 'supervisor']);
     }
-    
+
+    // PERM-2026-09 REQ-PERM-2: overridable capability names (must mirror OVERRIDABLE_CAPS in utils/permissions.ts — guarded by parity test)
+    function overridableCaps() {
+      return ['sell', 'return', 'customer.payment', 'supplier.ops', 'product.create',
+              'product.price', 'product.delete', 'category.write', 'settings.write',
+              'archive.open', 'archive.close', 'customer.write', 'supplier.write',
+              'report.view', 'archive.view', 'dashboard.view', 'statement.export'];
+    }
+    // Tier-B (UI-only) subset — accountant may only be granted these (INV-3)
+    function uiCaps() {
+      return ['report.view', 'archive.view', 'dashboard.view', 'statement.export'];
+    }
+    // PERM-2026-09 REQ-PERM-2: effective capability = role matrix + per-user overrides.
+    // Order mirrors effectiveCan() in TS: disabled -> owner -> type guards (INV-9) -> deny -> grant.
+    // Type guards come BEFORE any short-circuit on role so a malformed list fails closed
+    // even for a user who holds the capability by default.
+    function hasCap(cap, roles) {
+      let u = getUserData();
+      return isAuthenticated()
+        && (!('disabled' in u) || u.disabled != true)
+        && (u.role == 'owner'
+            || ((!('capGrants' in u) || u.capGrants is list)
+                && (!('capDenies' in u) || u.capDenies is list)
+                && !(cap in u.get('capDenies', []))
+                && (u.role in roles
+                    || (u.role in ['admin', 'supervisor', 'cashier']
+                        && cap in u.get('capGrants', [])))));
+    }
+    // PERM-2026-09 REQ-PERM-2: whitelist for stored override lists (write-time only).
+    // Uses d.get('role','') so role-less docs (e.g. sehelly2018) never throw an evaluation error.
+    function capListsValid(d) {
+      return ((!('capGrants' in d) || (d.capGrants is list && d.capGrants.size() <= 20 && d.capGrants.hasOnly(overridableCaps())))
+        && (!('capDenies' in d) || (d.capDenies is list && d.capDenies.size() <= 20 && d.capDenies.hasOnly(overridableCaps())))
+        && (!('capGrants' in d) || !('capDenies' in d) || !(d.capGrants.hasAny(d.capDenies)))
+        && (d.get('role', '') != 'owner' || (!('capGrants' in d) && !('capDenies' in d)))
+        && (d.get('role', '') != 'accountant' || !('capGrants' in d) || d.capGrants.hasOnly(uiCaps())));
+    }
+    // True when either override list changed between pre- and post-image.
+    function capsChanged() {
+      return (('capGrants' in request.resource.data) != ('capGrants' in resource.data))
+        || (('capGrants' in request.resource.data) && ('capGrants' in resource.data)
+            && !(request.resource.data.capGrants == resource.data.capGrants))
+        || (('capDenies' in request.resource.data) != ('capDenies' in resource.data))
+        || (('capDenies' in request.resource.data) && ('capDenies' in resource.data)
+            && !(request.resource.data.capDenies == resource.data.capDenies));
+    }
+    function capsStampOk() {
+      return !capsChanged()
+        || (request.resource.data.permsUpdatedBy == request.auth.uid
+            && request.resource.data.permsUpdatedAt == request.time);
+    }
+
     match /users/{userId} {
       // R5 (BR-09/D-3): users exclusive to owner. Read: owner + self only.
       allow read: if isOwner() || (isAuthenticated() && request.auth.uid == userId);
       // create/update/delete: isOwner() only — with R1 owner-doc protection kept:
       // an owner doc can never be disabled or deleted via rules (Break-glass via Console only — BR-06).
-      allow create: if isOwner();
+      // PERM-2: + capListsValid on post-image; + stamp when overrides are introduced/changed.
+      allow create: if isOwner()
+                && capListsValid(request.resource.data)
+                && ((!('capGrants' in request.resource.data) && !('capDenies' in request.resource.data))
+                    || (request.resource.data.permsUpdatedBy == request.auth.uid
+                        && request.resource.data.permsUpdatedAt == request.time));
       allow update: if isOwner()
                 && !(resource.data.role == 'owner'
-                     && request.resource.data.get('disabled', false) == true);
+                     && request.resource.data.get('disabled', false) == true)
+                && (resource.data.get('role', '') != 'owner'
+                    || request.resource.data.get('role', '') == 'owner')
+                && capListsValid(request.resource.data)
+                && capsStampOk();
       allow delete: if isOwner() && resource.data.role != 'owner';
     }
-    
+
     match /appSettings/{settingsId} {
       allow read: if isActiveUser();
-      allow write: if isAdmin();
+      allow write: if hasCap('settings.write', ['owner', 'admin']);
     }
-    
+
     match /categories/{docId} {
       allow read: if isActiveUser();
-      allow write: if isAdmin();
+      allow write: if hasCap('category.write', ['owner', 'admin']);
     }
-    
+
     // BUG-P0-3: non-admin users may never change product prices directly.
+    // PERM-2: price branch uses hasCap (grants/denies apply); outer isStaff() kept for role gating.
     match /products/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('product.create', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.quantity >= 0;
       allow update: if isStaff()
         && request.resource.data.quantity >= 0
         && (
-          isAdmin()
+          hasCap('product.price', ['owner', 'admin'])
           ||
           (!('price' in request.resource.data.diff(resource.data).affectedKeys())
             && !('retailCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
@@ -71,56 +132,65 @@ service cloud.firestore {
             && !('wholesaleCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
             && !('wholesaleCreditPrice' in request.resource.data.diff(resource.data).affectedKeys()))
         );
-      allow delete: if isAdmin();
+      allow delete: if hasCap('product.delete', ['owner', 'admin']);
     }
-    
+
     // REQ-SEC1-8 Phase 0: openingBalance freeze — R1: isStaff() instead of isActiveUser() for non-admin path
+    // PERM-2 (D-P7): side-effect branch ({balance} only) stays open to staff (INV-8);
+    // profile branch requires the capability; openingBalance stays admin-only as today (INV-4).
     match /customers/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff();
-      allow update: if isAdmin() || (isStaff()
-        && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
+      allow create: if hasCap('customer.write', ['owner', 'admin', 'supervisor', 'cashier']);
+      allow update: if (isStaff()
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+                  || (hasCap('customer.write', ['owner', 'admin', 'supervisor', 'cashier'])
+                      && (isAdmin()
+                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys())));
       allow delete: if isAdmin();
     }
-    
+
     match /invoices/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('sell', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
-    
+
     match /returns/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('return', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
-    
+
     match /customerPayments/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('customer.payment', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.amount > 0;
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
+    // PERM-2 (D-P7): same split as customers.
     match /suppliers/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff();
-      allow update: if isAdmin() || (isStaff()
-        && !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()));
+      allow create: if hasCap('supplier.write', ['owner', 'admin', 'supervisor', 'cashier']);
+      allow update: if (isStaff()
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+                  || (hasCap('supplier.write', ['owner', 'admin', 'supervisor', 'cashier'])
+                      && (isAdmin()
+                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys())));
       allow delete: if isAdmin();
     }
 
     match /supplierPayments/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.amount > 0;
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
@@ -129,7 +199,7 @@ service cloud.firestore {
 
     match /purchaseInvoices/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
@@ -138,23 +208,25 @@ service cloud.firestore {
 
     match /supplierReturns/{docId} {
       allow read: if isActiveUser();
-      allow create: if isStaff()
+      allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
-    
+
+    // PERM-2: admin close-branch uses hasCap (grants/denies apply); staff-open branch unchanged.
     match /dailyArchives/{docId} {
       allow read: if isActiveUser();
-      allow create: if canOpenDay();
+      allow create: if hasCap('archive.open', ['owner', 'admin', 'supervisor']);
       allow update: if (isStaff() && resource.data.status == 'open'
                     && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
-                || isAdmin();
+                || hasCap('archive.close', ['owner', 'admin']);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     // BUG-P0-13/15: counters — R1: isStaff() for non-admin path (was isActiveUser)
+    // PERM-2: untouched (no capability).
     match /counters/{docId} {
       allow read: if isActiveUser();
       allow create: if isAdmin() || (isStaff()
@@ -184,6 +256,15 @@ service cloud.firestore {
         && (!('uid' in request.resource.data) || (request.resource.data.uid is string
           && request.resource.data.uid.size() <= 128));
       allow read, delete: if isAdmin();
+    }
+
+    // PERM-2026-09 REQ-PERM-2 (D-P6): append-only audit log for permission changes (no Functions/Spark-safe).
+    match /permissionAudit/{docId} {
+      allow read: if isOwner();
+      allow create: if isOwner()
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.at == request.time;
+      allow update, delete: if false;
     }
   }
 }

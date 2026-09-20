@@ -1,6 +1,9 @@
 // REQ-RBAC-3 AC-07 — permissionsParity (نقي، بلا محاكي)
 // كل مسار وكل عنصر ملاحة مرتبط بقدرة موجودة في جدول utils/permissions.ts — لا قدرة يتيمة
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { PERMISSION_MATRIX, can, OVERRIDABLE_CAPS, NON_OVERRIDABLE_CAPS, effectiveCan } from '../utils/permissions';
 import { UserRole } from '../types';
 
@@ -61,5 +64,45 @@ describe('permissionsParity — single source (BR-07)', () => {
     }
     expect(can(undefined as any, 'sell')).toBe(false);
     expect(can('manager' as any, 'sell')).toBe(false);
+  });
+});
+
+describe('permissionsRulesAlignment — TS ↔ firestore.rules (REQ-PERM-2)', () => {
+  const rulesText = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../firestore.rules'), 'utf8');
+  it('overridableCaps() في القواعد تطابق OVERRIDABLE_CAPS حرفيًا كمجموعة', () => {
+    const m = rulesText.match(/function overridableCaps\(\)\s*\{\s*return\s*\[([\s\S]*?)\];/);
+    expect(m, 'overridableCaps() found in rules').not.toBeNull();
+    const inRules = new Set((m![1].match(/'[^']+'/g) || []).map((s) => s.slice(1, -1)));
+    expect(inRules).toEqual(new Set(Object.keys(OVERRIDABLE_CAPS)));
+  });
+  it("كل hasCap('<cap>', [...]) يطابق قائمة أدوار المصفوفة", () => {
+    const re = /hasCap\('([^']+)',\s*\[([^\]]*)\]\)/g;
+    const found = new Map<string, Set<string>>();
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(rulesText)) !== null) {
+      const roles = new Set((m[2].match(/'[^']+'/g) || []).map((s) => s.slice(1, -1)));
+      if (found.has(m[1])) {
+        // نفس القدرة قد تظهر في create وupdate — القوائم يجب أن تتطابق
+        expect(roles, `consistent roles for ${m[1]}`).toEqual(found.get(m[1]));
+      } else {
+        found.set(m[1], roles);
+      }
+    }
+    // كل قدرة طبقة A تظهر مرة على الأقل
+    const layerA = Object.entries(OVERRIDABLE_CAPS).filter(([, l]) => l === 'rules').map(([c]) => c);
+    for (const cap of layerA) {
+      expect(found.has(cap), `hasCap present for ${cap}`).toBe(true);
+    }
+    // قدرات الطبقة B لا تظهر أبدًا في hasCap (واجهة فقط)
+    for (const cap of Object.entries(OVERRIDABLE_CAPS).filter(([, l]) => l === 'ui').map(([c]) => c)) {
+      expect(found.has(cap), `UI-only ${cap} absent from hasCap`).toBe(false);
+    }
+    // مطابقة الأدوار مع المصفوفة
+    for (const [cap, roles] of found) {
+      const expected = new Set(
+        (Object.entries((PERMISSION_MATRIX as any)[cap]) as [string, boolean][]).filter(([, v]) => v).map(([r]) => r),
+      );
+      expect(roles, `roles for ${cap}`).toEqual(expected);
+    }
   });
 });

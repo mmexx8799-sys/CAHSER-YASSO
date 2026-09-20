@@ -112,3 +112,17 @@ describe('RBAC Escalation — SR-04 disabled user rejected for every role', () =
     });
   }
 });
+
+// REQ-PERM-2 (addition only — no existing test touched): legacy `permissions` field is ignored by new logic
+describe('PERM-2 legacy permissions field ignored', () => {
+  it("cashier with legacy permissions:['product.price'] gains nothing; sell still allowed", async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), 'users', 'legacy-perm'), { email: 'l@t.local', role: UserRole.Cashier, permissions: ['product.price'] });
+    });
+    const db = testEnv.authenticatedContext('legacy-perm').firestore();
+    await seedDoc('products', 'legacy-price', { name: 'منتج', code: 'C1', quantity: 5, price: 10, categoryId: 'cat1', searchableIndex: [] });
+    await assertFails(updateDoc(doc(db, 'products', 'legacy-price'), { price: 999 }));
+    await assertSucceeds(setDoc(doc(db, 'invoices', 'legacy-inv'), { total: 10, subtotal: 10, items: [] }));
+  });
+});
