@@ -105,6 +105,9 @@ export interface User {
     role?: UserRole;
     // FIX: Add optional disabled property to allow soft deletion without Auth.
     disabled?: boolean;
+    // PERM-2026-09 REQ-PERM-1: per-user capability overrides (optional; absent = legacy behavior).
+    capGrants?: string[];
+    capDenies?: string[];
 }
 
 export type PriceType = 'retail' | 'wholesale';

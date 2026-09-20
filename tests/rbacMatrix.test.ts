@@ -59,7 +59,7 @@ function opFor(cap: Capability): { col: string; id: string; data: any; kind: 'cr
 }
 
 // Capabilities that are UI-only (لا فرض بالقواعد) — لا نختبرها هنا، تُختبر في permissionsParity (R3)
-const UI_ONLY: Capability[] = ['dashboard.view', 'report.view', 'statement.export', 'backup.export'];
+const UI_ONLY: Capability[] = ['dashboard.view', 'report.view', 'archive.view', 'statement.export', 'backup.export'];
 const DATA_ONLY: Capability[] = ['data.restore', 'data.reset']; // تُختبر عبر ledger.delete في R5
 const EXCLUDED = new Set<string>([...UI_ONLY, ...DATA_ONLY]);
 
