@@ -29,6 +29,11 @@
 - `data.restore`/`data.reset` now require `role=owner` (R2 `utils/permissions.ts`), but no `owner` exists in production until R4.
 - No operational risk: all current production data is test/dummy data (confirmed by project owner) — no real backup/restore need expected before R4 completes.
 
+## R3 — Backup button also hidden for admin, no owner yet (2026-09-20)
+
+- `backup.export` now owner-only in UI (`SettingsPage`), same root cause as R2's restore/reset gap.
+- No operational risk (dummy data), but reinforces need to complete R4 soon.
+
 ## مفتوحة (Open)
 
 Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)

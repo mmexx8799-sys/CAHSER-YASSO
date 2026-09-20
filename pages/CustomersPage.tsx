@@ -9,6 +9,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { useDebounce } from '../hooks/useDebounce';
 import { usePermissions } from '../hooks/usePermissions';
+import { isAdminRole } from '../utils/permissions';
 
 const CustomerFormModal: React.FC<{
   isOpen: boolean;
@@ -80,7 +81,7 @@ const CustomerCard: React.FC<{
   onDelete: (customer: Customer) => void;
   onAddPayment: (customer: Customer) => void;
 }> = ({ customer, onEdit, onDelete, onAddPayment }) => {
-  const { can } = usePermissions();
+  const { can, role } = usePermissions();
   const balance = customer.balance || 0;
   const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
   const balanceText = balance > 0 ? 'عليه مديونية (مدين)' : balance < 0 ? 'له رصيد (دائن)' : 'رصيد صفري';
@@ -98,7 +99,7 @@ const CustomerCard: React.FC<{
       <div className="flex justify-end space-x-2 space-x-reverse mt-2">
         {can('customer.payment') && <button onClick={() => onAddPayment(customer)} title="إضافة دفعة" aria-label={`إضافة دفعة لـ ${customer.name}`} className="p-2 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>}
         {can('customer.write') && <button onClick={() => onEdit(customer)} title="تعديل" aria-label={`تعديل ${customer.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>}
-        {can('customer.write') && <button onClick={() => onDelete(customer)} title="حذف" aria-label={`حذف ${customer.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>}      </div>
+        {isAdminRole(role) && <button onClick={() => onDelete(customer)} title="حذف" aria-label={`حذف ${customer.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>}      </div>
     </div>
   );
 }

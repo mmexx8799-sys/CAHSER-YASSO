@@ -9,6 +9,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { useDebounce } from '../hooks/useDebounce';
 import { usePermissions } from '../hooks/usePermissions';
+import { isAdminRole } from '../utils/permissions';
 
 const SupplierFormModal: React.FC<{
   isOpen: boolean;
@@ -80,7 +81,7 @@ const SupplierCard: React.FC<{
   onDelete: (supplier: Supplier) => void;
   onAddPayment: (supplier: Supplier) => void;
 }> = ({ supplier, onEdit, onDelete, onAddPayment }) => {
-  const { can } = usePermissions();
+  const { can, role } = usePermissions();
   const balance = supplier.balance || 0;
   const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
   const balanceText = balance > 0 ? 'له مديونية علينا (دائن)' : balance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري';
@@ -98,7 +99,7 @@ const SupplierCard: React.FC<{
       <div className="flex justify-end space-x-2 space-x-reverse mt-2">
         {can('supplier.ops') && <button onClick={() => onAddPayment(supplier)} title="إضافة دفعة" aria-label={`إضافة دفعة لـ ${supplier.name}`} className="p-2 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-full transition-colors"><DollarSign size={20} /></button>}
         {can('supplier.write') && <button onClick={() => onEdit(supplier)} title="تعديل" aria-label={`تعديل ${supplier.name}`} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors"><Edit size={20} /></button>}
-        {can('supplier.write') && <button onClick={() => onDelete(supplier)} title="حذف" aria-label={`حذف ${supplier.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>}
+        {isAdminRole(role) && <button onClick={() => onDelete(supplier)} title="حذف" aria-label={`حذف ${supplier.name}`} className="p-2 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-full transition-colors"><Trash2 size={20} /></button>}
       </div>
     </div>
   );
