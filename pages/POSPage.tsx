@@ -31,17 +31,28 @@ const ArchiveGuard: React.FC<{ type: 'sale' | 'return' }> = ({ type }) => {
         }
     }
     return (
-        <div className="absolute top-0 bottom-0 left-0 right-0 bg-white dark:bg-gray-900 flex flex-col justify-center items-center text-center p-4 z-50">
-            <AlertCircle size={64} className="text-orange-400 mb-4" />
-            <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">{messages[type].title}</h2>
-            <p className="text-gray-600 dark:text-gray-300 mb-8 text-lg">{messages[type].body}</p>
-            <button
-                onClick={() => navigate('/settings')}
-                className="flex items-center space-x-2 bg-primary-600 text-white py-3 px-6 rounded-lg shadow-md hover:bg-primary-700 text-lg font-semibold"
+        <div className="flex w-full items-start sm:items-center justify-center px-4 py-8 sm:p-6 min-h-[calc(100dvh-14rem)] lg:min-h-[calc(100dvh-10rem)]">
+            <section
+                aria-labelledby="archive-guard-title"
+                className="w-full max-w-md rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6 py-8 sm:p-8 shadow-xl text-center"
             >
-                <Settings size={20} />
-                <span>الانتقال إلى الإعدادات</span>
-            </button>
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 dark:bg-orange-900/30 ring-1 ring-orange-100 dark:ring-orange-800">
+                    <AlertCircle size={32} className="text-orange-500 dark:text-orange-300" aria-hidden="true" />
+                </div>
+                <h2 id="archive-guard-title" className="text-2xl sm:text-[1.7rem] font-extrabold leading-9 text-gray-900 dark:text-gray-100 text-balance">
+                    {messages[type].title}
+                </h2>
+                <p className="mt-3 text-sm sm:text-base leading-7 text-gray-600 dark:text-gray-300 text-pretty">
+                    {messages[type].body}
+                </p>
+                <button
+                    onClick={() => navigate('/settings')}
+                    className="mt-7 inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl bg-primary-600 px-6 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+                >
+                    <Settings size={20} aria-hidden="true" />
+                    <span>الانتقال إلى الإعدادات</span>
+                </button>
+            </section>
         </div>
     );
 };
@@ -606,7 +617,7 @@ export default function POSPage() {
     }
 
     if (!dailyArchive) {
-        return <div className="relative h-full"><ArchiveGuard type="sale" /></div>;
+        return <ArchiveGuard type="sale" />;
     }
 
     return (

@@ -44,15 +44,15 @@ const Header = React.memo(() => {
     };
 
     return (
-        <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50 px-4 pt-[env(safe-area-inset-top)] transition-colors duration-200">
-            <div className="h-16 flex items-center justify-between">
-                <h1 className="text-xl font-bold text-primary-700 dark:text-primary-300">{appName}</h1>
-                <div className="flex items-center space-x-2 space-x-reverse text-sm">
+        <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50 px-4 pt-[env(safe-area-inset-top)] border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
+            <div className="h-16 flex items-center justify-between gap-3 max-w-screen-2xl mx-auto">
+                <h1 className="flex-1 min-w-0 text-lg sm:text-xl font-bold text-primary-700 dark:text-primary-300 truncate leading-tight">{appName}</h1>
+                <div className="flex shrink-0 items-center gap-1 sm:gap-2 text-sm">
                     <button onClick={toggleTheme} aria-label="تبديل الوضع الليلي" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors">
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
-                    <span className="text-gray-700 dark:text-gray-200 hidden sm:block truncate max-w-xs">{currentUser?.email}</span>
-                    <button onClick={handleSignOut} aria-label="تسجيل الخروج" className="flex items-center space-x-1 text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-300 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                    <span className="text-gray-700 dark:text-gray-200 hidden md:block truncate max-w-[12rem] lg:max-w-xs" dir="ltr">{currentUser?.email}</span>
+                    <button onClick={handleSignOut} aria-label="تسجيل الخروج" className="flex shrink-0 items-center gap-1.5 text-red-700 dark:text-red-300 hover:text-red-800 dark:hover:text-red-200 p-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                         <LogOut size={18} />
                         <span className="font-semibold">خروج</span>
                     </button>
