@@ -113,10 +113,10 @@ describe('Archive transitions (SR-06)', () => {
     await assertFails(updateDoc(doc(db, 'dailyArchives', 'arch-bypass'), { status: 'closed', totalSales: 999 } as any));
   });
 
-  it('delete: isAdmin ALLOWED, others DENIED (R1)', async () => {
+  it('delete: isOwner ALLOWED, others DENIED (R5)', async () => {
     for (const [role, shouldAllow] of [
       [UserRole.Owner, true],
-      [UserRole.Admin, true],
+      [UserRole.Admin, false],
       [UserRole.Supervisor, false],
       [UserRole.Cashier, false],
       [UserRole.Accountant, false],

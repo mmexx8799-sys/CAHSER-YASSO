@@ -188,10 +188,11 @@ describe('BUG-P0-13: counters rule — direct writes (AC-02)', () => {
     expect(await getCounter(db, 'probe-upd')).toBe(6);
   });
 
-  it('AC-02: cashier cannot delete a counter; admin can', async () => {
+  it('AC-02 (R5): cashier/admin cannot delete a counter; owner can', async () => {
     await testEnv.clearFirestore();
     await seedActiveUser('cashier-ac02d');
     await seedActiveUser('admin-ac02d', 'admin');
+    await seedActiveUser('owner-ac02d', 'owner');
     await testEnv.withSecurityRulesDisabled(async (ctx) => {
       await setDoc(doc(ctx.firestore(), 'counters', 'probe-del'), { lastNumber: 3 });
     });
@@ -200,8 +201,11 @@ describe('BUG-P0-13: counters rule — direct writes (AC-02)', () => {
     await assertFails(deleteDoc(doc(cashierDb, 'counters', 'probe-del')));
 
     const adminDb = testEnv.authenticatedContext('admin-ac02d').firestore();
-    await assertSucceeds(deleteDoc(doc(adminDb, 'counters', 'probe-del')));
-    expect(await getCounter(adminDb, 'probe-del')).toBeUndefined();
+    await assertFails(deleteDoc(doc(adminDb, 'counters', 'probe-del')));
+
+    const ownerDb = testEnv.authenticatedContext('owner-ac02d').firestore();
+    await assertSucceeds(deleteDoc(doc(ownerDb, 'counters', 'probe-del')));
+    expect(await getCounter(ownerDb, 'probe-del')).toBeUndefined();
   });
 
   it('AC-02: unauthenticated writes are rejected', async () => {

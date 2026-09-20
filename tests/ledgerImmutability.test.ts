@@ -68,14 +68,17 @@ describe('Ledger immutability — non-admin cannot update ledger docs (SR-05)', 
       await assertSucceeds(updateDoc(doc(dbOwner, col, `${col}-existing`), { total: 102 } as any));
     });
   }
-  it('delete stays isAdmin() in R1 (admin can delete, cashier cannot)', async () => {
+  it('delete is owner-only in R5 (owner can delete; admin/cashier cannot)', async () => {
     await testEnv.clearFirestore();
     await seedUser('cashier-del', UserRole.Cashier);
     await seedUser('admin-del', UserRole.Admin);
+    await seedUser('owner-del', UserRole.Owner);
     await seedDoc('invoices', 'inv-del-ledger', { total: 10 });
     const dbCash = testEnv.authenticatedContext('cashier-del').firestore();
     const dbAdmin = testEnv.authenticatedContext('admin-del').firestore();
+    const dbOwner = testEnv.authenticatedContext('owner-del').firestore();
     await assertFails(deleteDoc(doc(dbCash, 'invoices', 'inv-del-ledger')));
-    await assertSucceeds(deleteDoc(doc(dbAdmin, 'invoices', 'inv-del-ledger')));
+    await assertFails(deleteDoc(doc(dbAdmin, 'invoices', 'inv-del-ledger')));
+    await assertSucceeds(deleteDoc(doc(dbOwner, 'invoices', 'inv-del-ledger')));
   });
 });

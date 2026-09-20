@@ -34,16 +34,15 @@ service cloud.firestore {
     }
     
     match /users/{userId} {
-      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      // R1: owner guard + permissions field protection (SR-01/02, BR-06)
-      // create: owner can create any role; admin can create non-owner; others cannot
-      allow create: if isOwner() || (isAdmin() && request.resource.data.role != 'owner');
-      // update: owner cannot be disabled via rules; admin cannot touch owner doc nor escalate to owner; self can update non-sensitive fields only
-      allow update: if (isOwner() && !(resource.data.role == 'owner' && request.resource.data.get('disabled', false) == true))
-                || (isAdmin() && resource.data.role != 'owner' && request.resource.data.role != 'owner')
-                || (request.auth.uid == userId
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'disabled', 'permissions']));
-      allow delete: if isAdmin() && resource.data.role != 'owner';
+      // R5 (BR-09/D-3): users exclusive to owner. Read: owner + self only.
+      allow read: if isOwner() || (isAuthenticated() && request.auth.uid == userId);
+      // create/update/delete: isOwner() only — with R1 owner-doc protection kept:
+      // an owner doc can never be disabled or deleted via rules (Break-glass via Console only — BR-06).
+      allow create: if isOwner();
+      allow update: if isOwner()
+                && !(resource.data.role == 'owner'
+                     && request.resource.data.get('disabled', false) == true);
+      allow delete: if isOwner() && resource.data.role != 'owner';
     }
     
     match /appSettings/{settingsId} {
@@ -90,7 +89,7 @@ service cloud.firestore {
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
     
     match /returns/{docId} {
@@ -99,7 +98,7 @@ service cloud.firestore {
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
     
     match /customerPayments/{docId} {
@@ -108,7 +107,7 @@ service cloud.firestore {
         && request.resource.data.amount > 0;
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     match /suppliers/{docId} {
@@ -125,7 +124,7 @@ service cloud.firestore {
         && request.resource.data.amount > 0;
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     match /purchaseInvoices/{docId} {
@@ -134,7 +133,7 @@ service cloud.firestore {
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     match /supplierReturns/{docId} {
@@ -143,7 +142,7 @@ service cloud.firestore {
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
     
     match /dailyArchives/{docId} {
@@ -152,7 +151,7 @@ service cloud.firestore {
       allow update: if (isStaff() && resource.data.status == 'open'
                     && !('status' in request.resource.data.diff(resource.data).affectedKeys()))
                 || isAdmin();
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     // BUG-P0-13/15: counters — R1: isStaff() for non-admin path (was isActiveUser)
@@ -164,7 +163,7 @@ service cloud.firestore {
       allow update: if isAdmin() || (isStaff()
         && request.resource.data.lastNumber == resource.data.lastNumber + 1
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastNumber']));
-      allow delete: if isAdmin();
+      allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
     // 2.2-free: clientErrors — unchanged (isActiveUser for create, isAdmin for read/delete)
