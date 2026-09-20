@@ -15,8 +15,8 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { usePosCartStore } from './stores/posCartStore';
 import { useReturnCartStore } from './stores/returnCartStore';
 import { usePermissions } from './hooks/usePermissions';
-import { can } from './utils/permissions';
 import type { Capability } from './utils/permissions';
+import { buildNavItems, resolveLanding } from './utils/nav';
 
 // Lazy load pages
 const POSPage = React.lazy(() => import('./pages/POSPage'));
@@ -63,47 +63,21 @@ const Header = React.memo(() => {
 });
 
 // Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
-// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts
+// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts — via utils/nav.ts pure
 const useNavItems = () => {
     const { currentUser } = useAuth();
+    const { can: canCap } = usePermissions();
     const role = currentUser?.role;
     const disabled = currentUser?.disabled === true;
+    const grants = (currentUser as any)?.capGrants;
+    const denies = (currentUser as any)?.capDenies;
     return useMemo(() => {
-        const items: Array<{ to: string; icon: any; label: string }> = [];
-        if (disabled || !role) {
-            // Offline/missing role fallback — show all base (rules are enforcer)
-            items.push(
-                { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
-                { to: "/customers", icon: Users, label: "العملاء" },
-                { to: "/suppliers", icon: Truck, label: "الموردين" },
-                { to: "/returns", icon: Undo2, label: "المرتجعات" },
-                { to: "/products", icon: Package, label: "المنتجات" },
-                { to: "/reports", icon: BarChart2, label: "التقارير" },
-                { to: "/archive", icon: Archive, label: "الأرشيف" },
-            );
-        } else {
-            if (can(role, 'sell' as Capability)) items.push({ to: "/", icon: ShoppingCart, label: "نقطة البيع" });
-            // Customers/Suppliers visible to all active roles (read) — accountant sees them read-only per spec
-            items.push({ to: "/customers", icon: Users, label: "العملاء" });
-            items.push({ to: "/suppliers", icon: Truck, label: "الموردين" });
-            if (can(role, 'return' as Capability)) items.push({ to: "/returns", icon: Undo2, label: "المرتجعات" });
-            if (can(role, 'product.create' as Capability)) items.push({ to: "/products", icon: Package, label: "المنتجات" });
-            if (can(role, 'report.view' as Capability)) {
-                items.push({ to: "/reports", icon: BarChart2, label: "التقارير" });
-                items.push({ to: "/archive", icon: Archive, label: "الأرشيف" });
-            }
-        }
-        if (!disabled && can(role, 'dashboard.view' as Capability)) {
-            items.push({ to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" });
-        }
-        if (!disabled && can(role, 'settings.write' as Capability)) {
-            items.push({ to: "/settings", icon: Settings, label: "الإعدادات" });
-        }
-        if (!disabled && can(role, 'users.manage' as Capability)) {
-            items.push({ to: "/users", icon: Users, label: "المستخدمين" });
-        }
-        return items;
-    }, [role, disabled]);
+        // مفوضة للدالة النقية (capGrants/capDenies تؤثر)
+        return buildNavItems(role as any, { grants, denies } as any, { disabled }).map(it => {
+            const iconMap: any = { '/': ShoppingCart, '/customers': Users, '/suppliers': Truck, '/returns': Undo2, '/products': Package, '/reports': BarChart2, '/archive': Archive, '/dashboard': LayoutDashboard, '/settings': Settings, '/users': Users };
+            return { to: it.to, icon: iconMap[it.to], label: it.label };
+        });
+    }, [role, disabled, JSON.stringify(grants), JSON.stringify(denies)]);
 };
 
 const BottomNav = React.memo(() => {
@@ -165,30 +139,44 @@ const PageLoader: React.FC = () => (
 );
 
 const RequireCapability: React.FC<{ capability: Capability; children: React.ReactNode }> = ({ capability, children }) => {
-    const { can: canCap } = usePermissions();
+    const { can: canCap, role } = usePermissions() as any;
+    const { isUnresolved, currentUser } = useAuth() as any;
     const navigate = useNavigate();
     const location = useLocation();
+    if (isUnresolved) {
+        return <div className="p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
+    }
     useEffect(() => {
         if (!canCap(capability)) {
-            toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
-            navigate("/", { replace: true });
+            const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+            if (location.pathname !== landing) {
+                toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
+                navigate(landing, { replace: true });
+            }
         }
-    }, [canCap, capability, navigate, location.pathname]);
+    }, [canCap, capability, navigate, location.pathname, role, currentUser]);
     if (!canCap(capability)) return null;
     return <>{children}</>;
 };
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Backwards compat: old AdminRoute now maps to settings.write (dashboard/settings were admin) — users route uses users.manage directly
-    const { can: canCap } = usePermissions();
+    // Backwards compat: old AdminRoute now maps to settings.write — uses landing resolver
+    const { can: canCap, role } = usePermissions() as any;
+    const { isUnresolved, currentUser } = useAuth() as any;
     const navigate = useNavigate();
     const location = useLocation();
     const allowed = canCap('settings.write' as Capability);
+    if (isUnresolved) {
+        return <div className="p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
+    }
     useEffect(() => {
         if (!allowed) {
-            toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
-            navigate("/", { replace: true });
+            const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+            if (location.pathname !== landing) {
+                toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
+                navigate(landing, { replace: true });
+            }
         }
-    }, [allowed, navigate, location.pathname]);
+    }, [allowed, navigate, location.pathname, role, currentUser]);
     if (!allowed) return null;
     return <>{children}</>;
 };
@@ -242,8 +230,15 @@ const AndroidBackHandler = () => {
     return null;
 };
 
+const LandingRedirect: React.FC = () => {
+    const { can: _c, role } = usePermissions() as any;
+    const { currentUser } = useAuth() as any;
+    const to = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+    return <Navigate to={to} replace />;
+};
+
 const AppRoutes: React.FC = () => {
-    const { currentUser, isLoading } = useAuth();
+    const { currentUser, isLoading, isUnresolved, retry } = useAuth() as any;
 
     // BUG-P0-5: side effects (signOut + toast) must not run in the render
     // body — they fired on every render. Guard is keyed on uid (not a plain
@@ -260,6 +255,10 @@ const AppRoutes: React.FC = () => {
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen bg-gray-100"><PageLoader /></div>;
+    }
+
+    if (isUnresolved) {
+        return <div className="flex flex-col justify-center items-center h-screen bg-gray-100 p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={retry} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
     }
 
     if (!currentUser) {
@@ -298,11 +297,11 @@ const AppRoutes: React.FC = () => {
                     <Route path="/dashboard" element={<RequireCapability capability="dashboard.view"><DashboardPage /></RequireCapability>} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<RequireCapability capability="report.view"><ReportsPage /></RequireCapability>} />
-                    <Route path="/archive" element={<RequireCapability capability="report.view"><ArchivePage /></RequireCapability>} />
+                    <Route path="/archive" element={<RequireCapability capability="archive.view"><ArchivePage /></RequireCapability>} />
                     <Route path="/settings" element={<RequireCapability capability="settings.write"><SettingsPage /></RequireCapability>} />
                     <Route path="/users" element={<RequireCapability capability="users.manage"><UsersPage /></RequireCapability>} />
                 </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<LandingRedirect />} />
             </Routes>
         </>
     );

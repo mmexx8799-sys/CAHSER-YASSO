@@ -26,6 +26,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export default function SupplierAccountPage() {
     const { can } = usePermissions();
+    const canExport = can('statement.export');
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -581,7 +582,8 @@ export default function SupplierAccountPage() {
                             </div>
                             <button
                                 onClick={exportStatementCsv}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 disabled:opacity-50"
                             >
                                 <Download size={16} />
@@ -589,7 +591,8 @@ export default function SupplierAccountPage() {
                             </button>
                             <button
                                 onClick={exportStatementExcel}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
                             >
                                 <FileSpreadsheet size={16} />

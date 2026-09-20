@@ -11,6 +11,7 @@ import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByB
 import { resolveBarcodeScan, withCloudTimeout } from '../utils/barcodeResolution';
 import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
+import { usePermissions } from '../hooks/usePermissions';
 import { orderBy, where, collection, getDocs, query } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import { getDB } from '../services/firebase';
@@ -136,6 +137,8 @@ const ReturnCartModal: React.FC<{
     categories: Category[];
     originalInvoiceId: string | null;
 }> = ({ dailyArchive, categories, originalInvoiceId }) => {
+    const { can } = usePermissions();
+    const canReturn = can('return');
     const { confirm } = useConfirmation();
     const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, pricingMethod, setPricingMethod } = useReturnCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -403,7 +406,7 @@ const ReturnCartModal: React.FC<{
                     <button
                         data-testid="return-confirm"
                         onClick={handleProcessReturn}
-                        disabled={returnCart.length === 0 || !dailyArchive || dailyArchive.status === 'closed' || isProcessing}
+                        disabled={returnCart.length === 0 || !dailyArchive || dailyArchive.status === 'closed' || isProcessing || !canReturn} title={!canReturn ? 'ليس لديك صلاحية المرتجعات' : undefined}
                         className="w-full py-3 px-4 bg-red-600 text-white rounded-lg font-bold text-lg shadow-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center space-x-2 space-x-reverse"
                     >
                         {isProcessing ? (

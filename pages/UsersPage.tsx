@@ -8,7 +8,6 @@ import type { User } from '../types';
 import { UserRole } from '../types';
 import { orderBy } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
-import { usePermissions } from '../hooks/usePermissions';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'مالك',
