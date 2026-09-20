@@ -143,3 +143,38 @@ firebase login
 
 > النطاق الآمن للتنظيف هو `configstore` تحديدًا — لا تحذف `.config` كله؛
 > أدوات أخرى (opencode وrefact وغيرها) تشارك نفس المجلد الأب.
+
+## RBAC-2026-09 — ترحيل المالك R4 (Runbook)
+
+> ⚠️ لا يُشغَّل `--apply` ضد الإنتاج إلا بإذن صريح بعد مخرجات المحاكي الأربعة
+> (dry-run / apply+read-back / idempotent / rollback) — المرجع REQ-RBAC-4.
+
+```bash
+# 1) تجربة على المحاكي أولًا (تلقائية ضمن npm run test:rules — tests/migrateRoles.test.ts)
+npm run test:rules
+
+# 2) Dry-run ضد الإنتاج (صفر كتابة — يعرض الخطة فقط)
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\sa.json"
+node scripts/migrateRoles.mjs --owner izatadel007@gmail.com
+# المتوقع: candidate ... admin->owner, writes: 1, DRY-RUN — لا كتابة
+
+# 3) التنفيذ الفعلي (بعد الإذن فقط) — يتطلب تأكيد المشروع صراحةً
+node scripts/migrateRoles.mjs --owner izatadel007@gmail.com --apply --project casher-yasoo
+# يحفظ users-backup-<timestamp>.json محليًا قبل الكتابة، ثم يعرض read-back: role=owner
+
+# 4) التحقق: دخول فعلي بحساب izatadel007 وفتح /users (صلاحيات owner)
+
+# 5) التراجع (إن لزم) — قبل أي تراجع في القواعد/الواجهة (EC-09):
+node scripts/migrateRoles.mjs --rollback users-backup-<timestamp>.json --apply --project casher-yasoo
+```
+
+- بيانات الاعتماد من `GOOGLE_APPLICATION_CREDENTIALS` فقط — ممنوع أي `--key-file` (AUDIT-SEC-2).
+- السكربت لا يمس Firebase Auth إطلاقًا — يغيّر حقل `role` فقط.
+- الترتيب الإلزامي للتراجع الكامل (§2.5): **أولًا** rollback الترحيل أعلاه **ثم** أي تراجع قواعد/واجهة.
+
+## Break-glass — قفل المالك خارج النظام (EC-08)
+
+1. Firebase Console → Authentication: إعادة تعيين كلمة المرور لحساب `izatadel007@gmail.com` (أو إنشاء حساب بديل مؤقت).
+2. Firebase Console → Firestore → `users/{uid}`: تعديل `role` إلى `owner` و`disabled` إلى `false` — الـ Console يتجاوز القواعد.
+3. التحقق بالدخول الفعلي وفتح `/users`.
+4. نسخة `users-backup-*.json` من R4 محفوظة خارج الجهاز للطوارئ.
