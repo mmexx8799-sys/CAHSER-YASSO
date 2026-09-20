@@ -26,6 +26,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(true);
     const [isUnresolved, setIsUnresolved] = useState(false);
     const lastUserRef = useRef<AppUser | null>(null);
+    const hasRealUserRef = useRef(false);
 
     const [retryTick, setRetryTick] = useState(0);
     const retry = useCallback(() => setRetryTick(x => x + 1), []);
@@ -46,17 +47,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (!user) {
                 setCurrentUser(null);
                 lastUserRef.current = null;
+                hasRealUserRef.current = false;
                 setIsLoading(false);
                 setIsUnresolved(false);
                 return;
             }
 
+            hasRealUserRef.current = false;
             setIsLoading(true);
             setIsUnresolved(false);
             const userDocRef = doc(getDB(), 'users', user.uid);
             timeoutId = setTimeout(() => {
                 if (myGen !== gen) return;
-                if (shouldFlagUnresolved({ hasServerSnapshot, hasResolvedUser: !!lastUserRef.current })) {
+                if (shouldFlagUnresolved({ hasServerSnapshot, hasResolvedUser: hasRealUserRef.current })) {
                     setIsUnresolved(true);
                     setIsLoading(false);
                 }
@@ -74,6 +77,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     if (!fromCache) {
                         signOut().catch(()=>{ /* ignore signOut race */ });
                         const next: AppUser | null = null;
+                        hasRealUserRef.current = false;
                         if (!equalUser(lastUserRef.current, next)) { lastUserRef.current = next; setCurrentUser(next); }
                         setIsLoading(false);
                         setIsUnresolved(false);
@@ -89,6 +93,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     capGrants: data.capGrants,
                     capDenies: data.capDenies,
                 };
+                hasRealUserRef.current = true;
                 if (!equalUser(lastUserRef.current, next)) {
                     lastUserRef.current = next;
                     setCurrentUser(next);

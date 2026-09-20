@@ -21,4 +21,12 @@ describe('shouldFlagUnresolved', () => {
   it('no server + has resolved user (cache) => false', () => expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: true })).toBe(false));
   it('has server => false regardless', () => expect(shouldFlagUnresolved({ hasServerSnapshot: true, hasResolvedUser: false })).toBe(false));
   it('has server + has user => false', () => expect(shouldFlagUnresolved({ hasServerSnapshot: true, hasResolvedUser: true })).toBe(false));
+  it('تسلسل خطأ → إعادة محاولة → خطأ/مهلة ⇒ unresolved (المستخدم المؤقت لا يُحتسب)', () => {
+    // أول خطأ قبل أي لقطة حقيقية: hasRealUser=false → unresolved
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: false })).toBe(true);
+    // بعد إنشاء مستخدم مؤقت بلا دور (من فرع الخطأ) لا يصبح hasRealUser=true، فإعادة المحاولة الثانية التي تفشل/تنتهي مهلتها تبقى unresolved
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: false })).toBe(true);
+    // لو كان لدينا لقطة cache حقيقية، فلا unresolved
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: true })).toBe(false);
+  });
 });

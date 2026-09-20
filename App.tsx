@@ -136,31 +136,13 @@ const RequireCapability: React.FC<{ capability: Capability; children: React.Reac
         if (!canCap(capability)) {
             const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
             if (location.pathname !== landing) {
-                toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
+                const silent = location.pathname === '/' || location.pathname === '/returns';
+                if (!silent) toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
                 navigate(landing, { replace: true });
             }
         }
     }, [canCap, capability, navigate, location.pathname, role, currentUser]);
     if (!canCap(capability)) return null;
-    return <>{children}</>;
-};
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { can: canCap, role } = usePermissions() as any;
-    const { currentUser } = useAuth() as any;
-    const navigate = useNavigate();
-    const location = useLocation();
-    const allowed = canCap('settings.write' as Capability);
-    useEffect(() => {
-        if (!allowed) {
-            const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
-            if (location.pathname !== landing) {
-                toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
-                navigate(landing, { replace: true });
-            }
-        }
-    }, [allowed, navigate, location.pathname, role, currentUser]);
-    if (!allowed) return null;
     return <>{children}</>;
 };
 

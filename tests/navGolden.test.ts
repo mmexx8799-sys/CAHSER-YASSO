@@ -3,9 +3,12 @@ import { describe, it, expect } from 'vitest';
 import { UserRole } from '../types';
 import { buildNavItems, resolveLanding, ROUTE_CAPS } from '../utils/nav';
 import { effectiveCan } from '../utils/permissions';
+import { readFileSync } from 'fs';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 // المخرج الحالي قبل التعديل سُجل هنا كـ Golden — أي انحراف غير مقصود يفشل.
-// بلا تجاوزات: الأصل App.tsx 73-107 (القديم: بلا دور => كل شيء). الجديد: بلا دور => 5 أساسية.
+// بلا تجاوزات: الأصل App.tsx 73-107 (القديم: بلا دور => كل شيء). الجديد: بلا دور => 3 أساسية (customers/suppliers/products) — / و/returns محروسان.
 // disabled => []
 describe('navGolden — buildNavItems (no overrides)', () => {
   const cases: Array<[string|null, string[]]> = [
@@ -14,8 +17,8 @@ describe('navGolden — buildNavItems (no overrides)', () => {
     [UserRole.Supervisor, ['/','/customers','/suppliers','/returns','/products','/reports','/archive']],
     [UserRole.Cashier, ['/','/customers','/suppliers','/returns','/products','/reports','/archive']],
     [UserRole.Accountant, ['/customers','/suppliers','/reports','/archive']],
-    [null, ['/','/customers','/suppliers','/returns','/products']],
-    [undefined as any, ['/','/customers','/suppliers','/returns','/products']],
+    [null, ['/customers','/suppliers','/products']],
+    [undefined as any, ['/customers','/suppliers','/products']],
   ];
   for (const [role, expected] of cases) {
     it(`role=${role ?? 'null'} => ${expected.join(',')}`, () => {
@@ -57,5 +60,15 @@ describe('navGolden — buildNavItems (no overrides)', () => {
   it('فصل archive.view عن report.view', () => {
     expect(buildNavItems(UserRole.Cashier, { denies: ['report.view'] } as any).map(i=>i.to)).toEqual(['/','/customers','/suppliers','/returns','/products','/archive']);
     expect(buildNavItems(UserRole.Cashier, { denies: ['archive.view'] } as any).map(i=>i.to)).toEqual(['/','/customers','/suppliers','/returns','/products','/reports']);
+  });
+  it('ROUTE_CAPS مصدر واحد: App.tsx المحروس يطابق الجدول بالضبط', () => {
+    const appText = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../App.tsx'), 'utf8');
+    const pairs: Array<[string,string]> = [];
+    // App.tsx guarded routes are written as <Route path="X" element={<RequireCapability capability="Y">
+    const reGuard = /<Route path="([^"]+)" element=\{<RequireCapability capability="([^"]+)">/g;
+    let m: RegExpExecArray | null;
+    while ((m = reGuard.exec(appText)) !== null) pairs.push([m[1], m[2]]);
+    const map = new Map(pairs);
+    expect(map).toEqual(new Map(Object.entries(ROUTE_CAPS)));
   });
 });

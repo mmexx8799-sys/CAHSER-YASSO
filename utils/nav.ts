@@ -17,11 +17,10 @@ const NAV_ORDER: Array<{ to: string; label: string; cap?: Capability; always?: b
   { to: '/users', label: 'المستخدمين', cap: 'users.manage' },
 ];
 
-// Single source for route guards — App.tsx must use this
+// Single source for route guards — App.tsx must use this (only guarded routes)
 export const ROUTE_CAPS: Record<string, Capability> = {
   '/': 'sell',
   '/returns': 'return',
-  '/products': 'product.create',
   '/reports': 'report.view',
   '/archive': 'archive.view',
   '/dashboard': 'dashboard.view',
@@ -41,10 +40,8 @@ export function buildNavItems(
   const hasValidRole = !!role && (Object.values(UserRole) as string[]).includes(role as string);
   if (!hasValidRole) {
     return [
-      { to: '/', label: 'نقطة البيع' },
       { to: '/customers', label: 'العملاء' },
       { to: '/suppliers', label: 'الموردين' },
-      { to: '/returns', label: 'المرتجعات' },
       { to: '/products', label: 'المنتجات' },
     ];
   }
