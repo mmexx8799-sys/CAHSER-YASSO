@@ -23,16 +23,25 @@
 - `mmexx8799@gmail.com` (uid: `OQTdQOxDCAbMld06A8oT1Yhm7hC3`) — نفس الحالة، نفس السبب.
 - إجراء الحذف (Auth ثم Firestore) يُنفَّذ يدويًا بعد انتهاء دورة RBAC بالكامل — لا يُنسى.
 - الجرد النهائي AC-04 (2026-09-19): 4 حسابات فعّالة بلا تأثر (izatadel007@gmail.com `admin→owner`، mexx.maxx104@hotmail.com `admin`، abdelrhmanyasoo@gmail.com `admin`، esraa.man104@gmail.com `cashier`) + حسابان أعلاه بلا دور عمدًا (الأكثر أمانًا لحساب غير مستخدَم — القواعد تمنعه تلقائيًا).
+- تحديث 2026-09-20 (لقطة `/users` الحية): ظهر حساب سابع `sehelly2018@gmail.com` بلا `role` (—) لم يكن في الجرد الأصلي. الحالة: Default-deny (محروم من الكتابة تلقائيًا — لا أثر تشغيلي)؛ إن احتاج وصولًا يُسند له دور من `/users` بواسطة المالك.
 
 ## R2 — Restore/Reset temporarily owner-only, no owner yet (2026-09-19)
 
 - `data.restore`/`data.reset` now require `role=owner` (R2 `utils/permissions.ts`), but no `owner` exists in production until R4.
 - No operational risk: all current production data is test/dummy data (confirmed by project owner) — no real backup/restore need expected before R4 completes.
+- **Resolved by R4 (2026-09-20):** `izatadel007@gmail.com` أصبح `owner` فعليًا — الاستعادة/الضبط متاحان له الآن.
 
 ## R3 — Backup button also hidden for admin, no owner yet (2026-09-20)
 
 - `backup.export` now owner-only in UI (`SettingsPage`), same root cause as R2's restore/reset gap.
 - No operational risk (dummy data), but reinforces need to complete R4 soon.
+- **Resolved by R4 (2026-09-20):** زر النسخ متاح للمالك الآن.
+
+## R4 — Owner migration production run (2026-09-20)
+
+- الطريقة: تعديل يدوي عبر Console (حقل `role: admin → owner` على وثيقة `izatadel007@gmail.com`) — لتعذّر Admin SDK محليًا (لا `GOOGLE_APPLICATION_CREDENTIALS` على الجهاز، والسكربت يرفض العمل بلا اعتماد — AUDIT-SEC-2). التغيير = حقل واحد في وثيقة واحدة، مطابق لما كان سيفعله `scripts/migrateRoles.mjs --apply` (كتابة واحدة).
+- Read-back: لقطة Console تُظهر `role: "owner"` + لقطة `/users` حية تُظهر `izatadel007@gmail.com` بصفة **مالك** محمي (`محمي — Break-glass فقط`، بلا أزرار حذف/تعطيل) — دخول فعلي ناجح.
+- `abdelrhmanyasoo@gmail.com` بقي `admin` كما اتفقنا (لم يُمس).
 
 ## مفتوحة (Open)
 
