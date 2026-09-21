@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, UserX, UserCheck } from 'lucide-react';
+import { Plus, Trash2, UserX, UserCheck, Shield } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationProvider';
-import { addUser, deleteUser, setUserDisabled } from '../services/api';
+import { addUser, deleteUser, setUserDisabled, setUserCapOverrides } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import type { User } from '../types';
 import { UserRole } from '../types';
 import { orderBy } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
+import { usePermissions } from '../hooks/usePermissions';
+import { PermissionEditorModal } from '../components/PermissionEditorModal';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'مالك',
@@ -84,25 +86,28 @@ export default function UsersPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const { confirm } = useConfirmation();
+    const { can } = usePermissions();
+    const canManage = can('users.manage');
+    const [permUser, setPermUser] = useState<User | null>(null);
+    const [isPermOpen, setIsPermOpen] = useState(false);
 
     useEffect(() => {
         let unsub: (() => void) | null = null;
         try {
             const constraints: QueryConstraint[] = [orderBy('email')];
-            // The data from subscribeToCollection includes an `id` property, which is the document ID.
-            // We need to map this `id` to the `uid` property of our `User` type for consistency.
             unsub = subscribeToCollection<Omit<User, 'uid'>>('users', (usersData) => {
                 const mappedUsers: User[] = usersData.map(doc => ({
                     uid: doc.id,
                     email: doc.email,
                     role: doc.role,
                     disabled: doc.disabled,
+                    capGrants: (doc as any).capGrants,
+                    capDenies: (doc as any).capDenies,
                 }));
                 setUsers(mappedUsers);
                 setIsLoading(false);
             }, constraints);
         } catch (e) {
-            // Firestore teardown race guard: subscription failed mid-lifecycle — show empty state instead of crashing.
             console.warn('Users subscription failed, showing empty list:', e);
             setIsLoading(false);
         }
@@ -111,7 +116,6 @@ export default function UsersPage() {
                 try {
                     unsub();
                 } catch (e) {
-                    // Swallow synchronous teardown errors from Firestore internals.
                     console.warn('Users unsubscribe swallowed an error:', e);
                 }
             }
@@ -122,7 +126,6 @@ export default function UsersPage() {
         try {
             await addUser(email, password, role);
         } catch (error) {
-            // Errors are already toasted in the API service, just log here
             console.error("Failed to add user from component:", error);
         }
     };
@@ -152,10 +155,14 @@ export default function UsersPage() {
             try {
                 await deleteUser(user.uid);
             } catch (error) {
-                // Error already toasted in API service
                 console.error('Failed to delete user from component:', error);
             }
         }
+    };
+
+    const handlePermSave = async (grants: string[], denies: string[]) => {
+        if (!permUser) return;
+        await setUserCapOverrides(permUser.uid, { grants, denies });
     };
 
     return (
@@ -177,16 +184,25 @@ export default function UsersPage() {
             ) : (
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                     <div className="divide-y divide-gray-200 dark:divide-gray-700 lg:grid lg:grid-cols-2 lg:gap-x-8 lg:divide-y-0">
-                        {users.map(user => (
+                        {users.map(user => {
+                            const n = ((user.capGrants?.length || 0) + (user.capDenies?.length || 0));
+                            const hasValidRole = !!user.role && (Object.values(UserRole) as string[]).includes(user.role as string);
+                            const showPerm = canManage && user.role !== UserRole.Owner && hasValidRole;
+                            return (
                             <div key={user.uid} className={`p-4 flex justify-between items-center lg:border-b lg:border-gray-200 lg:dark:border-gray-700 ${user.disabled ? 'bg-gray-50 dark:bg-gray-900 opacity-60' : ''}`}>
                                 <div>
-                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{user.email}</p>
+                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{user.email} {n>0 && <span className="ml-2 text-xs px-1.5 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded">صلاحيات مخصّصة ({n})</span>}</p>
                                     <p className={`text-sm font-semibold ${ROLE_COLOR[user.role as string] ?? 'text-gray-700 dark:text-gray-300'}`}>
                                         {ROLE_LABELS[user.role as string] ?? user.role ?? '—'}
                                         {user.disabled && ' - مُعطَّل'}
                                     </p>
                                 </div>
                                 <div className="flex items-center space-x-2 space-x-reverse">
+                                    {showPerm && (
+                                        <button onClick={() => { setPermUser(user); setIsPermOpen(true); }} className="p-2 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded" title="الصلاحيات" aria-label={`صلاحيات ${user.email}`}>
+                                            <Shield size={18} />
+                                        </button>
+                                    )}
                                     {user.role !== UserRole.Owner ? (
                                         <>
                                             <button
@@ -211,11 +227,12 @@ export default function UsersPage() {
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 </div>
             )}
             <UserFormModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleAddUser} />
+            <PermissionEditorModal isOpen={isPermOpen} onClose={() => setIsPermOpen(false)} user={permUser} onSave={handlePermSave} />
         </div>
     );
 }

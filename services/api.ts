@@ -124,6 +124,37 @@ export const setUserDisabled = async (uid: string, disabled: boolean) => {
     }
 };
 
+export const setUserCapOverrides = async (targetUid: string, overrides: { grants: string[]; denies: string[] }) => {
+    const auth = getAuth();
+    const byUid = auth.currentUser?.uid;
+    if (!byUid) throw new Error("يجب تسجيل الدخول أولاً");
+    const userRef = doc(db, 'users', targetUid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) throw new Error("المستخدم غير موجود");
+    const beforeData = snap.data() as any;
+    const before = { grants: beforeData.capGrants || [], denies: beforeData.capDenies || [] };
+    const after = { grants: overrides.grants || [], denies: overrides.denies || [] };
+    const batch = writeBatch(db);
+    const update: any = {};
+    if (after.grants.length === 0) update.capGrants = deleteField();
+    else update.capGrants = after.grants;
+    if (after.denies.length === 0) update.capDenies = deleteField();
+    else update.capDenies = after.denies;
+    update.permsUpdatedBy = byUid;
+    update.permsUpdatedAt = serverTimestamp();
+    batch.update(userRef, update);
+    const auditRef = doc(collection(db, 'permissionAudit'));
+    batch.set(auditRef, {
+        by: byUid,
+        at: serverTimestamp(),
+        targetUid,
+        before,
+        after,
+    });
+    await batch.commit();
+    toast.success("تم تحديث الصلاحيات بنجاح");
+};
+
 
 // -----------------------
 
