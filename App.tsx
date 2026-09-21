@@ -44,8 +44,11 @@ const Header = React.memo(() => {
 
     return (
         <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50 px-4 pt-[env(safe-area-inset-top)] border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
-            <div className="h-16 flex items-center justify-between gap-3 max-w-screen-2xl mx-auto">
+            <div className="h-16 flex items-center justify-between gap-2 max-w-screen-2xl mx-auto">
                 <h1 className="flex-1 min-w-0 text-lg sm:text-xl font-bold text-primary-700 dark:text-primary-300 truncate leading-tight">{appName}</h1>
+                <div className="flex-1 flex justify-center items-center min-w-0">
+                    <OfflineNotifier />
+                </div>
                 <div className="flex shrink-0 items-center gap-1 sm:gap-2 text-sm">
                     <button onClick={toggleTheme} aria-label="تبديل الوضع الليلي" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors">
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
@@ -293,7 +296,6 @@ export default function App() {
                                     }}
                                 />
                                 <AppRoutes />
-                                <OfflineNotifier />
                             </HashRouter>
                         </ConfirmationProvider>
                     </ThemeProvider>
