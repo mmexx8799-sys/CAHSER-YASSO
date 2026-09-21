@@ -1,4 +1,4 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 In Progress (REQ-OFF1-0 Done — 1ab34cd/tag pre-offline-p1 — 340 اختبار — PWA pending)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 In Progress (REQ-OFF1-0 Done — 1ab34cd/tag pre-offline-p1 — REQ-OFF1-1 scaffold c3ab8d6 — precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد) — بانتظار فحص المالك البصري AC-04)
 (Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
 
 PERM-2026-09 — نموذج الصلاحيات

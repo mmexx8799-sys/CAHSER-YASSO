@@ -141,12 +141,12 @@
 - **Edge:** جواب ناقص / تعارض D-O7 (ويب/أندرويد) — القرار: (ب) ويب فقط الآن.
 - **تحقق:** `npx tsc --noEmit` + `npm run build` + `git diff --stat` + `git tag` — **Commit:** `docs: REQ-OFF1-0 offline-p1 baseline + D-O1..D-O7`
 
-### REQ-OFF1-1 — هيكل PWA (واجهة فقط — لا بيانات)
-- **الملفات المسموحة:** `package.json` (إضافة `vite-plugin-pwa` فقط — بلا major bumps), `vite.config.ts` (إعداد `VitePWA`), `index.html` (manifest link إن لزم), `public/manifest.json` (جديد), `public/icons/*` (إن لزم), `src/pwa.d.ts` (types)
-- **AC-01:** `vite.config.ts` يحتوي `VitePWA({ registerType:'prompt', includeAssets:['**/*'], workbox:{ globPatterns:['**/*.{js,css,html,svg,png,woff2}'], navigateFallback:'index.html', cleanupOutdatedCaches:true, runtimeCaching:[] } })` — لا `runtimeCaching` لـ `firestore.googleapis.com`.
-- **AC-02:** `public/manifest.json` موجود (`name:"Nour Elrahman", short_name:"Casher", display:"standalone", background_color:"#fff"`).
-- **AC-03:** `npm run build` ينتج `dist/manifest.webmanifest` + `dist/sw.js` + `dist/workbox-*.js` — `dist/index.html` يحتوي تسجيل SW.
-- **AC-04:** قطع الشبكة → تحديث الصفحة → الواجهة تفتح (لا ديناصور) — فحص يدوي في DevTools → Application → Cache Storage لا يحتوي `firestore.googleapis.com`.
+### REQ-OFF1-1 — هيكل PWA (واجهة فقط — لا بيانات) — **In Progress — بانتظار فحص المالك البصري (AC-04)**
+- **الملفات المسموحة:** `package.json` (إضافة `vite-plugin-pwa` فقط — بلا major bumps), `vite.config.ts` (إعداد `VitePWA`), `index.html` (manifest link إن لزم), `public/icons/*`, `src/pwa.d.ts` (types) — لا `public/manifest.json` (مانيفست واحد عبر `VitePWA.manifest` — تعديل A)
+- **AC-01:** `vite.config.ts` يحتوي `VitePWA({ registerType:'prompt', disable: mode==='capacitor', includeAssets:['**/*'], manifest:{...icons 192/512/maskable}, workbox:{ globPatterns:['**/*.{js,css,html,svg,png,woff2}'], navigateFallback:'index.html', navigateFallbackDenylist:[/^\/__\//], cleanupOutdatedCaches:true, runtimeCaching:[] } })` — لا `runtimeCaching` لـ `firestore.googleapis.com`.
+- **AC-02:** المانيفست عبر `VitePWA.manifest` (لا `public/manifest.json`) — `dist/manifest.webmanifest` يحتوي `name:"Nour Elrahman", short_name:"Casher", display:"standalone", ... icons 192/512/maskable`.
+- **AC-03:** `npm run build` ينتج `dist/manifest.webmanifest` (412B) + `dist/sw.js` (3152B) + `dist/workbox-*.js` + `dist/registerSW.js` — `dist/index.html` يحتوي `<link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js">` — **المثبت:** precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد).
+- **AC-04:** قطع الشبكة → تحديث الصفحة → الواجهة تفتح (لا ديناصور) — فحص يدوي في DevTools → Application → Service Workers `activated` + Cache Storage `workbox-precache 37` بلا `firestore/googleapis` — **Playwright مثبت:** SW `activated`, cache 37, `FIRESTORE_IN_CACHE: none`, `HAS_ROOT: true, HAS_DINO: NO` — **البصري في Chrome بانتظار المالك** (تسجيل دخول + تنقل + باركود أوفلاين).
 - **Edge:** build بلا PWA / manifest مفقود / icons ناقصة.
 - **تحقق:** `npx tsc --noEmit` + `npm run build` + `git diff --stat` + فحص يدوي أوفلاين — **Commit:** `feat(offline-p1): REQ-OFF1-1 PWA scaffold (UI only, no data cache)`
 
