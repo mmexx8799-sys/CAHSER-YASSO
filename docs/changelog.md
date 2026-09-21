@@ -1,5 +1,12 @@
 # Changelog — Nour-Elrahman
 
+## Unreleased — PERM-2026-09 (2026-09-21)
+- **REQ-PERM-0 — أساس وجرد (قراءة فقط):** وسم `pre-perm-2026-09` على `e7771f2`, جرد واجهة/قواعد, إثبات فصل `balance` — لا كود — **Done**
+- **REQ-PERM-1 — الطبقة النقية `fcb1e2d`:** `types.ts: capGrants/capDenies` + `utils/permissions.ts: archive.view + OVERRIDABLE_CAPS + effectiveCan` + `tests/permissionsOverrides.test.ts` + `permissionsParity` + `rbacMatrix: archive.view→UI_ONLY` — 27 ملف/269 اختبار
+- **REQ-PERM-2 — القواعد `d9cdb0d`:** `firestore.rules: hasCap + capListsValid + permissionAudit + D-P7` + `tests/permissionsRules.test.ts` + مواءمة — نشر `firebase deploy --only firestore:rules --project casher-yasoo` — 28 ملف/340 اختبار
+- **REQ-PERM-3 — الواجهة الحية `4de2a31` + `22c0032` + `21130c1` + `98a01ad`:** `AuthContext onSnapshot` + `usePermissions effectiveCan` + `buildNavItems/resolveLanding` + بوابات `sell/return` + `statement.export` — الفهرس `permissionAudit` نُشر بالـ`Indexes` — النهاية `21130c1 → 98a01ad` مع إصلاحات lint/مهلة/حراسة
+- **REQ-PERM-4 — المحرر `020dba9` + `a16b048`:** `services/api.ts:setUserCapOverrides` + `components/PermissionEditorModal.tsx` + `utils/capOverrides.ts` + `firestore.indexes.json` + `tests/capOverrides` + `setUserCapOverrides` — إصلاحات `a16b048` (toast, emulator, تعليقات, audit api)
+
 ## Unreleased — RBAC-2026-09 G0 (2026-09-19)
 - **REQ-RBAC-0 — Owner decisions + measured baseline (no code change):** تسجيل قرارات G0 (D-1: izatadel007@gmail.com owner, D-2:(أ) D-3:موافقة D-4:الآن D-5:Deferred D-6:يبقى D-7:لاحقًا) في `docs/known-issues.md` + قياس خط الأساس الخام: `tsc --noEmit` نظيف · `build` نظيف (938kB) · `test:rules` **130/130 أخضر (18/18)** بدل «64» القديم (تصحيح E-15) + `concurrentSalesHigh` خط الأساس: N=10 10/10, N=12 12/12, N=15 15/15, متعدد 10/10 + E-16: `android/` موجود (ليس محذوفًا) + تحديث `backlog.md` (In Progress RBAC-0…5) و`current-state-map.md` — ⛔ STOP قبل R1 لمراجعة Claude.
 

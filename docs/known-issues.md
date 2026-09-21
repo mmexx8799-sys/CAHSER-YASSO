@@ -179,3 +179,12 @@ Incident: قواعد firestore.rules المحدّثة عبر REQ-P0-9 (d5d7d0f �
 Root Cause: قالب الـ REQ كان يطلب tsc/build/git diff فقط كأدلة — لا يغطي النشر الحي للقواعد، ونجاح البناء المحلي لا يعطي أي معلومات عن ما هو مُطبّق فعليًا في الإنتاج.
 Fix: إضافة قاعدة دائمة جديدة لقالب REQ (موثّقة في docs/req-template.md) — أي REQ يلمس firestore.rules يجب أن يحتوي AC إضافي يطلب تشغيل `firebase deploy --only firestore:rules` ولصق مخرجاته كدليل، ولا يُعتبر مكتملًا حتى يتم تأكيد النشر الحي.
 Status: Closed — Deployment gap resolved 2026-09-12
+
+## PERM-2026-09 — Known Issues (2026-09-21)
+
+- **حسابات بلا `role` لا تُعطَّل/تُحذف من `/users`:** الواجهة تخفي أزرار التعطيل/الحذف للحساب بلا دور صالح — الإجراء الوحيد عبر Console (Firestore + Auth) — لا أثر تشغيلي (Default-deny).
+- **قائمة مشوهة من Console تمنع تعطيل صاحبها من الواجهة:** إذا كُتبت `capGrants/capDenies` بقيمة غير `list` أو خارج `overridableCaps()` من Console، فإن `capListsValid` تفشل على `update` حتى لتعطيل الحساب — صحّح القائمة أولًا من Console ثم عطّل — الأمان لا يتأثر (الحساب مغلق fail-closed).
+- **تحذير `canOpenDay` غير مستخدمة:** `firestore.rules:32 canOpenDay` تظهر `[W] Unused function` بعد REQ-PERM-2 — الدالة استُبدلت بـ`hasCap('archive.open', [...])` — تُحذف في تنظيف لاحق — بلا أثر.
+- **وثائق `permissionAudit` لا تُحذف من التطبيق:** لا زر حذف ولا `delete` في القواعد (`update, delete: false`) — تنظيفها قبل الانطلاق يتم من Console فقط — خارج النسخ الاحتياطي وضبط المصنع عمدًا.
+- **منع `product.create` يخفي تبويب المنتجات:** `buildNavItems` يربط التبويب بهذه القدرة — منحها/منعها يظهر/يخفي التبويب كاملًا — مقصود.
+- **الواجهة بلا إشعار إصدار جديد:** لا يوجد تنبيه `New version available` بعد نشر الاستضافة — يحتاج تحديث يدوي للصفحة — Backlog.

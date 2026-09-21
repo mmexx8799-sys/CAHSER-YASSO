@@ -13,6 +13,11 @@
 - (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
+- **PERM-2026-09 — تنظيف lint القديم (7 أخطاء اختبارات):** `tests/migrateRoles.test.ts: @ts-nocheck`, `permissionsRules: outcome`, `rbacEscalation/matrix: getDoc/expect`, `restorePreflight: empty block` — تُنظّف خارج الدورة — لا أثر تشغيلي.
+- **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
+- **PERM — عرض السجل بالبريد بدل UID:** `components/PermissionEditorModal.tsx` يعرض `by/targetUid` كـUID خام — يُستبدل ببريد من `users` cache.
+- **PERM — قدرة `product.view`:** فصل عرض المنتجات عن إنشائها — حاليًا `product.create` يخفي التبويب كاملًا — Backlog.
+- **PERM — إشعار إصدار جديد:** لا يوجد `New version available` بعد نشر الاستضافة — يحتاج service worker أو فحص نسخة.
 - Known Gap (pre-existing, out of RBAC scope — مراجعة R1 2026-09-19): `products.create` بلا حراسة سعر عند الإنشاء — `firestore.rules:62-63` تتحقق `quantity >=0` فقط؛ حراسة BUG-P0-3 (`price`/`retailCashPrice`…) موجودة فقط في `update` (سطر 69-73). أي `isStaff()` يستطيع تحديد سعر تعسفي عند إنشاء منتج جديد ثم لا يستطيع تعديله. ليس انحدار R1 — AC-09 نص "منطق BUG-P0-3 بلا تغيير" — يُسجل هنا للمتابعة لاحقًا، لا يُفتح له REQ الآن.
 - سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)
 - TECH-P0-1b — قفل نافذة TOCTOU race في processReturn (دفعة 2026-09-13): الخيار A الحالي يقرأ المرتجعات السابقة عبر getDocs() خارج الـ transaction — الحل المقترح: تخزين returnedQuantities داخل مستند الفاتورة نفسها وتحديثه ذريًا داخل نفس الـ transaction بدل الاعتماد على القراءة الخارجية (يُعاد التقييم عند نمو عدد الكاشيرين المتزامنين)
