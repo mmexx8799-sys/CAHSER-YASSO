@@ -23,7 +23,7 @@ const OfflineNotifier: React.FC = () => {
 
     return (
         <div 
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg flex items-center space-x-2 space-x-reverse z-[101]"
+            className="fixed bottom-20 lg:bottom-4 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-4 rounded-lg shadow-lg flex items-center space-x-2 space-x-reverse z-[101] max-w-[90vw]"
             role="alert"
             aria-live="assertive"
         >
