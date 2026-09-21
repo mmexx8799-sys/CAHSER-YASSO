@@ -1,9 +1,9 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — PERM-2026-09 Done (32 ملف/340 اختبار, rules + indexes منشورة, hosting محليًا فقط حتى REQ-PERM-5)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — PERM-2026-09 Done (32 ملف/340 اختبار, rules + indexes + hosting منشورة — live = perm-2026-09-done)
 (Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
 
 PERM-2026-09 — نموذج الصلاحيات
 - وثيقة `users/{uid}`: `role, disabled, capGrants?: string[], capDenies?: string[], permsUpdatedBy/At` — غياب الحقلين = السلوك القديم — `effectiveCan` يطبق: disabled/role فاسد → false, owner → مصفوفة, غير قابلة → مصفوفة, منع → false, منح (محاسب كتابة يُتجاهل) → true, وإلا مصفوفة — `capListsValid` تفرض `hasOnly(overridableCaps)` و`!hasAny` و`owner بلا حقول` و`accountant ⊆ ui`.
-- القابلة للتجاوز (17): طبقة A تُفرض في القواعد (12): `sell, return, customer.payment, supplier.ops, product.create, product.price, product.delete, category.write, settings.write, archive.open, archive.close, customer.write, supplier.write` — طبقة B واجهة فقط (4): `report.view, archive.view, dashboard.view, statement.export` — كلها في `utils/permissions.ts: OVERRIDABLE_CAPS` و`firestore.rules: overridableCaps()` — مواءمة regex في `tests/permissionsParity`.
+- القابلة للتجاوز (17): طبقة A تُفرض في القواعد (13): `sell, return, customer.payment, supplier.ops, product.create, product.price, product.delete, category.write, settings.write, archive.open, archive.close, customer.write, supplier.write` — طبقة B واجهة فقط (4): `report.view, archive.view, dashboard.view, statement.export` — كلها في `utils/permissions.ts: OVERRIDABLE_CAPS` و`firestore.rules: overridableCaps()` — مواءمة regex في `tests/permissionsParity`.
 - غير قابلة (5): `users.manage, data.restore, data.reset, ledger.delete, backup.export` — `NON_OVERRIDABLE_CAPS` — منحها يُتجاهل.
 
 Core Architecture (React/TS/Firebase/Capacitor)   ✅ Stable
