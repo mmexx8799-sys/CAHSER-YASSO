@@ -2,8 +2,8 @@
 
 ## In Progress — OFFLINE-P1 (REQ-OFF1-0…5) — started 2026-09-21 — base 1ab34cd (tag pre-offline-p1)
 - REQ-OFF1-0: الأساس والجرد (قراءة فقط) — **Done 2026-09-21** — tag `pre-offline-p1` على `1ab34cd` — `tsc` نظيف · `eslint` 7 أخطاء PERM · `test:rules` 340/340 · `build` 938 kB — الجرد الخام (ب→هـ) موثق في تقرير REQ-OFF1-0 + D-O1…D-O7 موقعة في `known-issues.md`
-- REQ-OFF1-1: هيكل PWA (واجهة فقط — لا بيانات) — **In Progress** — allowed: `package.json`, `vite.config.ts`, `index.html`, `public/icons/*`, `src/pwa.d.ts` — تعديل A: لا `public/manifest.json` (مانيفست واحد عبر `VitePWA.manifest`)
-- REQ-OFF1-2: رفض فوري + وضع قراءة فقط — Pending
+- REQ-OFF1-1: هيكل PWA (واجهة فقط — لا بيانات) — **Done 2026-09-21 (c3ab8d6 + dc1e813)** — `vite-plugin-pwa@1.3.0` — `manifest` عبر `VitePWA.manifest` (لا `public/manifest.json`) — `precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد)` — `build` 938 kB + PWA 2138 KiB — `test:rules` 340/340 — الفحص البصري للمالك (Incognito Offline): `SW activated`, `workbox-precache 37`, لا `firestore/googleapis` في الكاش, `HAS_ROOT true, HAS_DINO false`, `58 requests 0.0 B / 2.1 MB from ServiceWorker` — الأيقونات مؤقتة (بند مفتوح)
+- REQ-OFF1-2: رفض فوري + وضع قراءة فقط (21 دالة — D-O8 أ) + الجرد الخام — **In Progress** — allowed: `hooks/useOffline.ts`, `components/OfflineBanner.tsx`, `App.tsx`, `pages/POSPage.tsx`, `pages/ReturnsPage.tsx`, `pages/SuppliersPage.tsx`, `pages/CustomerAccountPage.tsx`, `services/api.ts` — يتضمن الشرطين: grep على `monitoring/auth` + `assertOnline()` أول سطر
 - REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — Pending
 - REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — Pending
 - REQ-OFF1-5: إغلاق وتوثيق — Pending

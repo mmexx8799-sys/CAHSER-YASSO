@@ -1,5 +1,9 @@
 # Changelog — Nour-Elrahman
 
+## Unreleased — OFFLINE-P1 (2026-09-21)
+- **REQ-OFF1-0 — أساس وجرد (قراءة فقط):** وسم `pre-offline-p1` على `1ab34cd`, D-O1…D-O8 موقعة (21 دالة — 6+15), الجرد الخام (ب→هـ) + بناء 938 kB + 340/340
+- **REQ-OFF1-1 — هيكل PWA (واجهة فقط):** `vite-plugin-pwa@1.3.0` via `VitePWA({disable: mode==='capacitor', registerType:'prompt', manifest 192/512/maskable, workbox precache 37 فريد (40 إجمالي، 3 مكررة x2 — مطابقة بالعدد), navigateFallbackDenylist + runtimeCaching:[]})` — `dist/manifest.webmanifest` 412B + `sw.js` 3152B — الفحص البصري (Incognito Offline): `SW activated`, `58 requests 0.0 B / 2.1 MB from ServiceWorker`, `إدارة المستخدمين` تفتح أوفلاين — `build:android` بلا SW — الأيقونات مؤقتة (بند مفتوح)
+
 ## Unreleased — PERM-2026-09 (2026-09-21)
 - **REQ-PERM-0 — أساس وجرد (قراءة فقط):** وسم `pre-perm-2026-09` على `e7771f2`, جرد واجهة/قواعد, إثبات فصل `balance` — لا كود — **Done**
 - **REQ-PERM-1 — الطبقة النقية `fcb1e2d`:** `types.ts: capGrants/capDenies` + `utils/permissions.ts: archive.view + OVERRIDABLE_CAPS + effectiveCan` + `tests/permissionsOverrides.test.ts` + `permissionsParity` + `rbacMatrix: archive.view→UI_ONLY` — 27 ملف/269 اختبار
