@@ -1,5 +1,13 @@
 # Backlog — Nour-Elrahman
 
+## In Progress — OFFLINE-P1 (REQ-OFF1-0…5) — started 2026-09-21 — base 1ab34cd (tag pre-offline-p1)
+- REQ-OFF1-0: الأساس والجرد (قراءة فقط) — **Done 2026-09-21** — tag `pre-offline-p1` على `1ab34cd` — `tsc` نظيف · `eslint` 7 أخطاء PERM · `test:rules` 340/340 · `build` 938 kB — الجرد الخام (ب→هـ) موثق في تقرير REQ-OFF1-0 + D-O1…D-O7 موقعة في `known-issues.md`
+- REQ-OFF1-1: هيكل PWA (واجهة فقط — لا بيانات) — **In Progress** — allowed: `package.json`, `vite.config.ts`, `index.html`, `public/manifest.json`, `public/icons/*`, `src/pwa.d.ts`
+- REQ-OFF1-2: رفض فوري + وضع قراءة فقط — Pending
+- REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — Pending
+- REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — Pending
+- REQ-OFF1-5: إغلاق وتوثيق — Pending
+
 ## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**
 - REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done code+tests 2026-09-19 (b926b6d) — معتمد فنيًا من المراجع، ⛔ W0 موقوف حتى جرد users الإنتاج (AC-04 فيتو)**

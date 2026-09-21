@@ -1,4 +1,4 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — PERM-2026-09 Done (32 ملف/340 اختبار, rules + indexes + hosting منشورة — live = perm-2026-09-done)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 In Progress (REQ-OFF1-0 Done — 1ab34cd/tag pre-offline-p1 — 340 اختبار — PWA pending)
 (Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
 
 PERM-2026-09 — نموذج الصلاحيات
