@@ -137,7 +137,7 @@ const RequireCapability: React.FC<{ capability: Capability; children: React.Reac
             const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
             if (location.pathname !== landing) {
                 const silent = location.pathname === '/' || location.pathname === '/returns';
-                if (!silent) toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
+                if (!silent) toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.", { id: 'no-permission' });
                 navigate(landing, { replace: true });
             }
         }

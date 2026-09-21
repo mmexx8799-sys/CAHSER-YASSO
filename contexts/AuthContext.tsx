@@ -4,7 +4,7 @@ import type { User as AppUser } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getDB } from '../services/firebase';
-import { decideSnapshotAction, shouldFlagUnresolved } from '../utils/authState';
+import { decideSnapshotAction, shouldFlagUnresolved, decideErrorAction } from '../utils/authState';
 
 interface AuthContextType {
     currentUser: AppUser | null;
@@ -104,7 +104,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 if (myGen !== gen) return;
                 if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
                 console.error("Auth Check Error", e);
-                if (lastUserRef.current) {
+                const action = decideErrorAction({ hasRealUser: hasRealUserRef.current });
+                if (action === 'keep') {
                     setIsLoading(false);
                 } else {
                     setCurrentUser({ uid: user.uid, email: user.email! });

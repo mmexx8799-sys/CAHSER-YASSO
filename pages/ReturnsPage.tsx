@@ -523,7 +523,12 @@ export default function ReturnsPage() {
         setIsArchiveLoading(true);
         getOpenDailyArchive()
             .then(setDailyArchive)
-            .catch(err => toast.error('فشل في تحميل اليومية: ' + err.message))
+            .catch((err: any) => {
+                const code = String(err?.code || '');
+                const msg = String(err?.message || '');
+                if (code.includes('permission-denied') || msg.includes('permission') || msg.includes('insufficient')) return;
+                toast.error('فشل في تحميل اليومية: ' + err.message);
+            })
             .finally(() => setIsArchiveLoading(false));
 
         return () => unsubscribeCategories();

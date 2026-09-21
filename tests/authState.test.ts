@@ -1,6 +1,6 @@
 // tests/authState.test.ts — جدول حالات نقية (REQ-PERM-3:3) node only
 import { describe, it, expect } from 'vitest';
-import { decideSnapshotAction, shouldFlagUnresolved } from '../utils/authState';
+import { decideSnapshotAction, shouldFlagUnresolved, decideErrorAction } from '../utils/authState';
 
 describe('decideSnapshotAction', () => {
   const table: Array<[boolean, boolean, string]> = [
@@ -21,12 +21,24 @@ describe('shouldFlagUnresolved', () => {
   it('no server + has resolved user (cache) => false', () => expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: true })).toBe(false));
   it('has server => false regardless', () => expect(shouldFlagUnresolved({ hasServerSnapshot: true, hasResolvedUser: false })).toBe(false));
   it('has server + has user => false', () => expect(shouldFlagUnresolved({ hasServerSnapshot: true, hasResolvedUser: true })).toBe(false));
-  it('تسلسل خطأ → إعادة محاولة → خطأ/مهلة ⇒ unresolved (المستخدم المؤقت لا يُحتسب)', () => {
-    // أول خطأ قبل أي لقطة حقيقية: hasRealUser=false → unresolved
-    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: false })).toBe(true);
-    // بعد إنشاء مستخدم مؤقت بلا دور (من فرع الخطأ) لا يصبح hasRealUser=true، فإعادة المحاولة الثانية التي تفشل/تنتهي مهلتها تبقى unresolved
-    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: false })).toBe(true);
-    // لو كان لدينا لقطة cache حقيقية، فلا unresolved
-    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: true })).toBe(false);
+  it('decideErrorAction: hasRealUser=false ⇒ tempUnresolved، true ⇒ keep', () => {
+    expect(decideErrorAction({ hasRealUser: false })).toBe('tempUnresolved');
+    expect(decideErrorAction({ hasRealUser: true })).toBe('keep');
+  });
+  it('تسلسل حقيقي: خطأ → إعادة محاولة → خطأ ⇒ unresolved (المؤقت لا يُحتسب كحقيقي)', () => {
+    let hasRealUser = false;
+    // أول خطأ: لا مستخدم حقيقي → tempUnresolved
+    expect(decideErrorAction({ hasRealUser })).toBe('tempUnresolved');
+    // بعد الخطأ يُنشأ مستخدم مؤقت لكن hasRealUser يبقى false
+    expect(hasRealUser).toBe(false);
+    // إعادة محاولة: hasServerSnapshot=false, hasResolvedUser=false → unresolved
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: hasRealUser })).toBe(true);
+    // خطأ ثانٍ بعد إعادة المحاولة: ما زال لا حقيقي → tempUnresolved مرة أخرى
+    expect(decideErrorAction({ hasRealUser })).toBe('tempUnresolved');
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: hasRealUser })).toBe(true);
+    // لو وصلت لقطة حقيقية، يصبح hasRealUser=true ولا unresolved بعدها
+    hasRealUser = true;
+    expect(shouldFlagUnresolved({ hasServerSnapshot: false, hasResolvedUser: hasRealUser })).toBe(false);
+    expect(decideErrorAction({ hasRealUser })).toBe('keep');
   });
 });

@@ -20,3 +20,7 @@ export function decideSnapshotAction(exists: boolean, fromCache: boolean): Snaps
 export function shouldFlagUnresolved(opts: { hasServerSnapshot: boolean; hasResolvedUser: boolean }): boolean {
   return !opts.hasServerSnapshot && !opts.hasResolvedUser;
 }
+
+export function decideErrorAction(opts: { hasRealUser: boolean }): 'keep' | 'tempUnresolved' {
+  return opts.hasRealUser ? 'keep' : 'tempUnresolved';
+}

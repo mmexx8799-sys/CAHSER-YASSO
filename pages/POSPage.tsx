@@ -534,7 +534,13 @@ export default function POSPage() {
                     setIsLoading(false);
                 }
             })
-            .catch(err => {
+            .catch((err: any) => {
+                const code = String(err?.code || '');
+                const msg = String(err?.message || '');
+                if (code.includes('permission-denied') || msg.includes('permission') || msg.includes('insufficient')) {
+                    setIsLoading(false);
+                    return;
+                }
                 toast.error('فشل في تحميل اليومية: ' + err.message);
                 setIsLoading(false);
             })
