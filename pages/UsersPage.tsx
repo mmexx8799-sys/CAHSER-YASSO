@@ -95,6 +95,8 @@ export default function UsersPage() {
         let unsub: (() => void) | null = null;
         try {
             const constraints: QueryConstraint[] = [orderBy('email')];
+            // The data from subscribeToCollection includes an `id` property, which is the document ID.
+            // We need to map this `id` to the `uid` property of our `User` type for consistency.
             unsub = subscribeToCollection<Omit<User, 'uid'>>('users', (usersData) => {
                 const mappedUsers: User[] = usersData.map(doc => ({
                     uid: doc.id,
@@ -108,6 +110,7 @@ export default function UsersPage() {
                 setIsLoading(false);
             }, constraints);
         } catch (e) {
+            // Firestore teardown race guard: subscription failed mid-lifecycle — show empty state instead of crashing.
             console.warn('Users subscription failed, showing empty list:', e);
             setIsLoading(false);
         }
@@ -116,6 +119,7 @@ export default function UsersPage() {
                 try {
                     unsub();
                 } catch (e) {
+                    // Swallow synchronous teardown errors from Firestore internals.
                     console.warn('Users unsubscribe swallowed an error:', e);
                 }
             }
@@ -126,6 +130,7 @@ export default function UsersPage() {
         try {
             await addUser(email, password, role);
         } catch (error) {
+            // Errors are already toasted in the API service, just log here
             console.error("Failed to add user from component:", error);
         }
     };
@@ -155,6 +160,7 @@ export default function UsersPage() {
             try {
                 await deleteUser(user.uid);
             } catch (error) {
+                // Error already toasted in API service
                 console.error('Failed to delete user from component:', error);
             }
         }

@@ -37,8 +37,15 @@ describe('statesToLists — cleaning no-effect', () => {
     expect(denies).toEqual([]);
   });
   it('no conflict: grants/denies disjoint and sorted', () => {
-    const { grants } = statesToLists(UserRole.Admin, { sell: 'grant', 'product.price': 'grant', 'archive.open': 'deny' } as any);
-    expect(grants).not.toContain('sell');
+    const { grants, denies } = statesToLists(UserRole.Cashier, { 'product.price': 'grant', sell: 'deny', 'customer.write': 'grant' } as any);
+    expect(grants).toEqual([...grants].sort());
+    expect(denies).toEqual([...denies].sort());
+    const inter = grants.filter(c => denies.includes(c));
+    expect(inter).toEqual([]);
+  });
+  it('accountant grant dashboard.view (ui) is kept', () => {
+    const { grants } = statesToLists(UserRole.Accountant, { 'dashboard.view': 'grant' } as any);
+    expect(grants).toContain('dashboard.view');
   });
   it('Arabic labels exist for all overridable', () => {
     for (const cap of Object.keys(OVERRIDABLE_CAPS)) {

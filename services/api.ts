@@ -151,8 +151,19 @@ export const setUserCapOverrides = async (targetUid: string, overrides: { grants
         before,
         after,
     });
-    await batch.commit();
-    toast.success("تم تحديث الصلاحيات بنجاح");
+    try {
+        await batch.commit();
+        toast.success("تم تحديث الصلاحيات بنجاح");
+    } catch (e: any) {
+        toast.error(e?.message || "فشل تحديث الصلاحيات");
+        throw e;
+    }
+};
+
+export const getPermissionAudit = async (targetUid: string, limitCount = 5) => {
+    const q = query(collection(db, 'permissionAudit'), where('targetUid', '==', targetUid), orderBy('at', 'desc'), limit(limitCount));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
 };
 
 

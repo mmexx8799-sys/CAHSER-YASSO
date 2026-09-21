@@ -62,6 +62,7 @@ const Header = React.memo(() => {
 });
 
 // Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
+// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts — via utils/nav.ts pure
 const useNavItems = () => {
     const { currentUser } = useAuth();
     return useMemo(() => {
@@ -75,6 +76,7 @@ const useNavItems = () => {
 const BottomNav = React.memo(() => {
     const navItems = useNavItems();
 
+    // CHANGED: Added pb-[env(safe-area-inset-bottom)] for modern phones. lg:hidden — replaced by Sidebar on lg+.
     return (
         <nav className="fixed bottom-0 left-0 right-0 lg:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 pb-[env(safe-area-inset-bottom)] transition-colors duration-200">
             <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
@@ -96,6 +98,8 @@ const BottomNav = React.memo(() => {
     );
 });
 
+// Sidebar — desktop navigation (lg+). Same navItems, same active-state styling as BottomNav.
+// Built fixed from the start (lesson R2-01: sticky unreliable on iOS Safari — never use it here).
 const Sidebar = React.memo(() => {
     const navItems = useNavItems();
     return (
@@ -150,6 +154,7 @@ const AppLayout = React.memo(() => {
     return (
         <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Header />
+            {/* Mobile: pb clears BottomNav. lg+: BottomNav hidden — only small breathing pb remains (no dead 5rem space) */}
             <main className="flex-1 overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))] pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6 lg:pr-64">
                 <div className="max-w-screen-2xl w-full mx-auto">
                 <Suspense fallback={<PageLoader />}>
@@ -204,6 +209,10 @@ const LandingRedirect: React.FC = () => {
 const AppRoutes: React.FC = () => {
     const { currentUser, isLoading, isUnresolved, retry } = useAuth() as any;
 
+    // BUG-P0-5: side effects (signOut + toast) must not run in the render
+    // body — they fired on every render. Guard is keyed on uid (not a plain
+    // boolean) so a *different* disabled user signing in later in the same
+    // browser tab still gets exactly one toast.
     const disabledToastShownForUid = useRef<string | null>(null);
     useEffect(() => {
         if (currentUser?.disabled === true && disabledToastShownForUid.current !== currentUser.uid) {

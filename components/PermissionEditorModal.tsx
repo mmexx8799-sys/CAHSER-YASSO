@@ -5,8 +5,7 @@ import type { User } from '../types';
 import { can, OVERRIDABLE_CAPS } from '../utils/permissions';
 import { effectiveCan } from '../utils/permissions';
 import { CAP_LABELS_AR, statesToLists, listsToStates, type CapStates } from '../utils/capOverrides';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { getDB } from '../services/firebase';
+import { getPermissionAudit } from '../services/api';
 
 interface Props {
   isOpen: boolean;
@@ -25,12 +24,8 @@ export const PermissionEditorModal: React.FC<Props> = ({ isOpen, onClose, user, 
   useEffect(() => {
     if (isOpen && user) {
       setStates(listsToStates(user.capGrants, user.capDenies, user.role));
-      // fetch last 5 audit
       setAuditLoading(true);
-      const q = query(collection(getDB(), 'permissionAudit'), where('targetUid', '==', user.uid), orderBy('at', 'desc'), limit(5));
-      getDocs(q).then(snap => {
-        setAudit(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }).catch(() => setAudit([])).finally(() => setAuditLoading(false));
+      getPermissionAudit(user.uid, 5).then(rows => setAudit(rows)).catch(() => setAudit([])).finally(() => setAuditLoading(false));
     }
   }, [isOpen, user]);
 
@@ -124,11 +119,15 @@ export const PermissionEditorModal: React.FC<Props> = ({ isOpen, onClose, user, 
         </div>
         <div className="border-t pt-3 mt-3">
           <h3 className="font-semibold text-sm mb-1">سجل التغييرات (آخر 5)</h3>
-          {auditLoading ? <p className="text-xs">جاري التحميل...</p> : audit.length===0 ? <p className="text-xs text-gray-500">لا يوجد سجل</p> : audit.map(a=>(
+          {auditLoading ? <p className="text-xs">جاري التحميل...</p> : audit.length===0 ? <p className="text-xs text-gray-500">لا يوجد سجل</p> : audit.map(a=>{
+            const fmt = (arr:string[]) => arr.map(c=>CAP_LABELS_AR[c]||c).join(', ') || '—';
+            const bg = a.before?.grants||[], bd = a.before?.denies||[], ag = a.after?.grants||[], ad = a.after?.denies||[];
+            return (
             <div key={a.id} className="text-xs py-1 border-b border-gray-100 dark:border-gray-700">
-              <span>{a.by} → {a.targetUid}</span> <span className="text-gray-500">{a.at?.toDate?.()?.toLocaleString?.() || ''}</span>
+              <div className="flex justify-between"><span>{a.by}</span><span className="text-gray-500">{a.at?.toDate?.()?.toLocaleString?.() || ''}</span></div>
+              <div>قبل: منح [{fmt(bg)}] ({bg.length}) منع [{fmt(bd)}] ({bd.length}) → بعد: منح [{fmt(ag)}] ({ag.length}) منع [{fmt(ad)}] ({ad.length})</div>
             </div>
-          ))}
+          )})}
         </div>
         <div className="flex justify-end gap-2 mt-4">
           <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded" disabled={saving}>إلغاء</button>
