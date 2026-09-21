@@ -206,3 +206,9 @@ Status: Closed — Deployment gap resolved 2026-09-12
 - **وثائق `permissionAudit` لا تُحذف من التطبيق:** لا زر حذف ولا `delete` في القواعد (`update, delete: false`) — تنظيفها قبل الانطلاق يتم من Console فقط — خارج النسخ الاحتياطي وضبط المصنع عمدًا.
 - **منع `product.create` يخفي تبويب المنتجات:** `buildNavItems` يربط التبويب بهذه القدرة — منحها/منعها يظهر/يخفي التبويب كاملًا — مقصود.
 - **الواجهة بلا إشعار إصدار جديد:** لا يوجد تنبيه `New version available` بعد نشر الاستضافة — يحتاج تحديث يدوي للصفحة — Backlog.
+
+## OFFLINE-P1 — Known Issues / Open Items (2026-09-21 — REQ-OFF1-1)
+
+- **الأيقونات مؤقتة (REQ-OFF1-1):** `public/icons/maskable-512.png` نسخة مطابقة لـ `public/icons/icon-512.png` (نفس الـmd5) — والمانيفست يستخدم `purpose:'any maskable'` مدموجًا في مدخل واحد. تُستبدل بالشعار الحقيقي كمدخلين منفصلين (`any` / `maskable`) قبل أي نشر — بند مفتوح.
+- **بوابة النشر (OFFLINE-P1):** ممنوع `firebase deploy` لأي جزء من OFFLINE-P1 حتى إغلاق REQ-OFF1-3 — السبب: `registerType:'prompt'` بلا بانر يُبقي نسخًا قديمة عالقة بلا تحديث.
+- **قيد معروف — خط Cairo أوفلاين:** `runtimeCaching:[]` يعني خط Cairo (Google Fonts) لا يُخزَّن أوفلاين — يقع على خط النظام عند الانقطاع — متوقع ومقبول.
