@@ -23,13 +23,18 @@ const OfflineNotifier: React.FC = () => {
 
     return (
         <div
-            className="fixed top-16 inset-x-0 z-40 bg-amber-500 text-white flex items-center justify-center gap-2 py-1.5 px-4 text-sm font-medium shadow-sm border-b border-amber-600"
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-gray-900 text-white flex items-center gap-2 py-2 px-4 rounded-full shadow-lg border border-gray-700 text-sm font-medium max-w-[90vw]"
             role="status"
             aria-live="polite"
         >
-            <WifiOff size={16} className="shrink-0" aria-hidden="true" />
-            <span>وضع عدم الاتصال — القراءة فقط</span>
-            <span className="hidden sm:inline opacity-90 font-normal">— البيانات قد تكون غير محدثة</span>
+            <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+            <WifiOff size={14} className="shrink-0 opacity-80" aria-hidden="true" />
+            <span>وضع عدم الاتصال</span>
+            <span className="opacity-60">·</span>
+            <span className="opacity-80 font-normal hidden sm:inline">القراءة فقط</span>
         </div>
     );
 };
