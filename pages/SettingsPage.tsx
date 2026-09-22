@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sunrise, Sunset, AlertTriangle, KeyRound, Upload, Download, Save, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { getOpenDailyArchive, closeDailyArchive, startNewDailyArchive, backupData, restoreData, factoryReset, updateAppSettings } from '../services/api';
+import { getOpenDailyArchive, closeDailyArchive, startNewDailyArchive, backupData, restoreData, factoryReset, updateAppSettings, isOfflineGuardError } from '../services/api';
 import { changePassword } from '../services/auth';
 import type { DailyArchive, BackupData } from '../types';
 import { useConfirmation } from '../components/ConfirmationProvider';
@@ -85,7 +85,15 @@ const AppSettingsSection = memo(({ initialAppName }: { initialAppName: string })
             toast.error('اسم التطبيق لا يمكن أن يكون فارغاً.');
             return;
         }
-        await updateAppSettings({ appName: currentAppName });
+        try {
+            await updateAppSettings({ appName: currentAppName });
+        } catch (error) {
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error(error);
+            }
+        }
     };
 
     return (
@@ -277,7 +285,15 @@ export default function SettingsPage() {
             setDailyArchive(archive);
             toast.success(`تم فتح يومية ${archive.id} بنجاح.`);
         } catch (error) {
-            toast.error((error as Error).message);
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else if ((error as any)?.code) {
+                // خطأ تقني من SDK (له code) — لا يُعرض نصه الخام
+                toast.error("فشل في فتح اليومية.");
+            } else {
+                // خطأ عمل عادي من كودنا (رسالة عربية مُحررة بلا code — مثل "يومية مفتوحة بالفعل")
+                toast.error((error as Error).message || "فشل في فتح اليومية.");
+            }
         }
     }, []);
 
@@ -292,8 +308,12 @@ export default function SettingsPage() {
                     await closeDailyArchive(dailyArchive.id);
                     setDailyArchive(null);
                     toast.success('تم إغلاق اليومية بنجاح.');
-                } catch {
-                    toast.error('فشل في إغلاق اليومية.');
+                } catch (e) {
+                    if (isOfflineGuardError(e)) {
+                        toast.error((e as Error).message);
+                    } else {
+                        toast.error('فشل في إغلاق اليومية.');
+                    }
                 }
             }
         }
@@ -322,7 +342,11 @@ export default function SettingsPage() {
             toast.success('تم تنزيل النسخة الاحتياطية بنجاح!');
         } catch (error) {
             toast.dismiss();
-            toast.error('فشل إنشاء النسخة الاحتياطية.');
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                toast.error('فشل إنشاء النسخة الاحتياطية.');
+            }
             console.error(error);
         } finally {
             setIsDataBusy(false);
@@ -359,7 +383,11 @@ export default function SettingsPage() {
                         navigate('/');
                     } catch (error) {
                         toast.dismiss();
-                        toast.error('فشل في استعادة البيانات. الملف غير صالح.');
+                        if (isOfflineGuardError(error)) {
+                            toast.error((error as Error).message);
+                        } else {
+                            toast.error('فشل في استعادة البيانات. الملف غير صالح.');
+                        }
                         console.error(error);
                     } finally {
                         setIsDataBusy(false);
@@ -388,7 +416,11 @@ export default function SettingsPage() {
                 navigate('/');
             } catch (error) {
                 toast.dismiss();
-                toast.error('فشل ضبط المصنع.');
+                if (isOfflineGuardError(error)) {
+                    toast.error((error as Error).message);
+                } else {
+                    toast.error('فشل ضبط المصنع.');
+                }
                 console.error(error);
             } finally {
                 setIsDataBusy(false);

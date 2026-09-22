@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Supplier } from '../types';
-import { getSuppliersPaginated, updateSupplierProfile, deleteDocument, addSupplier } from '../services/api';
+import { getSuppliersPaginated, updateSupplierProfile, deleteDocument, addSupplier, isOfflineGuardError } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -211,8 +211,12 @@ export default function SuppliersPage() {
         toast.success('تمت إضافة المورد');
         loadSuppliers(true);
       }
-    } catch {
-      toast.error('فشلت عملية الحفظ');
+    } catch (e) {
+      if (isOfflineGuardError(e)) {
+        toast.error((e as Error).message);
+      } else {
+        toast.error('فشلت عملية الحفظ');
+      }
     }
   }, [loadSuppliers]);
 
@@ -231,8 +235,12 @@ export default function SuppliersPage() {
         await deleteDocument('suppliers', supplier.id);
         toast.success('تم حذف المورد');
         loadSuppliers(true);
-      } catch {
-        toast.error('فشل حذف المورد');
+      } catch (e) {
+        if (isOfflineGuardError(e)) {
+          toast.error((e as Error).message);
+        } else {
+          toast.error('فشل حذف المورد');
+        }
       }
     }
   }, [confirm, loadSuppliers]);

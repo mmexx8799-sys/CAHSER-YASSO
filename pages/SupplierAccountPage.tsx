@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, ShoppingCart, Undo2, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn, Product, Category } from '../types';
-import { addSupplierPayment, processPurchase, processSupplierReturn } from '../services/api';
+import { addSupplierPayment, processPurchase, processSupplierReturn, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -66,8 +66,12 @@ export default function SupplierAccountPage() {
             toast.success("تمت إضافة الدفعة بنجاح");
             setAmount('');
             setNotes('');
-        } catch {
-            toast.error("فشلت إضافة الدفعة");
+        } catch (e) {
+            if (isOfflineGuardError(e)) {
+                toast.error((e as Error).message);
+            } else {
+                toast.error("فشلت إضافة الدفعة");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -883,7 +887,11 @@ const PurchaseModal: React.FC<{
             });
             onComplete();
         } catch (error) {
-            console.error(error);
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error(error);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -1102,7 +1110,11 @@ const SupplierReturnModal: React.FC<{
             );
             onComplete();
         } catch (error) {
-            console.error(error);
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error(error);
+            }
         } finally {
             setIsSubmitting(false);
         }

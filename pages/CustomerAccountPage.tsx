@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
-import { addCustomerPayment } from '../services/api';
+import { addCustomerPayment, isOfflineGuardError } from '../services/api';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -60,8 +60,12 @@ export default function CustomerAccountPage() {
             toast.success("تمت إضافة الدفعة بنجاح");
             setAmount('');
             setNotes('');
-        } catch {
-            toast.error("فشلت إضافة الدفعة");
+        } catch (e) {
+            if (isOfflineGuardError(e)) {
+                toast.error((e as Error).message);
+            } else {
+                toast.error("فشلت إضافة الدفعة");
+            }
         } finally {
             setIsSubmitting(false);
         }

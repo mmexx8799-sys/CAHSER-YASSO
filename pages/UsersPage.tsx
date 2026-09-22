@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, UserX, UserCheck, Shield } from 'lucide-react';
 import { useConfirmation } from '../components/ConfirmationProvider';
-import { addUser, deleteUser, setUserDisabled, setUserCapOverrides } from '../services/api';
+import { addUser, deleteUser, setUserDisabled, setUserCapOverrides, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import type { User } from '../types';
 import { UserRole } from '../types';
@@ -10,6 +10,7 @@ import { orderBy } from 'firebase/firestore';
 import type { QueryConstraint } from 'firebase/firestore';
 import { usePermissions } from '../hooks/usePermissions';
 import { PermissionEditorModal } from '../components/PermissionEditorModal';
+import { toast } from 'react-hot-toast';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'مالك',
@@ -130,8 +131,13 @@ export default function UsersPage() {
         try {
             await addUser(email, password, role);
         } catch (error) {
-            // Errors are already toasted in the API service, just log here
-            console.error("Failed to add user from component:", error);
+            // Errors are already toasted in the API service, just log here —
+            // except the offline guard, which the API rethrows silently for the UI to show
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error("Failed to add user from component:", error);
+            }
         }
     };
 
@@ -146,7 +152,11 @@ export default function UsersPage() {
             try {
                 await setUserDisabled(user.uid, newDisabledState);
             } catch (error) {
-                console.error('Failed to toggle user disabled state:', error);
+                if (isOfflineGuardError(error)) {
+                    toast.error((error as Error).message);
+                } else {
+                    console.error('Failed to toggle user disabled state:', error);
+                }
             }
         }
     };
@@ -160,15 +170,27 @@ export default function UsersPage() {
             try {
                 await deleteUser(user.uid);
             } catch (error) {
-                // Error already toasted in API service
-                console.error('Failed to delete user from component:', error);
+                if (isOfflineGuardError(error)) {
+                    toast.error((error as Error).message);
+                } else {
+                    // Error already toasted in API service
+                    console.error('Failed to delete user from component:', error);
+                }
             }
         }
     };
 
     const handlePermSave = async (grants: string[], denies: string[]) => {
         if (!permUser) return;
-        await setUserCapOverrides(permUser.uid, { grants, denies });
+        try {
+            await setUserCapOverrides(permUser.uid, { grants, denies });
+        } catch (error) {
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error('Failed to save permission overrides:', error);
+            }
+        }
     };
 
     return (

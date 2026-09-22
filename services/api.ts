@@ -48,10 +48,22 @@ async function assertCan(capability: Parameters<typeof can>[1]): Promise<void> {
   }
 }
 
+// OFFLINE-P1 D-O8: علامة مميزة لخطأ الحارس — الواجهة تعرض message مباشرة
+// لهذا النوع فقط، وأي خطأ آخر يبقى بالسلوك الحالي (لا تسريب لتفاصيل تقنية).
+export class OfflineGuardError extends Error {
+  readonly code = 'offline-guard';
+  constructor(message: string) {
+    super(message);
+    this.name = 'OfflineGuardError';
+  }
+}
+export const isOfflineGuardError = (e: any): boolean =>
+  !!e && (e instanceof OfflineGuardError || e?.code === 'offline-guard' || e?.name === 'OfflineGuardError');
+
 // OFFLINE-P1 D-O8 (أ): رفض فوري على مستوى الخدمة — أول سطر في كل دالة كتابة قبل أي await/Firestore
 async function assertOnline(): Promise<void> {
   if (!navigator.onLine) {
-    throw new Error("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+    throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
   }
   // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
   try {
@@ -60,13 +72,13 @@ async function assertOnline(): Promise<void> {
     await Promise.race([ping, timeout]);
   } catch (e: any) {
     if (String(e?.message || '').includes('offline-timeout')) {
-      throw new Error("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+      throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
     }
     // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين
     const code = String(e?.code || '').toLowerCase();
     const msg = String(e?.message || '').toLowerCase();
     if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !navigator.onLine) {
-      throw new Error("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+      throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
     }
     // أخطاء أخرى (مثل permission-denied / not-found) تعني الاتصال موجود — لا تمنع الكتابة
   }
@@ -82,6 +94,7 @@ export const updateAppSettings = async (settings: Partial<AppSettings>) => {
         await setDoc(docRef, settings, { merge: true });
         toast.success('تم تحديث إعدادات التطبيق.');
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error updating app settings:", error);
         toast.error('فشل تحديث الإعدادات.');
     }
@@ -117,6 +130,7 @@ export const addUser = async (email: string, password: string, role: UserRole): 
         });
         toast.success("تم إضافة المستخدم بنجاح");
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         let message = "فشل في إضافة المستخدم.";
         if (error.code === 'auth/email-already-in-use') {
             message = 'هذا البريد الإلكتروني مستخدم بالفعل.';
@@ -136,6 +150,7 @@ export const deleteUser = async (uid: string) => {
         await deleteDocument('users', uid);
         toast.success("تم حذف دور المستخدم بنجاح.");
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         toast.error("فشل حذف دور المستخدم.");
         throw error;
     }
@@ -146,6 +161,7 @@ export const setUserDisabled = async (uid: string, disabled: boolean) => {
         await updateDocument('users', uid, { disabled });
         toast.success(disabled ? "تم تعطيل المستخدم بنجاح." : "تم تفعيل المستخدم بنجاح.");
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         toast.error("فشل تحديث حالة المستخدم.");
         throw error;
     }
@@ -183,6 +199,7 @@ export const setUserCapOverrides = async (targetUid: string, overrides: { grants
         await batch.commit();
         toast.success("تم تحديث الصلاحيات بنجاح");
     } catch (e: any) {
+        if (isOfflineGuardError(e)) throw e;
         toast.error(e?.message || "فشل تحديث الصلاحيات");
         throw e;
     }
@@ -234,6 +251,7 @@ const updateDocument = async (collectionPath: string, id: string, data: any) => 
         const docRef = doc(db, collectionPath, id);
         await updateDoc(docRef, data);
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating document: ", e);
         throw new Error("Failed to update document");
     }
@@ -257,6 +275,7 @@ export const updateCustomerProfile = async (id: string, data: any): Promise<void
             address: address ?? '',
         });
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating customer profile: ", e);
         throw new Error("Failed to update customer profile");
     }
@@ -280,6 +299,7 @@ export const updateSupplierProfile = async (id: string, data: any): Promise<void
             address: address ?? '',
         });
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating supplier profile: ", e);
         throw new Error("Failed to update supplier profile");
     }
@@ -359,6 +379,7 @@ export const saveProduct = async (
     } catch (e: any) {
         // Re-throw our own validation errors untouched (clear Arabic text);
         // only wrap unexpected Firestore failures.
+        if (isOfflineGuardError(e)) throw e;
         if (e?.message && /حقل المنتج|المنتج مطلوب/.test(e.message)) throw e;
         console.error("Error saving product: ", e);
         throw new Error("Failed to save product");
@@ -380,6 +401,7 @@ export const addCategory = async (name: string): Promise<string> => {
         const docRef = await addDoc(collection(db, 'categories'), { name: trimmed });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding category: ", e);
         throw new Error("Failed to add category");
     }
@@ -431,6 +453,7 @@ export const deleteDocument = async (collectionPath: string, id: string) => {
     try {
         await deleteDoc(doc(db, collectionPath, id));
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error deleting document: ", e);
         throw new Error("Failed to delete document");
     }
@@ -532,6 +555,7 @@ export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt
         });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding customer:", e);
         throw new Error("Failed to add customer");
     }
@@ -561,6 +585,7 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
 
         toast.success('تم تسجيل الدفعة بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error adding customer payment:", error);
         toast.error("حدث خطأ أثناء تسجيل الدفعة.");
         throw error;
@@ -618,6 +643,7 @@ export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt
         });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding supplier:", e);
         throw new Error("Failed to add supplier");
     }
@@ -646,6 +672,7 @@ export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | '
 
         toast.success('تم تسجيل دفعة المورد بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error adding supplier payment:", error);
         toast.error("حدث خطأ أثناء تسجيل دفعة المورد.");
         throw error;
@@ -737,6 +764,7 @@ export const processPurchase = async (purchaseData: {
         });
         toast.success('تم تسجيل فاتورة الشراء بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing purchase:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل فاتورة الشراء.');
         throw error;
@@ -806,6 +834,7 @@ export const processSupplierReturn = async (items: CartItem[], supplierId: strin
         });
         toast.success('تم تسجيل مرتجع المورد بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing supplier return:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل مرتجع المورد.');
         throw error;
@@ -973,6 +1002,7 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
         });
         toast.success('تمت عملية البيع بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing sale:", error);
         if (error.message.includes('quantity') || error.message.includes('الكمية')) {
             toast.error(error.message);
@@ -1118,6 +1148,7 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
         });
         toast.success('تمت عملية الإرجاع بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing return:", error);
         toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
         throw error;

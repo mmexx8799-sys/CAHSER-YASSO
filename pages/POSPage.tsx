@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2, ScanBarcode, Camera } from 'lucide-react';
 import type { Product, Customer, DailyArchive, Category } from '../types';
 import { PaymentMethod } from '../types';
-import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud } from '../services/api';
+import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByBarcode';
@@ -183,7 +183,11 @@ const CartModal: React.FC<{
             setIsPaymentModalOpen(false);
             onSaleComplete();
         } catch (error) {
-            toast.error("حدث خطأ أثناء إتمام البيع.");
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                toast.error("حدث خطأ أثناء إتمام البيع.");
+            }
             console.error(error);
         } finally {
             setIsProcessing(false);
