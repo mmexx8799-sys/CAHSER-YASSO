@@ -1,4 +1,4 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 (REQ-OFF1-0 Done — REQ-OFF1-1 Done c3ab8d6 — precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد — Playwright: SW activated / cache 37 / no firestore / reload offline OK) — فحص المالك البصري: Incognito Offline — 58 requests 0.0 B / 2.1 MB (ServiceWorker), إدارة المستخدمين تفتح أوفلاين)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 (REQ-OFF1-0 Done — REQ-OFF1-1 Done c3ab8d6/e0ef2af/f736890 — precache 37 فريد (40 إجمالي، 3 مكررة) — فحص المالك البصري ناجح: 9+ صفحات ببيانات حقيقية من الكاش المحلي (persistentLocalCache) — الجلسة القائمة فقط تعمل أوفلاين؛ تسجيل الدخول يتطلب شبكة)
 (Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
 
 PERM-2026-09 — نموذج الصلاحيات

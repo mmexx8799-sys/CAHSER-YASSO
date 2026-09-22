@@ -141,12 +141,12 @@
 - **Edge:** جواب ناقص / تعارض D-O7 (ويب/أندرويد) — القرار: (ب) ويب فقط الآن.
 - **تحقق:** `npx tsc --noEmit` + `npm run build` + `git diff --stat` + `git tag` — **Commit:** `docs: REQ-OFF1-0 offline-p1 baseline + D-O1..D-O7`
 
-### REQ-OFF1-1 — هيكل PWA (واجهة فقط — لا بيانات) — **In Progress — بانتظار فحص المالك البصري (AC-04)**
+### REQ-OFF1-1 — هيكل PWA (واجهة فقط — لا بيانات) — **Done 2026-09-21 — فحص المالك البصري ناجح (localhost:4173 Incognito Offline: 9+ صفحات ببيانات حقيقية من الكاش المحلي، لا ديناصور، مؤشر أوفلاين في الهيدر) — الجلسة القائمة فقط تعمل أوفلاين؛ تسجيل الدخول يتطلب شبكة (auth.ts مستثنى D-O8)**
 - **الملفات المسموحة:** `package.json` (إضافة `vite-plugin-pwa` فقط — بلا major bumps), `vite.config.ts` (إعداد `VitePWA`), `index.html` (manifest link إن لزم), `public/icons/*`, `src/pwa.d.ts` (types) — لا `public/manifest.json` (مانيفست واحد عبر `VitePWA.manifest` — تعديل A)
 - **AC-01:** `vite.config.ts` يحتوي `VitePWA({ registerType:'prompt', disable: mode==='capacitor', includeAssets:['**/*'], manifest:{...icons 192/512/maskable}, workbox:{ globPatterns:['**/*.{js,css,html,svg,png,woff2}'], navigateFallback:'index.html', navigateFallbackDenylist:[/^\/__\//], cleanupOutdatedCaches:true, runtimeCaching:[] } })` — لا `runtimeCaching` لـ `firestore.googleapis.com`.
 - **AC-02:** المانيفست عبر `VitePWA.manifest` (لا `public/manifest.json`) — `dist/manifest.webmanifest` يحتوي `name:"Nour Elrahman", short_name:"Casher", display:"standalone", ... icons 192/512/maskable`.
 - **AC-03:** `npm run build` ينتج `dist/manifest.webmanifest` (412B) + `dist/sw.js` (3152B) + `dist/workbox-*.js` + `dist/registerSW.js` — `dist/index.html` يحتوي `<link rel="manifest" href="./manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="./registerSW.js">` — **المثبت:** precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد).
-- **AC-04:** قطع الشبكة → تحديث الصفحة → الواجهة تفتح (لا ديناصور) — فحص يدوي في DevTools → Application → Service Workers `activated` + Cache Storage `workbox-precache 37` بلا `firestore/googleapis` — **Playwright مثبت:** SW `activated`, cache 37, `FIRESTORE_IN_CACHE: none`, `HAS_ROOT: true, HAS_DINO: NO` — **البصري في Chrome بانتظار المالك** (تسجيل دخول + تنقل + باركود أوفلاين).
+- **AC-04:** قطع الشبكة → تحديث الصفحة → الواجهة تفتح (لا ديناصور) — فحص يدوي في DevTools → Application → Service Workers `activated` + Cache Storage `workbox-precache 37` بلا `firestore/googleapis` — **Playwright مثبت:** SW `activated`, cache 37, `FIRESTORE_IN_CACHE: none`, `HAS_ROOT: true, HAS_DINO: NO` — **البصري للمالك ناجح:** 9+ صفحات ببيانات حقيقية من الكاش المحلي (persistentLocalCache)، لا ديناصور — ملاحظة: Console لم يُفحص، والجلسة القائمة فقط تعمل أوفلاين.
 - **Edge:** build بلا PWA / manifest مفقود / icons ناقصة.
 - **تحقق:** `npx tsc --noEmit` + `npm run build` + `git diff --stat` + فحص يدوي أوفلاين — **Commit:** `feat(offline-p1): REQ-OFF1-1 PWA scaffold (UI only, no data cache)`
 
