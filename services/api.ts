@@ -11,6 +11,7 @@ import {
     orderBy,
     writeBatch,
     getDoc,
+    getDocFromServer,
     Timestamp,
     serverTimestamp,
     setDoc,
@@ -47,10 +48,35 @@ async function assertCan(capability: Parameters<typeof can>[1]): Promise<void> {
   }
 }
 
+// OFFLINE-P1 D-O8 (أ): رفض فوري على مستوى الخدمة — أول سطر في كل دالة كتابة قبل أي await/Firestore
+async function assertOnline(): Promise<void> {
+  if (!navigator.onLine) {
+    throw new Error("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+  }
+  // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
+  try {
+    const ping = getDocFromServer(doc(db, 'counters', 'invoices'));
+    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
+    await Promise.race([ping, timeout]);
+  } catch (e: any) {
+    if (String(e?.message || '').includes('offline-timeout')) {
+      throw new Error("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+    }
+    // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين
+    const code = String(e?.code || '').toLowerCase();
+    const msg = String(e?.message || '').toLowerCase();
+    if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !navigator.onLine) {
+      throw new Error("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+    }
+    // أخطاء أخرى (مثل permission-denied / not-found) تعني الاتصال موجود — لا تمنع الكتابة
+  }
+}
+
 // --- App Settings API ---
 const APP_SETTINGS_ID = 'main';
 
 export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+    await assertOnline();
     try {
         const docRef = doc(db, 'appSettings', APP_SETTINGS_ID);
         await setDoc(docRef, settings, { merge: true });
@@ -71,6 +97,7 @@ export const checkIfUsersExist = async (): Promise<boolean> => {
 
 // FIX: Implement addUser to create a new user account and associated user document in firestore.
 export const addUser = async (email: string, password: string, role: UserRole): Promise<void> => {
+    await assertOnline();
     // RBAC-2026-09 R2 AC-04: تحقق أن role ضمن UserRole قبل الإنشاء
     if (!Object.values(UserRole).includes(role)) {
         throw new Error("دور المستخدم غير صالح");
@@ -125,6 +152,7 @@ export const setUserDisabled = async (uid: string, disabled: boolean) => {
 };
 
 export const setUserCapOverrides = async (targetUid: string, overrides: { grants: string[]; denies: string[] }) => {
+    await assertOnline();
     const auth = getAuth();
     const byUid = auth.currentUser?.uid;
     if (!byUid) throw new Error("يجب تسجيل الدخول أولاً");
@@ -201,6 +229,7 @@ const buildSearchableIndex = (name: string, code: string): string[] => {
 // use updateCustomerProfile / updateSupplierProfile / saveProduct instead,
 // so no caller can smuggle arbitrary fields (e.g. balance) into a write.
 const updateDocument = async (collectionPath: string, id: string, data: any) => {
+    await assertOnline();
     try {
         const docRef = doc(db, collectionPath, id);
         await updateDoc(docRef, data);
@@ -216,6 +245,7 @@ const updateDocument = async (collectionPath: string, id: string, data: any) => 
 // the caller passes. Balance changes happen ONLY via processSale,
 // processReturn and addCustomerPayment transactions.
 export const updateCustomerProfile = async (id: string, data: any): Promise<void> => {
+    await assertOnline();
     const { name, phone, address } = data || {};
     if (!name || !String(name).trim()) {
         throw new Error("اسم العميل مطلوب");
@@ -238,6 +268,7 @@ export const updateCustomerProfile = async (id: string, data: any): Promise<void
 // Firestore. Balance changes happen ONLY via processPurchase,
 // processSupplierReturn and addSupplierPayment transactions.
 export const updateSupplierProfile = async (id: string, data: any): Promise<void> => {
+    await assertOnline();
     const { name, phone, address } = data || {};
     if (!name || !String(name).trim()) {
         throw new Error("اسم المورد مطلوب");
@@ -263,6 +294,7 @@ export const updateSupplierProfile = async (id: string, data: any): Promise<void
 export const saveProduct = async (
     productData: Omit<Product, 'id' | 'createdAt' | 'searchableIndex'> | Product
 ): Promise<string | void> => {
+    await assertOnline();
     const data: any = productData || {};
     const {
         code, name, categoryId, quantity, minQuantity,
@@ -339,6 +371,7 @@ export const saveProduct = async (
 // trimmed name. NOTE: no duplicate check (would need a racy pre-read;
 // out of scope — same as before).
 export const addCategory = async (name: string): Promise<string> => {
+    await assertOnline();
     const trimmed = String(name ?? '').trim();
     if (!trimmed) {
         throw new Error("اسم التصنيف لا يمكن أن يكون فارغًا");
@@ -394,6 +427,7 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 
 // Generic function to delete a document
 export const deleteDocument = async (collectionPath: string, id: string) => {
+    await assertOnline();
     try {
         await deleteDoc(doc(db, collectionPath, id));
     } catch (e) {
@@ -487,6 +521,7 @@ export const getCustomersPaginated = async (
 // Customer creation — persists openingBalance as a separate immutable historical field (REQ-M8).
 // balance starts equal to it; only balance moves afterwards, openingBalance never changes.
 export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt' | 'openingBalance'>) => {
+    await assertOnline();
     try {
         const openingBalance = Number(customerData.balance) || 0;
         const docRef = await addDoc(collection(db, 'customers'), {
@@ -505,6 +540,7 @@ export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt
 
 // Add payment to customer's balance
 export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
+    await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
     }
@@ -571,6 +607,7 @@ const SUPPLIERS_PAGE_SIZE = 50;export const getSuppliersPaginated = async (
 // Supplier creation — persists openingBalance as a separate immutable historical field (REQ-M8).
 // balance starts equal to it; only balance moves afterwards, openingBalance never changes.
 export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'openingBalance'>) => {
+    await assertOnline();
     try {
         const openingBalance = Number(supplierData.balance) || 0;
         const docRef = await addDoc(collection(db, 'suppliers'), {
@@ -588,6 +625,7 @@ export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt
 
 // Supplier payment — reduces supplier.balance (we paid, our debt decreased)
 export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+    await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
     }
@@ -621,6 +659,7 @@ export const processPurchase = async (purchaseData: {
     total: number;
     supplierId: string;
 }) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processPurchase', async (transaction) => {
             const purchaseRef = doc(collection(db, 'purchaseInvoices'));
@@ -706,6 +745,7 @@ export const processPurchase = async (purchaseData: {
 
 // Supplier return — decreases product quantities + supplier.balance, records SupplierReturn
 export const processSupplierReturn = async (items: CartItem[], supplierId: string) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processSupplierReturn', async (transaction) => {
             const returnRef = doc(collection(db, 'supplierReturns'));
@@ -823,6 +863,7 @@ async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction
 
 // Invoices API
 export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processSale', async (transaction) => {
             const invoiceRef = doc(collection(db, 'invoices'));
@@ -953,6 +994,7 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
 // الإصلاح (خيار A، قرار مالك المنتج 2026-09-13): نقل قراءة المرتجعات السابقة
 // إلى getDocs() عادية قبل بدء runTransaction — Atomicity خيار B مؤجل كـ TECH-P0-1b.
 export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
+    await assertOnline();
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
 
@@ -1099,6 +1141,7 @@ export const getOpenDailyArchive = async (): Promise<DailyArchive | null> => {
 };
 
 export const startNewDailyArchive = async (): Promise<DailyArchive> => {
+    await assertOnline();
     const openArchive = await getOpenDailyArchive();
     if (openArchive) {
         throw new Error(`لا يمكن بدء يومية جديدة. اليومية ${openArchive.id} ما زالت مفتوحة.`);
@@ -1136,6 +1179,7 @@ export const startNewDailyArchive = async (): Promise<DailyArchive> => {
 };
 
 export const closeDailyArchive = async (id: string) => {
+    await assertOnline();
     const archiveRef = doc(db, 'dailyArchives', id);
     await updateDoc(archiveRef, {
         status: 'closed',
@@ -1233,6 +1277,7 @@ const convertMillisToTimestamps = (data: any): any => {
 
 
 export const backupData = async (): Promise<BackupData & { schemaVersion: number; appVersion: string; createdAt: string }> => {
+    await assertOnline();
     const backup: any = {
         schemaVersion: BACKUP_SCHEMA_VERSION,
         appVersion: APP_VERSION,
@@ -1269,6 +1314,7 @@ const deleteCollection = async (collectionPath: string) => {
 
 
 export const factoryReset = async () => {
+    await assertOnline();
     await assertCan('data.reset');
     // Only reset business data
     for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
@@ -1277,6 +1323,7 @@ export const factoryReset = async () => {
 };
 
 export const restoreData = async (backupData: any) => {
+    await assertOnline();
     // Validate BEFORE any destructive operation
     validateBackupStructure(backupData);
     await assertCan('data.restore');
