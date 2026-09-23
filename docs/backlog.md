@@ -6,7 +6,7 @@
 - REQ-OFF1-2: رفض فوري على مستوى الخدمة (22 دالة — D-O8 أ) + `OfflineGuardError` — **Done 2026-09-22 (db50102 + 0599ac1)** — `tsc` نظيف · `test:rules` 340/340 · emulator: 21/21 + Captive 2/2
 - REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — **Done 2026-09-22 (94619c8)** — `NewVersionBanner` + `withInFlightGuard` 22 + `registration.update()` كل 5د — بانر غير مُلح وقابل للإغلاق
 - REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — **Done 2026-09-22 (eb8bbe7)** — `offlineLog.ts` (14d window + 3s threshold) + `useOfflineLogger` + `OfflineStats` في الإعدادات — `idb-keyval@6.3.0`
-- REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — الخطوة التالية: **P2 (طابور الكتابة المؤجلة) مؤجلة** حتى قراءة إحصائيات 14 يوم فعلية (عتبة count≥5 أو avg≥2min) — المراجعة: المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON ويرسله للوكيل — تاريخ تقريبي: ~2026-10-06
+- REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23 (43d9031 + a9ce533)** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — إصلاح retry للـping (a9ce533: إعادة محاولة واحدة على offline-timeout) — الخطوة التالية: **P2 مؤجلة حتى 2026-10-06** (المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON)
 
 ## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**
