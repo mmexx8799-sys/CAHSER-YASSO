@@ -83,7 +83,12 @@ async function assertOnline(): Promise<void> {
         const timeout2 = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
         await Promise.race([ping2, timeout2]);
       } catch (e2: any) {
-        throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+        const m2 = String(e2?.message || '').toLowerCase();
+        const c2 = String(e2?.code || '').toLowerCase();
+        if (m2.includes('offline-timeout') || c2.includes('unavailable') || c2.includes('network') || m2.includes('network') || m2.includes('offline') || !navigator.onLine) {
+          throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+        }
+        // permission-denied / not-found etc — treat as online, don't block
       }
       return;
     }
