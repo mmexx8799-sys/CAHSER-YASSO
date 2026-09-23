@@ -7,6 +7,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { signOut } from './services/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineNotifier from './components/OfflineNotifier';
+import NewVersionBanner from './components/NewVersionBanner';
 import { ConfirmationProvider } from './components/ConfirmationProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
@@ -167,6 +168,7 @@ const AppLayout = React.memo(() => {
             </main>
             <BottomNav />
             <Sidebar />
+            <NewVersionBanner />
         </div>
     );
 });
