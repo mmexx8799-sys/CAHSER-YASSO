@@ -71,15 +71,23 @@ async function assertOnline(): Promise<void> {
     throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
   }
   // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
+  // عند فشل ping الأول بـ offline-timeout فقط، أعد محاولة واحدة إضافية بنفس المهلة قبل الرفض
   try {
     const ping = getDocFromServer(doc(db, 'counters', 'invoices'));
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
     await Promise.race([ping, timeout]);
   } catch (e: any) {
     if (String(e?.message || '').includes('offline-timeout')) {
-      throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+      try {
+        const ping2 = getDocFromServer(doc(db, 'counters', 'invoices'));
+        const timeout2 = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
+        await Promise.race([ping2, timeout2]);
+      } catch (e2: any) {
+        throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+      }
+      return;
     }
-    // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين
+    // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين وترفض من أول مرة
     const code = String(e?.code || '').toLowerCase();
     const msg = String(e?.message || '').toLowerCase();
     if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !navigator.onLine) {
