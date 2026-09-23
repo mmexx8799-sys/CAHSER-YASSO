@@ -4,9 +4,9 @@
 - REQ-OFF1-0: الأساس والجرد (قراءة فقط) — **Done 2026-09-21** — tag `pre-offline-p1` على `1ab34cd` — `tsc` نظيف · `eslint` 7 أخطاء PERM · `test:rules` 340/340 · `build` 938 kB — الجرد الخام (ب→هـ) موثق في تقرير REQ-OFF1-0 + D-O1…D-O7 موقعة في `known-issues.md`
 - REQ-OFF1-1: هيكل PWA (واجهة فقط — لا بيانات) — **Done 2026-09-21 (c3ab8d6 + dc1e813 + e0ef2af + 2412b7e/f736890)** — `vite-plugin-pwa@1.3.0` — `manifest` عبر `VitePWA.manifest` — `precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2 — مطابقة بالعدد)` — الفحص البصري للمالك (localhost:4173 Incognito Offline): تنقّل فعلي 9+ صفحات (الموردين/المنتجات/العملاء/المرتجعات/التقارير/الأرشيف/اللوحة/الإعدادات/المستخدمين) مع بيانات حقيقية من الكاش المحلي (`persistentLocalCache` — لا shell فاضي)، لا ديناصور، مؤشر `أوفلاين` في الهيدر — ملاحظتان: Console لم يُفحص، والجلسة القائمة فقط تعمل أوفلاين؛ تسجيل الدخول يتطلب شبكة (auth.ts مستثنى D-O8)
 - REQ-OFF1-2: رفض فوري على مستوى الخدمة (22 دالة — D-O8 أ) + `OfflineGuardError` بعلامة مميزة عبر 18 موقع UI — **Done 2026-09-22** — `tsc` نظيف · `test:rules` 340/340 سابقًا · اختبار emulator: 21/21 + Captive 2/2 + مسار صامت سابقًا (`processPurchase`) صار يعرض التوست
-- REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — **In Progress** — allowed: `components/NewVersionBanner.tsx`, `App.tsx` (+ `vite.config.ts` إن لزم — `registerType:'prompt'` مثبت مسبقًا)
-- REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — Pending
-- REQ-OFF1-5: إغلاق وتوثيق — Pending
+- REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — **Done 2026-09-22 (94619c8)** — `NewVersionBanner` + `withInFlightGuard` 22 + `registration.update()` كل 5د — بانر غير مُلح وقابل للإغلاق — زر معطّل أثناء كتابة/أوفلاين
+- REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — **Done 2026-09-22** — `services/offlineLog.ts` (`14d window + 3s threshold` — 37 precache سابقًا) + `hooks/useOfflineLogger.ts` + `components/OfflineStats.tsx` في `SettingsPage` — `idb-keyval@6.3.0` — حد معروف: تبويب يُغلق أوفلاين يبقى بلا `end`
+- REQ-OFF1-5: إغلاق وتوثيق — **In Progress** — allowed: `docs/backlog.md`, `docs/changelog.md`, `docs/current-state-map.md`, `docs/known-issues.md`
 
 ## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**

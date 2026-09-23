@@ -17,6 +17,7 @@ import { useReturnCartStore } from './stores/returnCartStore';
 import { usePermissions } from './hooks/usePermissions';
 import type { Capability } from './utils/permissions';
 import { buildNavItems, resolveLanding } from './utils/nav';
+import { useOfflineLogger } from './hooks/useOfflineLogger';
 
 // Lazy load pages
 const POSPage = React.lazy(() => import('./pages/POSPage'));
@@ -155,6 +156,7 @@ const RequireCapability: React.FC<{ capability: Capability; children: React.Reac
 };
 
 const AppLayout = React.memo(() => {
+    useOfflineLogger();
     return (
         <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Header />

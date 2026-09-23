@@ -29,6 +29,7 @@
     "barcode-detector": "^3.2.2",
     "exceljs": "^4.4.0",
     "firebase": "^10.11.0",
+    "idb-keyval": "6.3.0",
     "jsbarcode": "^3.12.3",
     "lucide-react": "^0.372.0",
     "react": "^18.2.0",

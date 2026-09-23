@@ -11,6 +11,7 @@ import { useAppSettings } from '../contexts/AppSettingsContext';
 import { usePosCartStore } from '../stores/posCartStore';
 import { useReturnCartStore } from '../stores/returnCartStore';
 import { usePermissions } from '../hooks/usePermissions';
+import OfflineStatsCard from '../components/OfflineStats';
 
 // --- Sub Components for Performance Isolation ---
 
@@ -450,6 +451,7 @@ export default function SettingsPage() {
                         onFactoryReset={handleFactoryReset}
                         isBusy={isDataBusy}
                     />
+                    <OfflineStatsCard />
                 </div>
             </div>
         </div>
