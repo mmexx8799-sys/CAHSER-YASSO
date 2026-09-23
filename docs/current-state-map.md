@@ -1,4 +1,4 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-21 — OFFLINE-P1 (REQ-OFF1-0 Done — REQ-OFF1-1 Done c3ab8d6/e0ef2af/f736890 — precache 37 فريد (40 إجمالي، 3 مكررة) — فحص المالك البصري ناجح: 9+ صفحات ببيانات حقيقية من الكاش المحلي (persistentLocalCache) — الجلسة القائمة فقط تعمل أوفلاين؛ تسجيل الدخول يتطلب شبكة)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-23 — **OFFLINE-P1 مكتمل** (REQ-OFF1-0…5 Done — precache 37 فريد، حارس 22 دالة، بانر تحديث + حماية كتابة جارية، تسجيل 14 يوم في الإعدادات) — P2 (الطابور) مؤجل حتى 2026-10-06
 (Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
 
 PERM-2026-09 — نموذج الصلاحيات

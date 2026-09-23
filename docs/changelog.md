@@ -1,8 +1,12 @@
 # Changelog — Nour-Elrahman
 
-## Unreleased — OFFLINE-P1 (2026-09-21)
-- **REQ-OFF1-0 — أساس وجرد (قراءة فقط):** وسم `pre-offline-p1` على `1ab34cd`, D-O1…D-O8 موقعة (21 دالة — 6+15), الجرد الخام (ب→هـ) + بناء 938 kB + 340/340
-- **REQ-OFF1-1 — هيكل PWA (واجهة فقط):** `vite-plugin-pwa@1.3.0` via `VitePWA({disable: mode==='capacitor', registerType:'prompt', manifest 192/512/maskable, workbox precache 37 فريد (40 إجمالي، 3 مكررة x2 — مطابقة بالعدد), navigateFallbackDenylist + runtimeCaching:[]})` — `dist/manifest.webmanifest` 412B + `sw.js` 3152B — الفحص البصري (Incognito Offline): `SW activated`, `58 requests 0.0 B / 2.1 MB from ServiceWorker`, `إدارة المستخدمين` تفتح أوفلاين — `build:android` بلا SW — الأيقونات مؤقتة (بند مفتوح)
+## Unreleased — OFFLINE-P1 (2026-09-21 → 2026-09-23) — **OFFLINE-P1 مكتمل**
+- **REQ-OFF1-0 — الأساس:** وسم `pre-offline-p1` على `1ab34cd` + قرارات D-O1…D-O8 — لا كود — **Done 2026-09-21**
+- **REQ-OFF1-1 — فتح أوفلاين:** التطبيق يفتح أوفلاين بعد زيارة واحدة (PWA) — لا صفحة ديناصور — تحديث `vite-plugin-pwa` مع مؤشر `أوفلاين` في الهيدر — **Done 2026-09-21**
+- **REQ-OFF1-2 — منع الكتابة أوفلاين:** أي محاولة بيع/حفظ أوفلاين تُرفض فورًا برسالة واضحة — لا بيانات تُفقد بصمت — **Done 2026-09-22**
+- **REQ-OFF1-3 — تحديث النسخة:** يظهر تنبيه عند توفر إصدار جديد مع زر تحديث آمن (لا يقطع عملية جارية) — **Done 2026-09-22**
+- **REQ-OFF1-4 — متابعة الانقطاعات:** تُسجل الانقطاعات تلقائيًا لمدة 14 يومًا وتُعرض في الإعدادات لاتخاذ قرار P2 — **Done 2026-09-22**
+- **REQ-OFF1-5 — الإغلاق:** توثيق نهائي — **Done 2026-09-23**
 
 ## Unreleased — PERM-2026-09 (2026-09-21)
 - **REQ-PERM-0 — أساس وجرد (قراءة فقط):** وسم `pre-perm-2026-09` على `e7771f2`, جرد واجهة/قواعد, إثبات فصل `balance` — لا كود — **Done**

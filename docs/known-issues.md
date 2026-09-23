@@ -44,6 +44,19 @@
 - **حد معروف — انقطاع غير مغلق (OFF1-4):** لو أُغلق التبويب وهو أوفلاين، `logOfflineEnd` لا تُنفذ — الانقطاع يبقى `end: undefined` في IndexedDB إلى الأبد، ولا يدخل ضمن `getOfflineStats()` (يتطلب `durationMs` و`end`) ولا يُنظّف تلقائيًا — `MAX_ENTRIES` يحد الحجم فقط.
 - **الأساس المقاس (REQ-OFF1-0 2026-09-21 — HEAD 1ab34cd — tag pre-offline-p1):** `npx tsc --noEmit` نظيف (0) · `npx eslint . --quiet` 7 أخطاء معروفة (PERM backlog) · `npm run test:rules` **340/340 أخضر (32 ملف)** — 101.20s · `npm run build` نظيف (938.00 kB `index-Bp9vaXPN.js` — 19.62s) · `git status --short` نظيف بعد الوسم · `vite.config.ts`/`index.html`/`public/` بلا PWA · `OfflineNotifier.tsx` إشعار فقط · `processSale` بلا رفض فوري · الجرد الخام (ب→هـ) في تقرير REQ-OFF1-0.
 
+## OFFLINE-P1 — الفجوات المقبولة المجمعة (مؤقتة — 2026-09-23)
+
+> كلها موثقة كـ Accepted Risk مؤقت — لا تُعتبر حلًا نهائيًا، وتُراجع قبل P2.
+
+- **assertOnline() بلا تغطية آلية:** تجاوز كامل في `vitest` — التحقق الوحيد يدوي (Playwright 21/21 + Captive 2/2) — مطلوب: اختبار مخصص بمحاكاة الشبكة.
+- **انقطاع غير مغلق:** تبويب يُغلق وهو أوفلاين → `end: undefined` للأبد في IndexedDB — `MAX_ENTRIES` يحد الحجم فقط.
+- **تكلفة الأداء:** +1 `getDocFromServer` لكل كتابة (~50-200ms حتى 2s) — يُقيَّم بعد 14 يومًا؛ مقترح cache لـping 10s.
+- **قاعدة تصنيف handleStartDay:** ثلاثي (`OfflineGuardError` / `.code` / غيره) — إن أضيف خطأ SDK بلا `code` أو عمل بـ`code` ينكسر بصمت.
+- **الأيقونات مؤقتة:** `maskable-512.png` نسخة من `icon-512.png` — تُستبدل بالشعار الحقيقي قبل النشر.
+- **بوابة النشر:** ممنوع `firebase deploy` حتى إغلاق P1 بالكامل — `registerType:'prompt'` بلا بانر يبقي نسخًا قديمة.
+- **خط Cairo أوفلاين:** `runtimeCaching:[]` — يقع على النظام — مقبول.
+- **مراجعة 14 يوم:** بعد ~2026-10-06 — المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON ويرسله للوكيل — عتبة P2: `count≥5` أو `avg≥2min` — الخطوة التالية منفصلة (P2) ومؤجلة حتى هذا القياس.
+
 ## AC-04 Follow-up — Roleless test accounts (2026-09-19)
 
 - `ramypro0120@gmail.com` (uid: `s162boAmSEbgaLDmRNG2SoisoN23`) — بلا `role` عمدًا، حساب تجريبي غير مستخدَم، مجدول للحذف بعد اكتمال الإنتاج النهائي. محروم من كل كتابة (Default-deny — BR-01) — لا أثر تشغيلي.
