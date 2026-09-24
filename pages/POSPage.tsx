@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, CreditCard, Trash2, ShoppingCart, AlertCircle, Settings, Loader2, ScanBarcode, Camera } from 'lucide-react';
 import type { Product, Customer, DailyArchive, Category } from '../types';
 import { PaymentMethod } from '../types';
-import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud } from '../services/api';
+import { getProductsPaginated, processSale, getOpenDailyArchive, getProductByBarcodeCloud, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByBarcode';
@@ -13,6 +13,7 @@ import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { usePosCartStore } from '../stores/posCartStore';
+import { usePermissions } from '../hooks/usePermissions';
 import { FloatingCartButton } from '../components/FloatingCartButton';
 import { ProductSearch } from '../components/ProductSearch';
 import { orderBy } from 'firebase/firestore';
@@ -139,6 +140,8 @@ const CartModal: React.FC<{
     onSaleComplete: () => void;
 }> = ({ customers, dailyArchive, categories, onSaleComplete }) => {
     const { confirm } = useConfirmation();
+    const { can } = usePermissions();
+    const canSell = can("sell");
     const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, recalcCartPrices } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -180,7 +183,11 @@ const CartModal: React.FC<{
             setIsPaymentModalOpen(false);
             onSaleComplete();
         } catch (error) {
-            toast.error("حدث خطأ أثناء إتمام البيع.");
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                toast.error("حدث خطأ أثناء إتمام البيع.");
+            }
             console.error(error);
         } finally {
             setIsProcessing(false);
@@ -299,10 +306,11 @@ const CartModal: React.FC<{
                         </div>
                         <button
                             onClick={() => !isProcessing && setIsPaymentModalOpen(true)}
-                            disabled={cart.length === 0 || isProcessing}
+                            disabled={cart.length === 0 || isProcessing || !canSell}
+                            title={!canSell ? 'ليس لديك صلاحية البيع' : undefined}
                             className="w-full py-3 px-4 bg-primary-600 text-white rounded-lg font-bold text-xl shadow-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                         >
-                            {isProcessing ? 'جارٍ التنفيذ...' : 'دفع'}
+                            {isProcessing ? 'جارٍ التنفيذ...' : !canSell ? 'غير مصرح بالبيع' : 'دفع'}
                         </button>
                     </div>
                 </div>
@@ -329,6 +337,8 @@ const PaymentModal: React.FC<{
     onPaymentMethodChange?: (paymentMethod: PaymentMethod) => void;
     isProcessing?: boolean;
 }> = ({ isOpen, onClose, subtotal, customers, onSubmit, onPaymentMethodChange, isProcessing = false }) => {
+    const { can } = usePermissions();
+    const canSell = can('sell');
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.Cash);
     const [selectedCustomer, setSelectedCustomer] = useState<string>('');
     const [discount, setDiscount] = useState(0);
@@ -422,7 +432,7 @@ const PaymentModal: React.FC<{
                     <button onClick={() => !isProcessing && onClose()} disabled={isProcessing} className="flex-1 py-3 px-4 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 font-semibold text-lg disabled:opacity-50 disabled:cursor-not-allowed">
                         إلغاء
                     </button>
-                    <button data-testid="pos-confirm-payment" onClick={handleSubmit} disabled={isProcessing} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
+                    <button data-testid="pos-confirm-payment" onClick={handleSubmit} disabled={isProcessing || !canSell} title={!canSell ? 'ليس لديك صلاحية البيع' : undefined} className="flex-1 py-3 px-4 bg-primary-600 text-white rounded-md hover:bg-primary-700 flex items-center justify-center space-x-2 font-semibold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                         {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <CreditCard size={20} />}
                         <span>{isProcessing ? 'جارٍ التنفيذ...' : 'تأكيد الدفع'}</span>
                     </button>
@@ -528,7 +538,13 @@ export default function POSPage() {
                     setIsLoading(false);
                 }
             })
-            .catch(err => {
+            .catch((err: any) => {
+                const code = String(err?.code || '');
+                const msg = String(err?.message || '');
+                if (code.includes('permission-denied') || msg.includes('permission') || msg.includes('insufficient')) {
+                    setIsLoading(false);
+                    return;
+                }
                 toast.error('فشل في تحميل اليومية: ' + err.message);
                 setIsLoading(false);
             })

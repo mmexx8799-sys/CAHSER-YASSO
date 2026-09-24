@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, ShoppingCart, Undo2, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn, Product, Category } from '../types';
-import { addSupplierPayment, processPurchase, processSupplierReturn } from '../services/api';
+import { addSupplierPayment, processPurchase, processSupplierReturn, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -26,6 +26,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export default function SupplierAccountPage() {
     const { can } = usePermissions();
+    const canExport = can('statement.export');
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -65,8 +66,12 @@ export default function SupplierAccountPage() {
             toast.success("تمت إضافة الدفعة بنجاح");
             setAmount('');
             setNotes('');
-        } catch {
-            toast.error("فشلت إضافة الدفعة");
+        } catch (e) {
+            if (isOfflineGuardError(e)) {
+                toast.error((e as Error).message);
+            } else {
+                toast.error("فشلت إضافة الدفعة");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -581,7 +586,8 @@ export default function SupplierAccountPage() {
                             </div>
                             <button
                                 onClick={exportStatementCsv}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 disabled:opacity-50"
                             >
                                 <Download size={16} />
@@ -589,7 +595,8 @@ export default function SupplierAccountPage() {
                             </button>
                             <button
                                 onClick={exportStatementExcel}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
                             >
                                 <FileSpreadsheet size={16} />
@@ -880,7 +887,11 @@ const PurchaseModal: React.FC<{
             });
             onComplete();
         } catch (error) {
-            console.error(error);
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error(error);
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -1099,7 +1110,11 @@ const SupplierReturnModal: React.FC<{
             );
             onComplete();
         } catch (error) {
-            console.error(error);
+            if (isOfflineGuardError(error)) {
+                toast.error((error as Error).message);
+            } else {
+                console.error(error);
+            }
         } finally {
             setIsSubmitting(false);
         }

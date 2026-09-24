@@ -24,13 +24,17 @@ beforeAll(async () => {
     const { getDB } = await import('../services/firebase');
     const { getDoc: getDocWarm, doc: docWarm } = await import('firebase/firestore');
     await getDocWarm(docWarm(getDB(), 'users', 'warmup-noop'));
-  } catch {}
+  } catch {
+    // warmup race — ignore
+  }
 });
 afterAll(async () => { await testEnv.cleanup(); });
 
 async function signInAs(email: string, password: string, role: string) {
   const fbAuth = getAuthInstance();
-  try { await firebaseSignOut(fbAuth); } catch {}
+  try { await firebaseSignOut(fbAuth); } catch {
+    // not signed in — ignore
+  }
   try { await createUserWithEmailAndPassword(fbAuth, email, password); } catch (e: any) {
     if (!String(e?.code).includes('email-already-in-use')) throw e;
   }

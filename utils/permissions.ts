@@ -25,7 +25,8 @@ export type Capability =
   | 'backup.export'       // تصدير النسخة
   | 'users.manage'        // users create/update/delete
   | 'dashboard.view'      // لوحة التحكم
-  | 'report.view'         // التقارير/الأرشيف
+  | 'report.view'         // التقارير
+  | 'archive.view'        // الأرشيف (D-P4: منفصلة عن report.view بنفس المصفوفة الافتراضية)
   | 'statement.export';   // تصدير كشف الحساب
 
 // المصفوفة القانونية §1.4 — القيم boolean لكل دور
@@ -57,8 +58,89 @@ const MATRIX: Record<Capability, Record<UserRole, boolean>> = {
   'dashboard.view':    { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: false, [UserRole.Cashier]: false, [UserRole.Accountant]: false },
   // D-2 (أ): الكاشير يرى التقارير/الأرشيف
   'report.view':       { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: true,  [UserRole.Cashier]: true,  [UserRole.Accountant]: true },
+  // D-P4: صف archive.view مطابق لـreport.view حرفيًا (يُثبَت باختبار)
+  'archive.view':      { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: true,  [UserRole.Cashier]: true,  [UserRole.Accountant]: true },
   'statement.export':  { [UserRole.Owner]: true,  [UserRole.Admin]: true,  [UserRole.Supervisor]: true,  [UserRole.Cashier]: true,  [UserRole.Accountant]: true },
 };
+
+// PERM-2026-09 REQ-PERM-1: القدرات القابلة للتجاوز مع طبقتها (مُصدَّرة كثابت بسيط لاختبار المواءمة في REQ-PERM-2)
+export const OVERRIDABLE_CAPS: Record<string, 'rules' | 'ui'> = {
+  'sell': 'rules',
+  'return': 'rules',
+  'customer.payment': 'rules',
+  'supplier.ops': 'rules',
+  'product.create': 'rules',
+  'product.price': 'rules',
+  'product.delete': 'rules',
+  'category.write': 'rules',
+  'settings.write': 'rules',
+  'archive.open': 'rules',
+  'archive.close': 'rules',
+  'customer.write': 'rules',
+  'supplier.write': 'rules',
+  'report.view': 'ui',
+  'archive.view': 'ui',
+  'dashboard.view': 'ui',
+  'statement.export': 'ui',
+};
+
+// غير قابلة للتجاوز إطلاقًا: منحها/منعها يُتجاهل ويعود للمصفوفة
+export const NON_OVERRIDABLE_CAPS: Capability[] = [
+  'users.manage',
+  'data.restore',
+  'data.reset',
+  'ledger.delete',
+  'backup.export',
+];
+
+export interface CapOverrides {
+  grants?: unknown;
+  denies?: unknown;
+}
+
+// PERM-2026-09 REQ-PERM-1: القدرة الفعلية وفق SPEC 1.2 + INV-9 الدقيق:
+// 1) معطّل أو دور غير صالح → false
+// 2) مالك → المصفوفة (التجاوزات تُتجاهل)
+// 3) قدرة غير قابلة للتجاوز → المصفوفة
+// 4) قوائم مشوّهة النوع (غير array عند وجودها) → false للقدرات القابلة فقط
+// 5) منع → false (يغلب المنح)
+// 6) منح → true إلا كتابة المحاسب (طبقة rules تُتجاهل)
+// 7) غير ذلك → المصفوفة
+export function effectiveCan(
+  role: string | undefined | null,
+  capability: Capability,
+  overrides?: CapOverrides | null,
+  opts?: { disabled?: boolean },
+): boolean {
+  if (opts?.disabled === true) return false;
+  if (!role || !(Object.values(UserRole) as string[]).includes(role)) return false;
+  const row = MATRIX[capability];
+  if (!row) return false;
+  const base = row[role as UserRole] ?? false;
+  // 2) المالك محصّن
+  if (role === UserRole.Owner) return base;
+  // 3) غير القابلة للتجاوز تعود للمصفوفة
+  if (!(capability in OVERRIDABLE_CAPS)) return base;
+  // 4) INV-9: تشوّه النوع → false للقابلة فقط (وصلنا هنا لأنها قابلة وغير مالك)
+  const grants = overrides?.grants;
+  const denies = overrides?.denies;
+  if ((grants !== undefined && !Array.isArray(grants)) || (denies !== undefined && !Array.isArray(denies))) {
+    return false;
+  }
+  const grantList: string[] = Array.isArray(grants) ? (grants as string[]) : [];
+  const denyList: string[] = Array.isArray(denies) ? (denies as string[]) : [];
+  // 5) المنع يغلب
+  if (denyList.includes(capability)) return false;
+  // 6) المنح (المحاسب: طبقة rules تُتجاهل، طبقة ui تُقبل)
+  if (grantList.includes(capability)) {
+    if (role === UserRole.Accountant && OVERRIDABLE_CAPS[capability] === 'rules') {
+      return base;
+    }
+    return true;
+  }
+  // 7) الافتراضي
+  return base;
+}
 
 // جميع الأدوار المغلقة — BR-01
 export const ALL_ROLES: UserRole[] = [

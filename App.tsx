@@ -1,4 +1,3 @@
-
 import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck, LayoutDashboard } from 'lucide-react';
@@ -8,6 +7,7 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { signOut } from './services/auth';
 import ErrorBoundary from './components/ErrorBoundary';
 import OfflineNotifier from './components/OfflineNotifier';
+import NewVersionBanner from './components/NewVersionBanner';
 import { ConfirmationProvider } from './components/ConfirmationProvider';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppSettingsProvider, useAppSettings } from './contexts/AppSettingsContext';
@@ -15,8 +15,9 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { usePosCartStore } from './stores/posCartStore';
 import { useReturnCartStore } from './stores/returnCartStore';
 import { usePermissions } from './hooks/usePermissions';
-import { can } from './utils/permissions';
 import type { Capability } from './utils/permissions';
+import { buildNavItems, resolveLanding } from './utils/nav';
+import { useOfflineLogger } from './hooks/useOfflineLogger';
 
 // Lazy load pages
 const POSPage = React.lazy(() => import('./pages/POSPage'));
@@ -45,8 +46,11 @@ const Header = React.memo(() => {
 
     return (
         <header className="fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-md z-50 px-4 pt-[env(safe-area-inset-top)] border-b border-gray-100 dark:border-gray-700 transition-colors duration-200">
-            <div className="h-16 flex items-center justify-between gap-3 max-w-screen-2xl mx-auto">
+            <div className="h-16 flex items-center justify-between gap-2 max-w-screen-2xl mx-auto">
                 <h1 className="flex-1 min-w-0 text-lg sm:text-xl font-bold text-primary-700 dark:text-primary-300 truncate leading-tight">{appName}</h1>
+                <div className="flex-1 flex justify-center items-center min-w-0">
+                    <OfflineNotifier />
+                </div>
                 <div className="flex shrink-0 items-center gap-1 sm:gap-2 text-sm">
                     <button onClick={toggleTheme} aria-label="تبديل الوضع الليلي" className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors">
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
@@ -63,47 +67,15 @@ const Header = React.memo(() => {
 });
 
 // Shared nav items source — consumed by BOTH BottomNav (mobile) and Sidebar (lg+). No data duplication.
-// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts
+// RBAC-2026-09 R3: capability-driven (BR-07) — single source utils/permissions.ts — via utils/nav.ts pure
 const useNavItems = () => {
     const { currentUser } = useAuth();
-    const role = currentUser?.role;
-    const disabled = currentUser?.disabled === true;
     return useMemo(() => {
-        const items: Array<{ to: string; icon: any; label: string }> = [];
-        if (disabled || !role) {
-            // Offline/missing role fallback — show all base (rules are enforcer)
-            items.push(
-                { to: "/", icon: ShoppingCart, label: "نقطة البيع" },
-                { to: "/customers", icon: Users, label: "العملاء" },
-                { to: "/suppliers", icon: Truck, label: "الموردين" },
-                { to: "/returns", icon: Undo2, label: "المرتجعات" },
-                { to: "/products", icon: Package, label: "المنتجات" },
-                { to: "/reports", icon: BarChart2, label: "التقارير" },
-                { to: "/archive", icon: Archive, label: "الأرشيف" },
-            );
-        } else {
-            if (can(role, 'sell' as Capability)) items.push({ to: "/", icon: ShoppingCart, label: "نقطة البيع" });
-            // Customers/Suppliers visible to all active roles (read) — accountant sees them read-only per spec
-            items.push({ to: "/customers", icon: Users, label: "العملاء" });
-            items.push({ to: "/suppliers", icon: Truck, label: "الموردين" });
-            if (can(role, 'return' as Capability)) items.push({ to: "/returns", icon: Undo2, label: "المرتجعات" });
-            if (can(role, 'product.create' as Capability)) items.push({ to: "/products", icon: Package, label: "المنتجات" });
-            if (can(role, 'report.view' as Capability)) {
-                items.push({ to: "/reports", icon: BarChart2, label: "التقارير" });
-                items.push({ to: "/archive", icon: Archive, label: "الأرشيف" });
-            }
-        }
-        if (!disabled && can(role, 'dashboard.view' as Capability)) {
-            items.push({ to: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" });
-        }
-        if (!disabled && can(role, 'settings.write' as Capability)) {
-            items.push({ to: "/settings", icon: Settings, label: "الإعدادات" });
-        }
-        if (!disabled && can(role, 'users.manage' as Capability)) {
-            items.push({ to: "/users", icon: Users, label: "المستخدمين" });
-        }
-        return items;
-    }, [role, disabled]);
+        return buildNavItems((currentUser as any)?.role as any, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true }).map(it => {
+            const iconMap: any = { '/': ShoppingCart, '/customers': Users, '/suppliers': Truck, '/returns': Undo2, '/products': Package, '/reports': BarChart2, '/archive': Archive, '/dashboard': LayoutDashboard, '/settings': Settings, '/users': Users };
+            return { to: it.to, icon: iconMap[it.to], label: it.label };
+        });
+    }, [currentUser]);
 };
 
 const BottomNav = React.memo(() => {
@@ -165,35 +137,26 @@ const PageLoader: React.FC = () => (
 );
 
 const RequireCapability: React.FC<{ capability: Capability; children: React.ReactNode }> = ({ capability, children }) => {
-    const { can: canCap } = usePermissions();
+    const { can: canCap, role } = usePermissions() as any;
+    const { currentUser } = useAuth() as any;
     const navigate = useNavigate();
     const location = useLocation();
     useEffect(() => {
         if (!canCap(capability)) {
-            toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
-            navigate("/", { replace: true });
+            const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+            if (location.pathname !== landing) {
+                const silent = location.pathname === '/' || location.pathname === '/returns';
+                if (!silent) toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.", { id: 'no-permission' });
+                navigate(landing, { replace: true });
+            }
         }
-    }, [canCap, capability, navigate, location.pathname]);
+    }, [canCap, capability, navigate, location.pathname, role, currentUser]);
     if (!canCap(capability)) return null;
-    return <>{children}</>;
-};
-const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Backwards compat: old AdminRoute now maps to settings.write (dashboard/settings were admin) — users route uses users.manage directly
-    const { can: canCap } = usePermissions();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const allowed = canCap('settings.write' as Capability);
-    useEffect(() => {
-        if (!allowed) {
-            toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.");
-            navigate("/", { replace: true });
-        }
-    }, [allowed, navigate, location.pathname]);
-    if (!allowed) return null;
     return <>{children}</>;
 };
 
 const AppLayout = React.memo(() => {
+    useOfflineLogger();
     return (
         <div className="flex flex-col h-screen font-sans bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Header />
@@ -207,6 +170,7 @@ const AppLayout = React.memo(() => {
             </main>
             <BottomNav />
             <Sidebar />
+            <NewVersionBanner />
         </div>
     );
 });
@@ -242,8 +206,15 @@ const AndroidBackHandler = () => {
     return null;
 };
 
+const LandingRedirect: React.FC = () => {
+    const { role } = usePermissions() as any;
+    const { currentUser } = useAuth() as any;
+    const to = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+    return <Navigate to={to} replace />;
+};
+
 const AppRoutes: React.FC = () => {
-    const { currentUser, isLoading } = useAuth();
+    const { currentUser, isLoading, isUnresolved, retry } = useAuth() as any;
 
     // BUG-P0-5: side effects (signOut + toast) must not run in the render
     // body — they fired on every render. Guard is keyed on uid (not a plain
@@ -260,6 +231,10 @@ const AppRoutes: React.FC = () => {
 
     if (isLoading) {
         return <div className="flex justify-center items-center h-screen bg-gray-100"><PageLoader /></div>;
+    }
+
+    if (isUnresolved) {
+        return <div className="flex flex-col justify-center items-center h-screen bg-gray-100 p-8 text-center"><p className="text-lg">تعذّر تحميل الصلاحيات — أعد المحاولة</p><button onClick={retry} className="mt-4 px-4 py-2 bg-primary-600 text-white rounded">أعد المحاولة</button></div>;
     }
 
     if (!currentUser) {
@@ -289,20 +264,20 @@ const AppRoutes: React.FC = () => {
             <AndroidBackHandler />
             <Routes>
                 <Route element={<AppLayout />}>
-                    <Route path="/" element={<POSPage />} />
+                    <Route path="/" element={<RequireCapability capability="sell"><POSPage /></RequireCapability>} />
                     <Route path="/customers" element={<CustomersPage />} />
                     <Route path="/customers/:id" element={<CustomerAccountPage />} />
                     <Route path="/suppliers" element={<SuppliersPage />} />
                     <Route path="/suppliers/:id" element={<SupplierAccountPage />} />
-                    <Route path="/returns" element={<ReturnsPage />} />
+                    <Route path="/returns" element={<RequireCapability capability="return"><ReturnsPage /></RequireCapability>} />
                     <Route path="/dashboard" element={<RequireCapability capability="dashboard.view"><DashboardPage /></RequireCapability>} />
                     <Route path="/products" element={<ProductsPage />} />
                     <Route path="/reports" element={<RequireCapability capability="report.view"><ReportsPage /></RequireCapability>} />
-                    <Route path="/archive" element={<RequireCapability capability="report.view"><ArchivePage /></RequireCapability>} />
+                    <Route path="/archive" element={<RequireCapability capability="archive.view"><ArchivePage /></RequireCapability>} />
                     <Route path="/settings" element={<RequireCapability capability="settings.write"><SettingsPage /></RequireCapability>} />
                     <Route path="/users" element={<RequireCapability capability="users.manage"><UsersPage /></RequireCapability>} />
                 </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="*" element={<LandingRedirect />} />
             </Routes>
         </>
     );
@@ -325,7 +300,6 @@ export default function App() {
                                     }}
                                 />
                                 <AppRoutes />
-                                <OfflineNotifier />
                             </HashRouter>
                         </ConfirmationProvider>
                     </ThemeProvider>

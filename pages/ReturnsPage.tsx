@@ -4,13 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, Trash2, Undo2, AlertCircle, Settings, Loader2, FileText, Link2, ScanBarcode, Camera } from 'lucide-react';
 import type { Product, DailyArchive, Category, Customer, Invoice, Return } from '../types';
 import { PaymentMethod } from '../types';
-import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated, getProductByBarcodeCloud } from '../services/api';
+import { getProductsPaginated, getOpenDailyArchive, processReturn, getCustomersPaginated, getProductByBarcodeCloud, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { findProductByBarcode, buildBarcodeIndex } from '../utils/findProductByBarcode';
 import { resolveBarcodeScan, withCloudTimeout } from '../utils/barcodeResolution';
 import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
+import { usePermissions } from '../hooks/usePermissions';
 import { orderBy, where, collection, getDocs, query } from 'firebase/firestore';
 import type { QueryDocumentSnapshot, QueryConstraint } from 'firebase/firestore';
 import { getDB } from '../services/firebase';
@@ -136,6 +137,8 @@ const ReturnCartModal: React.FC<{
     categories: Category[];
     originalInvoiceId: string | null;
 }> = ({ dailyArchive, categories, originalInvoiceId }) => {
+    const { can } = usePermissions();
+    const canReturn = can('return');
     const { confirm } = useConfirmation();
     const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, pricingMethod, setPricingMethod } = useReturnCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
@@ -210,7 +213,11 @@ const ReturnCartModal: React.FC<{
             setCustomerSearch('');
             setCartModalOpen(false);
         } catch (error: any) {
-            toast.error(error.message || "حدث خطأ أثناء عملية الإرجاع.");
+            if (isOfflineGuardError(error)) {
+                toast.error(error.message);
+            } else {
+                toast.error("حدث خطأ أثناء عملية الإرجاع.");
+            }
             console.error(error);
         } finally {
             setIsProcessing(false);
@@ -403,7 +410,7 @@ const ReturnCartModal: React.FC<{
                     <button
                         data-testid="return-confirm"
                         onClick={handleProcessReturn}
-                        disabled={returnCart.length === 0 || !dailyArchive || dailyArchive.status === 'closed' || isProcessing}
+                        disabled={returnCart.length === 0 || !dailyArchive || dailyArchive.status === 'closed' || isProcessing || !canReturn} title={!canReturn ? 'ليس لديك صلاحية المرتجعات' : undefined}
                         className="w-full py-3 px-4 bg-red-600 text-white rounded-lg font-bold text-lg shadow-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex justify-center items-center space-x-2 space-x-reverse"
                     >
                         {isProcessing ? (
@@ -520,7 +527,12 @@ export default function ReturnsPage() {
         setIsArchiveLoading(true);
         getOpenDailyArchive()
             .then(setDailyArchive)
-            .catch(err => toast.error('فشل في تحميل اليومية: ' + err.message))
+            .catch((err: any) => {
+                const code = String(err?.code || '');
+                const msg = String(err?.message || '');
+                if (code.includes('permission-denied') || msg.includes('permission') || msg.includes('insufficient')) return;
+                toast.error('فشل في تحميل اليومية: ' + err.message);
+            })
             .finally(() => setIsArchiveLoading(false));
 
         return () => unsubscribeCategories();

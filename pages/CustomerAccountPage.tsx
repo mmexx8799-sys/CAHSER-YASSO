@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Customer, CustomerPayment, Invoice, Return } from '../types';
-import { addCustomerPayment } from '../services/api';
+import { addCustomerPayment, isOfflineGuardError } from '../services/api';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -25,6 +25,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export default function CustomerAccountPage() {
     const { can } = usePermissions();
+    const canExport = can('statement.export');
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -59,8 +60,12 @@ export default function CustomerAccountPage() {
             toast.success("تمت إضافة الدفعة بنجاح");
             setAmount('');
             setNotes('');
-        } catch {
-            toast.error("فشلت إضافة الدفعة");
+        } catch (e) {
+            if (isOfflineGuardError(e)) {
+                toast.error((e as Error).message);
+            } else {
+                toast.error("فشلت إضافة الدفعة");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -564,7 +569,8 @@ export default function CustomerAccountPage() {
                             </div>
                             <button
                                 onClick={exportStatementCsv}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 disabled:opacity-50"
                             >
                                 <Download size={16} />
@@ -572,7 +578,8 @@ export default function CustomerAccountPage() {
                             </button>
                             <button
                                 onClick={exportStatementExcel}
-                                disabled={!hasVisibleMovements}
+                                disabled={!hasVisibleMovements || !canExport}
+                                title={!canExport ? 'ليس لديك صلاحية تصدير الكشف' : undefined}
                                 className="flex items-center gap-1.5 py-2 px-4 bg-green-700 text-white rounded-lg font-semibold text-sm hover:bg-green-800 disabled:opacity-50"
                             >
                                 <FileSpreadsheet size={16} />

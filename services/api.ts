@@ -11,6 +11,7 @@ import {
     orderBy,
     writeBatch,
     getDoc,
+    getDocFromServer,
     Timestamp,
     serverTimestamp,
     setDoc,
@@ -30,6 +31,7 @@ import {
     getAuth
 } from "firebase/auth";
 import { can } from '../utils/permissions';
+import { withInFlightGuard } from './inflight';
 
 
 const db = getDB();
@@ -47,19 +49,74 @@ async function assertCan(capability: Parameters<typeof can>[1]): Promise<void> {
   }
 }
 
+// OFFLINE-P1 D-O8: علامة مميزة لخطأ الحارس — الواجهة تعرض message مباشرة
+// لهذا النوع فقط، وأي خطأ آخر يبقى بالسلوك الحالي (لا تسريب لتفاصيل تقنية).
+export class OfflineGuardError extends Error {
+  readonly code = 'offline-guard';
+  constructor(message: string) {
+    super(message);
+    this.name = 'OfflineGuardError';
+  }
+}
+export const isOfflineGuardError = (e: any): boolean =>
+  !!e && (e instanceof OfflineGuardError || e?.code === 'offline-guard' || e?.name === 'OfflineGuardError');
+
+// OFFLINE-P1 D-O8 (أ): رفض فوري على مستوى الخدمة — أول سطر في كل دالة كتابة قبل أي await/Firestore
+async function assertOnline(): Promise<void> {
+  // تجاوز الحارس في بيئة الاختبار (vitest / emulator) — الاختبارات لا تختبر الأوفلاين هنا
+  const viteEnv = (import.meta as any).env || {};
+  if (viteEnv.MODE === 'test' || viteEnv.VITEST || (typeof process !== 'undefined' && (process as any).env?.VITEST)) return;
+  if (typeof navigator === 'undefined') return;
+  if (!navigator.onLine) {
+    throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+  }
+  // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
+  // عند فشل ping الأول بـ offline-timeout فقط، أعد محاولة واحدة إضافية بنفس المهلة قبل الرفض
+  try {
+    const ping = getDocFromServer(doc(db, 'counters', 'invoices'));
+    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
+    await Promise.race([ping, timeout]);
+  } catch (e: any) {
+    if (String(e?.message || '').includes('offline-timeout')) {
+      try {
+        const ping2 = getDocFromServer(doc(db, 'counters', 'invoices'));
+        const timeout2 = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
+        await Promise.race([ping2, timeout2]);
+      } catch (e2: any) {
+        const m2 = String(e2?.message || '').toLowerCase();
+        const c2 = String(e2?.code || '').toLowerCase();
+        if (m2.includes('offline-timeout') || c2.includes('unavailable') || c2.includes('network') || m2.includes('network') || m2.includes('offline') || !navigator.onLine) {
+          throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+        }
+        // permission-denied / not-found etc — treat as online, don't block
+      }
+      return;
+    }
+    // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين وترفض من أول مرة
+    const code = String(e?.code || '').toLowerCase();
+    const msg = String(e?.message || '').toLowerCase();
+    if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !navigator.onLine) {
+      throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+    }
+    // أخطاء أخرى (مثل permission-denied / not-found) تعني الاتصال موجود — لا تمنع الكتابة
+  }
+}
+
 // --- App Settings API ---
 const APP_SETTINGS_ID = 'main';
 
-export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+export const updateAppSettings = withInFlightGuard(async (settings: Partial<AppSettings>) => {
+    await assertOnline();
     try {
         const docRef = doc(db, 'appSettings', APP_SETTINGS_ID);
         await setDoc(docRef, settings, { merge: true });
         toast.success('تم تحديث إعدادات التطبيق.');
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error updating app settings:", error);
         toast.error('فشل تحديث الإعدادات.');
     }
-};
+});
 
 // --- User Management ---
 export const checkIfUsersExist = async (): Promise<boolean> => {
@@ -70,7 +127,8 @@ export const checkIfUsersExist = async (): Promise<boolean> => {
 };
 
 // FIX: Implement addUser to create a new user account and associated user document in firestore.
-export const addUser = async (email: string, password: string, role: UserRole): Promise<void> => {
+export const addUser = withInFlightGuard(async (email: string, password: string, role: UserRole): Promise<void> => {
+    await assertOnline();
     // RBAC-2026-09 R2 AC-04: تحقق أن role ضمن UserRole قبل الإنشاء
     if (!Object.values(UserRole).includes(role)) {
         throw new Error("دور المستخدم غير صالح");
@@ -90,6 +148,7 @@ export const addUser = async (email: string, password: string, role: UserRole): 
         });
         toast.success("تم إضافة المستخدم بنجاح");
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         let message = "فشل في إضافة المستخدم.";
         if (error.code === 'auth/email-already-in-use') {
             message = 'هذا البريد الإلكتروني مستخدم بالفعل.';
@@ -101,7 +160,7 @@ export const addUser = async (email: string, password: string, role: UserRole): 
     } finally {
         await deleteApp(tempApp);
     }
-};
+});
 
 // FIX: Implement deleteUser to remove a user's role document from firestore.
 export const deleteUser = async (uid: string) => {
@@ -109,6 +168,7 @@ export const deleteUser = async (uid: string) => {
         await deleteDocument('users', uid);
         toast.success("تم حذف دور المستخدم بنجاح.");
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         toast.error("فشل حذف دور المستخدم.");
         throw error;
     }
@@ -119,9 +179,54 @@ export const setUserDisabled = async (uid: string, disabled: boolean) => {
         await updateDocument('users', uid, { disabled });
         toast.success(disabled ? "تم تعطيل المستخدم بنجاح." : "تم تفعيل المستخدم بنجاح.");
     } catch (error) {
+        if (isOfflineGuardError(error)) throw error;
         toast.error("فشل تحديث حالة المستخدم.");
         throw error;
     }
+};
+
+export const setUserCapOverrides = withInFlightGuard(async (targetUid: string, overrides: { grants: string[]; denies: string[] }) => {
+    await assertOnline();
+    const auth = getAuth();
+    const byUid = auth.currentUser?.uid;
+    if (!byUid) throw new Error("يجب تسجيل الدخول أولاً");
+    const userRef = doc(db, 'users', targetUid);
+    const snap = await getDoc(userRef);
+    if (!snap.exists()) throw new Error("المستخدم غير موجود");
+    const beforeData = snap.data() as any;
+    const before = { grants: beforeData.capGrants || [], denies: beforeData.capDenies || [] };
+    const after = { grants: overrides.grants || [], denies: overrides.denies || [] };
+    const batch = writeBatch(db);
+    const update: any = {};
+    if (after.grants.length === 0) update.capGrants = deleteField();
+    else update.capGrants = after.grants;
+    if (after.denies.length === 0) update.capDenies = deleteField();
+    else update.capDenies = after.denies;
+    update.permsUpdatedBy = byUid;
+    update.permsUpdatedAt = serverTimestamp();
+    batch.update(userRef, update);
+    const auditRef = doc(collection(db, 'permissionAudit'));
+    batch.set(auditRef, {
+        by: byUid,
+        at: serverTimestamp(),
+        targetUid,
+        before,
+        after,
+    });
+    try {
+        await batch.commit();
+        toast.success("تم تحديث الصلاحيات بنجاح");
+    } catch (e: any) {
+        if (isOfflineGuardError(e)) throw e;
+        toast.error(e?.message || "فشل تحديث الصلاحيات");
+        throw e;
+    }
+});
+
+export const getPermissionAudit = async (targetUid: string, limitCount = 5) => {
+    const q = query(collection(db, 'permissionAudit'), where('targetUid', '==', targetUid), orderBy('at', 'desc'), limit(limitCount));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
 };
 
 
@@ -158,22 +263,25 @@ const buildSearchableIndex = (name: string, code: string): string[] => {
 // NO LONGER EXPORTED. Internal use only (setUserDisabled below). Pages must
 // use updateCustomerProfile / updateSupplierProfile / saveProduct instead,
 // so no caller can smuggle arbitrary fields (e.g. balance) into a write.
-const updateDocument = async (collectionPath: string, id: string, data: any) => {
+const updateDocument = withInFlightGuard(async (collectionPath: string, id: string, data: any) => {
+    await assertOnline();
     try {
         const docRef = doc(db, collectionPath, id);
         await updateDoc(docRef, data);
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating document: ", e);
         throw new Error("Failed to update document");
     }
-};
+});
 
 // REQ-SEC1-1 (AUDIT-SEC-1): profile-only customer update. Destructures
 // {name, phone, address} EXPLICITLY — balance/openingBalance/createdAt (or
 // anything else smuggled in `data`) never reach Firestore, no matter what
 // the caller passes. Balance changes happen ONLY via processSale,
 // processReturn and addCustomerPayment transactions.
-export const updateCustomerProfile = async (id: string, data: any): Promise<void> => {
+export const updateCustomerProfile = withInFlightGuard(async (id: string, data: any): Promise<void> => {
+    await assertOnline();
     const { name, phone, address } = data || {};
     if (!name || !String(name).trim()) {
         throw new Error("اسم العميل مطلوب");
@@ -185,17 +293,19 @@ export const updateCustomerProfile = async (id: string, data: any): Promise<void
             address: address ?? '',
         });
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating customer profile: ", e);
         throw new Error("Failed to update customer profile");
     }
-};
+});
 
 // REQ-SEC1-2 (AUDIT-SEC-1): profile-only supplier update. Same pattern as
 // updateCustomerProfile — {name, phone, address} EXPLICITLY, balance/
 // openingBalance (or anything else smuggled in `data`) never reach
 // Firestore. Balance changes happen ONLY via processPurchase,
 // processSupplierReturn and addSupplierPayment transactions.
-export const updateSupplierProfile = async (id: string, data: any): Promise<void> => {
+export const updateSupplierProfile = withInFlightGuard(async (id: string, data: any): Promise<void> => {
+    await assertOnline();
     const { name, phone, address } = data || {};
     if (!name || !String(name).trim()) {
         throw new Error("اسم المورد مطلوب");
@@ -207,10 +317,11 @@ export const updateSupplierProfile = async (id: string, data: any): Promise<void
             address: address ?? '',
         });
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error updating supplier profile: ", e);
         throw new Error("Failed to update supplier profile");
     }
-};
+});
 
 // REQ-SEC1-3 (AUDIT-SEC-1): validated product upsert with a CLOSED
 // whitelist. Only known Product fields are destructured — id, createdAt,
@@ -218,9 +329,10 @@ export const updateSupplierProfile = async (id: string, data: any): Promise<void
 // anything else smuggled in `productData` never reach Firestore.
 // searchableIndex is always rebuilt here (single source); createdAt is
 // serverTimestamp() on create and preserved on update.
-export const saveProduct = async (
+export const saveProduct = withInFlightGuard(async (
     productData: Omit<Product, 'id' | 'createdAt' | 'searchableIndex'> | Product
 ): Promise<string | void> => {
+    await assertOnline();
     const data: any = productData || {};
     const {
         code, name, categoryId, quantity, minQuantity,
@@ -285,18 +397,20 @@ export const saveProduct = async (
     } catch (e: any) {
         // Re-throw our own validation errors untouched (clear Arabic text);
         // only wrap unexpected Firestore failures.
+        if (isOfflineGuardError(e)) throw e;
         if (e?.message && /حقل المنتج|المنتج مطلوب/.test(e.message)) throw e;
         console.error("Error saving product: ", e);
         throw new Error("Failed to save product");
     }
-};
+});
 
 // REQ-SEC1-4 (AUDIT-SEC-1): single-field category creation. The signature
 // itself ((name: string)) makes smuggling extra fields structurally
 // impossible — there is no `data` object to destructure. Always stores the
 // trimmed name. NOTE: no duplicate check (would need a racy pre-read;
 // out of scope — same as before).
-export const addCategory = async (name: string): Promise<string> => {
+export const addCategory = withInFlightGuard(async (name: string): Promise<string> => {
+    await assertOnline();
     const trimmed = String(name ?? '').trim();
     if (!trimmed) {
         throw new Error("اسم التصنيف لا يمكن أن يكون فارغًا");
@@ -305,10 +419,11 @@ export const addCategory = async (name: string): Promise<string> => {
         const docRef = await addDoc(collection(db, 'categories'), { name: trimmed });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding category: ", e);
         throw new Error("Failed to add category");
     }
-};
+});
 
 // REQ-BARCODE: فحص وجود سحابي لباركود مرشّح قبل الحفظ (يُستدعى فقط عند
 // التصادم المحلي — نادر جدًا). مساواة على حقل واحد: لا فهرس مركّب مطلوب.
@@ -351,14 +466,16 @@ export const getProductById = async (id: string): Promise<Product | null> => {
 };
 
 // Generic function to delete a document
-export const deleteDocument = async (collectionPath: string, id: string) => {
+export const deleteDocument = withInFlightGuard(async (collectionPath: string, id: string) => {
+    await assertOnline();
     try {
         await deleteDoc(doc(db, collectionPath, id));
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error deleting document: ", e);
         throw new Error("Failed to delete document");
     }
-};
+});
 
 
 // Products API - Paginated
@@ -444,7 +561,8 @@ export const getCustomersPaginated = async (
 
 // Customer creation — persists openingBalance as a separate immutable historical field (REQ-M8).
 // balance starts equal to it; only balance moves afterwards, openingBalance never changes.
-export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt' | 'openingBalance'>) => {
+export const addCustomer = withInFlightGuard(async (customerData: Omit<Customer, 'id' | 'createdAt' | 'openingBalance'>) => {
+    await assertOnline();
     try {
         const openingBalance = Number(customerData.balance) || 0;
         const docRef = await addDoc(collection(db, 'customers'), {
@@ -455,14 +573,16 @@ export const addCustomer = async (customerData: Omit<Customer, 'id' | 'createdAt
         });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding customer:", e);
         throw new Error("Failed to add customer");
     }
-};
+});
 
 
 // Add payment to customer's balance
-export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
+export const addCustomerPayment = withInFlightGuard(async (payment: Omit<CustomerPayment, 'id' | 'date'>) => {
+    await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
     }
@@ -483,11 +603,12 @@ export const addCustomerPayment = async (payment: Omit<CustomerPayment, 'id' | '
 
         toast.success('تم تسجيل الدفعة بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error adding customer payment:", error);
         toast.error("حدث خطأ أثناء تسجيل الدفعة.");
         throw error;
     }
-};
+});
 
 
 // Suppliers API - Paginated (mirror of getCustomersPaginated)
@@ -528,7 +649,8 @@ const SUPPLIERS_PAGE_SIZE = 50;export const getSuppliersPaginated = async (
 
 // Supplier creation — persists openingBalance as a separate immutable historical field (REQ-M8).
 // balance starts equal to it; only balance moves afterwards, openingBalance never changes.
-export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'openingBalance'>) => {
+export const addSupplier = withInFlightGuard(async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'openingBalance'>) => {
+    await assertOnline();
     try {
         const openingBalance = Number(supplierData.balance) || 0;
         const docRef = await addDoc(collection(db, 'suppliers'), {
@@ -539,13 +661,15 @@ export const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt
         });
         return docRef.id;
     } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
         console.error("Error adding supplier:", e);
         throw new Error("Failed to add supplier");
     }
-};
+});
 
 // Supplier payment — reduces supplier.balance (we paid, our debt decreased)
-export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+export const addSupplierPayment = withInFlightGuard(async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+    await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
     }
@@ -566,19 +690,21 @@ export const addSupplierPayment = async (payment: Omit<SupplierPayment, 'id' | '
 
         toast.success('تم تسجيل دفعة المورد بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error adding supplier payment:", error);
         toast.error("حدث خطأ أثناء تسجيل دفعة المورد.");
         throw error;
     }
-};
+});
 
 // Purchase invoice — increases product quantities + supplier.balance, records PurchaseInvoice
-export const processPurchase = async (purchaseData: {
+export const processPurchase = withInFlightGuard(async (purchaseData: {
     items: CartItem[];
     subtotal: number;
     total: number;
     supplierId: string;
 }) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processPurchase', async (transaction) => {
             const purchaseRef = doc(collection(db, 'purchaseInvoices'));
@@ -656,14 +782,16 @@ export const processPurchase = async (purchaseData: {
         });
         toast.success('تم تسجيل فاتورة الشراء بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing purchase:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل فاتورة الشراء.');
         throw error;
     }
-};
+});
 
 // Supplier return — decreases product quantities + supplier.balance, records SupplierReturn
-export const processSupplierReturn = async (items: CartItem[], supplierId: string) => {
+export const processSupplierReturn = withInFlightGuard(async (items: CartItem[], supplierId: string) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processSupplierReturn', async (transaction) => {
             const returnRef = doc(collection(db, 'supplierReturns'));
@@ -724,11 +852,12 @@ export const processSupplierReturn = async (items: CartItem[], supplierId: strin
         });
         toast.success('تم تسجيل مرتجع المورد بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing supplier return:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل مرتجع المورد.');
         throw error;
     }
-};
+});
 
 
 // REQ-P0-3 — helper: الأسعار المعرّفة للمنتج والحد الأدنى للتحقق
@@ -780,7 +909,8 @@ async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction
 }
 
 // Invoices API
-export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
+export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
+    await assertOnline();
     try {
         await runTransactionWithRetry('processSale', async (transaction) => {
             const invoiceRef = doc(collection(db, 'invoices'));
@@ -890,6 +1020,7 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
         });
         toast.success('تمت عملية البيع بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing sale:", error);
         if (error.message.includes('quantity') || error.message.includes('الكمية')) {
             toast.error(error.message);
@@ -898,7 +1029,7 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
         }
         throw error;
     }
-};
+});
 
 // Returns API — REQ-P0-1: يدعم ربط المرتجع بفاتورة أصلية مع فحص الكمية المتبقية
 // BUG-P0-1 ROOT CAUSE (للمراجع المستقل — يُحذف هذا السطر مع merge التعليقات):
@@ -910,7 +1041,8 @@ export const processSale = async (invoiceData: Omit<Invoice, 'id' | 'createdAt' 
 // TEST-REG-P0-1 (tests/processReturn.test.ts) أثبت الانهيار هذا قبل الإصلاح.
 // الإصلاح (خيار A، قرار مالك المنتج 2026-09-13): نقل قراءة المرتجعات السابقة
 // إلى getDocs() عادية قبل بدء runTransaction — Atomicity خيار B مؤجل كـ TECH-P0-1b.
-export const processReturn = async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
+export const processReturn = withInFlightGuard(async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
+    await assertOnline();
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
 
@@ -1034,11 +1166,12 @@ export const processReturn = async (items: CartItem[], dailyArchiveId: string, c
         });
         toast.success('تمت عملية الإرجاع بنجاح!');
     } catch (error: any) {
+        if (isOfflineGuardError(error)) throw error;
         console.error("Error processing return:", error);
         toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
         throw error;
     }
-};
+});
 
 
 // Daily Archive API
@@ -1056,7 +1189,8 @@ export const getOpenDailyArchive = async (): Promise<DailyArchive | null> => {
     return { id: docSnap.id, ...data, startTime } as DailyArchive;
 };
 
-export const startNewDailyArchive = async (): Promise<DailyArchive> => {
+export const startNewDailyArchive = withInFlightGuard(async (): Promise<DailyArchive> => {
+    await assertOnline();
     const openArchive = await getOpenDailyArchive();
     if (openArchive) {
         throw new Error(`لا يمكن بدء يومية جديدة. اليومية ${openArchive.id} ما زالت مفتوحة.`);
@@ -1091,15 +1225,16 @@ export const startNewDailyArchive = async (): Promise<DailyArchive> => {
 
     await setDoc(archiveRef, newArchiveForFirestore);
     return { id: today, ...newArchiveForClient };
-};
+});
 
-export const closeDailyArchive = async (id: string) => {
+export const closeDailyArchive = withInFlightGuard(async (id: string) => {
+    await assertOnline();
     const archiveRef = doc(db, 'dailyArchives', id);
     await updateDoc(archiveRef, {
         status: 'closed',
         endTime: serverTimestamp(),
     });
-};
+});
 
 
 // --- Data Management API ---
@@ -1190,7 +1325,8 @@ const convertMillisToTimestamps = (data: any): any => {
 }
 
 
-export const backupData = async (): Promise<BackupData & { schemaVersion: number; appVersion: string; createdAt: string }> => {
+export const backupData = withInFlightGuard(async (): Promise<BackupData & { schemaVersion: number; appVersion: string; createdAt: string }> => {
+    await assertOnline();
     const backup: any = {
         schemaVersion: BACKUP_SCHEMA_VERSION,
         appVersion: APP_VERSION,
@@ -1206,7 +1342,7 @@ export const backupData = async (): Promise<BackupData & { schemaVersion: number
         });
     }
     return backup as BackupData & { schemaVersion: number; appVersion: string; createdAt: string };
-};
+});
 
 const deleteCollection = async (collectionPath: string) => {
     const querySnapshot = await getDocs(collection(db, collectionPath));
@@ -1226,15 +1362,17 @@ const deleteCollection = async (collectionPath: string) => {
 };
 
 
-export const factoryReset = async () => {
+export const factoryReset = withInFlightGuard(async () => {
+    await assertOnline();
     await assertCan('data.reset');
     // Only reset business data
     for (const collectionName of BUSINESS_DATA_COLLECTIONS) {
         await deleteCollection(collectionName);
     }
-};
+});
 
-export const restoreData = async (backupData: any) => {
+export const restoreData = withInFlightGuard(async (backupData: any) => {
+    await assertOnline();
     // Validate BEFORE any destructive operation
     validateBackupStructure(backupData);
     await assertCan('data.restore');
@@ -1304,4 +1442,4 @@ export const restoreData = async (backupData: any) => {
         }
         if (hasCounterWrites) await counterBatch.commit();
     }
-};
+});

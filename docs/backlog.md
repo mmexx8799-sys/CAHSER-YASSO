@@ -1,18 +1,32 @@
 # Backlog — Nour-Elrahman
 
-## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
-- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**
-- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done code+tests 2026-09-19 (b926b6d) — معتمد فنيًا من المراجع، ⛔ W0 موقوف حتى جرد users الإنتاج (AC-04 فيتو)**
-- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — Pending
-- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر (utils/permissions.ts) — Pending
-- REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` (dry-run افتراضي + rollback) — Pending
-- REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق (users + حذف دفتري → owner-only + Live smoke B) — Pending
+## Done — OFFLINE-P1 (REQ-OFF1-0…5) — 2026-09-21 → 2026-09-23 — base 1ab34cd (tag pre-offline-p1)
+- REQ-OFF1-0: الأساس والجرد (قراءة فقط) — **Done 2026-09-21 (9c264ab)** — tag `pre-offline-p1` على `1ab34cd` — `tsc` نظيف · `eslint` 7 أخطاء PERM · `test:rules` 340/340 · `build` 938 kB — الجرد الخام (ب→هـ) موثق + D-O1…D-O8 موقعة في `known-issues.md`
+- REQ-OFF1-1: هيكل PWA (واجهة فقط — لا بيانات) — **Done 2026-09-21 (c3ab8d6 + dc1e813 + e0ef2af — إصلاحات النافبار 2412b7e/f736890)** — `vite-plugin-pwa@1.3.0` — `manifest` عبر `VitePWA.manifest` — `precache 37 فريد (40 إجمالي، 3 أيقونات مكررة x2)` — الفحص البصري للمالك 9+ صفحات ببيانات حقيقية من الكاش المحلي، لا ديناصور
+- REQ-OFF1-2: رفض فوري على مستوى الخدمة (22 دالة — D-O8 أ) + `OfflineGuardError` — **Done 2026-09-22 (db50102 + 0599ac1)** — `tsc` نظيف · `test:rules` 340/340 · emulator: 21/21 + Captive 2/2
+- REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — **Done 2026-09-22 (94619c8)** — `NewVersionBanner` + `withInFlightGuard` 22 + `registration.update()` كل 5د — بانر غير مُلح وقابل للإغلاق
+- REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — **Done 2026-09-22 (eb8bbe7)** — `offlineLog.ts` (14d window + 3s threshold) + `useOfflineLogger` + `OfflineStats` في الإعدادات — `idb-keyval@6.3.0`
+- REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23 (43d9031 + a9ce533)** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — إصلاح retry للـping (a9ce533: إعادة محاولة واحدة على offline-timeout) — الخطوة التالية: **P2 مؤجلة حتى 2026-10-06** (المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON)
+
+## Done — RBAC-2026-09 (REQ-RBAC-0…5) — 2026-09-19 → 2026-09-20 — base e24fe3e — tag pre-perm-2026-09 = e7771f2 → PERM-2026-09 وسّعت الصلاحيات
+- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0) — **Done 2026-09-19 (f179fd1)**
+- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done 2026-09-19 (b926b6d) — معتمد فنيًا — فيتو AC-04 حُلّ بالجرد النهائي 2026-09-19 (known-issues.md:61-66)**
+- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — **Done 2026-09-19 (bc46c07)**
+- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر — **Done 2026-09-20 (d61c246)** — MATRIX 22 عضوًا في الأسطر 9-30 من utils/permissions.ts
+- REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` — **Done 2026-09-20 (b1ebb4b)** — dry-run + rollback
+- REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق — **Done 2026-09-20 (e7771f2)** — `users` + حذف دفتري → owner-only — Live smoke B: **لا سجل في الدوكس — الحالة غير معروفة (بانتظار تأكيد المالك)**
 - **تنبيه صريح:** REQ-P0-2 (قفل `balance` الكامل) **يبقى Declined بقرار المالك (Ahmed 2026-09-16 + تأكيد 2026-09-19)** — هذه الدورة RBAC لا تمسّ `balance`/الكميات/إجماليات اليومية؛ المحاسب فقط هو الممنوع من الكتابة. لا يُعاد فتحه إلا بقرار مالك مكتوب جديد (known-issues BUG-P0-2 + backlog:22).
 
 ## In Progress (سابق — مغلق)
 - (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
+- **OFF1-2 — اختبار vitest لـassertOnline (مفتوح):** `assertOnline()` بلا تغطية آلية — مطلوب refactor يصدّر دالة داخلية بلا `MODE==='test'` bypass (مثل `assertOnlineCore(getDocFromServer, navigator)`) ثم اختبار vitest يمرر mock يحاكي `offline-timeout` و `unavailable` — لا يُنفذ الآن، يُسجل هنا فقط.
+- **PERM-2026-09 — تنظيف lint القديم (7 أخطاء 29671ff):** 5 أُصلحت فعلًا (`rbacEscalation: getDoc`, `rbacMatrix: expect/getDoc`, `restorePreflight: 2× empty block`) و2 سُكّتت بـ`eslint-disable` (`tests/migrateRoles.test.ts: @ts-nocheck` يبقى دينًا — الملف بلا فحص أنواع؛ `tests/permissionsRules.test.ts: outcome` — متغير تشخيصي) — لا أثر تشغيلي.
+- **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
+- **PERM — عرض السجل بالبريد بدل UID:** `components/PermissionEditorModal.tsx` يعرض `by/targetUid` كـUID خام — يُستبدل ببريد من `users` cache.
+- **PERM — قدرة `product.view`:** فصل عرض المنتجات عن إنشائها — حاليًا `product.create` يخفي التبويب كاملًا — Backlog.
+- **PERM — إشعار إصدار جديد:** لا يوجد `New version available` بعد نشر الاستضافة — يحتاج service worker أو فحص نسخة.
 - Known Gap (pre-existing, out of RBAC scope — مراجعة R1 2026-09-19): `products.create` بلا حراسة سعر عند الإنشاء — `firestore.rules:62-63` تتحقق `quantity >=0` فقط؛ حراسة BUG-P0-3 (`price`/`retailCashPrice`…) موجودة فقط في `update` (سطر 69-73). أي `isStaff()` يستطيع تحديد سعر تعسفي عند إنشاء منتج جديد ثم لا يستطيع تعديله. ليس انحدار R1 — AC-09 نص "منطق BUG-P0-3 بلا تغيير" — يُسجل هنا للمتابعة لاحقًا، لا يُفتح له REQ الآن.
 - سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)
 - TECH-P0-1b — قفل نافذة TOCTOU race في processReturn (دفعة 2026-09-13): الخيار A الحالي يقرأ المرتجعات السابقة عبر getDocs() خارج الـ transaction — الحل المقترح: تخزين returnedQuantities داخل مستند الفاتورة نفسها وتحديثه ذريًا داخل نفس الـ transaction بدل الاعتماد على القراءة الخارجية (يُعاد التقييم عند نمو عدد الكاشيرين المتزامنين)

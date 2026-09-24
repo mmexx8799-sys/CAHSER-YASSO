@@ -17,6 +17,47 @@
 - **المصدر:** مراجعة «خطة العرض على الخبير» مقابل الكود عند `e24fe3e` — الأساس المفحوص E-01…E-16.
 - **الأثر:** R1 يقبل `owner` في `isAdmin()`/`isStaff()`؛ R5 ينقل `users.manage` + حذف دفتري إلى `isOwner()` فقط بعد تعيين المالك في R4؛ `balance`/الكميات تبقى Accepted Risk (backlog:22).
 
+## OFFLINE-P1 — Owner Decisions (2026-09-21) — D-O1…D-O7
+
+> بوابة P1 موقّعة — لا يبدأ REQ-OFF1-1 قبل هذه القرارات. الافتراضي = ما يُطبّق إن لم يصدر قرار — المرجع `docs/SPEC-PLAN-OFFLINE-P1.md §1.5`.
+
+| # | القرار | القيمة المعتمدة | المالك | التاريخ |
+|---|---|---|---|---|
+| D-O1 | تسجيل PWA تلقائي أم بضغطة "تثبيت" | **(أ) تلقائي** — يضمن فتح أوفلاين دون تدريب | Owner | 2026-09-21 |
+| D-O2 | سلوك زر البيع أوفلاين | **(أ) معطّل + tooltip** — أوضح وأسرع | Owner | 2026-09-21 |
+| D-O3 | بانر القراءة فقط | **(أ) ثابت أعلى الصفحة** — لا يُفقد | Owner | 2026-09-21 |
+| D-O4 | تنبيه الإصدار الجديد | **(أ) بانر + زر "تحديث الآن"** — يمنع نسخة قديمة | Owner | 2026-09-21 |
+| D-O5 | تسجيل الانقطاعات | **(أ) محلي (IndexedDB) + `clientErrors`** — يُرى من Console حتى لو الجهاز مُسح | Owner | 2026-09-21 |
+| D-O6 | مدة القياس قبل تقرير P2 | **(أ) 14 يومًا** — عينة أدق | Owner | 2026-09-21 |
+| D-O7 | تحديث PWA للـ APK (Capacitor) | **(ب) ويب فقط الآن** — أقل مخاطرة إطلاق | Owner | 2026-09-21 |
+| D-O8 | نطاق الرفض الفوري (طبقة الخدمة) | **(أ) assertOnline() في أول كل دالة كتابة في `services/api.ts`** — بدون `clientErrors` (fire-and-forget) وبدون Auth — القائمة الموقعة 21 + إضافة `factoryReset` بعد الجرد (نفس فئة خطر `restoreData`) = **22 دالة محمية** + تعطيل أزرار AC-03 فقط | Owner | 2026-09-21 |
+
+- **المصدر:** `docs/SPEC-PLAN-OFFLINE-P1.md` مراجَع ومطابق للكود سطرًا بسطر (J-01…J-08) + مراجعة OFF1-2 الجرد (6 transactions + 15 كتابة عادية — `persistentLocalCache` يصفف محليًا).
+- **الأثر:** REQ-OFF1-1…4 تُنفذ بهذه القيم؛ P2 مؤجلة حتى أرقام P1 (count ≥ 5 أو avg ≥ 2min في 14 يومًا).
+- **تفاصيل D-O8 (أ) — الرفض الفوري على مستوى الخدمة:** دالة `assertOnline()` مشتركة تفحص `navigator.onLine` ثم preflight `getDocFromServer` بحسب (ج) وترمي الخطأ العربي الموحّد قبل أي `Firestore` — تُستدعى في أول كل دالة كتابة: `addCustomerPayment, addSupplierPayment, processPurchase, processSupplierReturn, processSale, processReturn, updateAppSettings, addUser, setUserCapOverrides, updateCustomerProfile, updateSupplierProfile, saveProduct, addCategory, addCustomer, addSupplier, deleteDocument, updateDocument, startNewDailyArchive, closeDailyArchive, backupData, restoreData` (21 دالة — 6 + 15) + `factoryReset` = **22 دالة محمية** — مستثناة: `monitoring.ts` و `auth.ts`. مع إصلاح retry (a9ce533): عند `offline-timeout` تُعاد المحاولة مرة واحدة بنفس المهلة (2s) قبل الرفض؛ أخطاء الشبكة الحقيقية تُرفض من أول مرة. تعطيل الأزرار AC-03 فقط.
+- **شرطان للجرد قبل تنفيذ assertOnline:** (1) `updateDocument`/`deleteDocument` مساعدان عامان — مثبت بالـgrep الخام: `findstr /n "updateDocument deleteDocument" services\monitoring.ts services\auth.ts` → لا مخرجات (فارغ) — الاستثناءان سليمان (`monitoring.ts` يكتب `clientErrors` عبر `addDoc` مباشرة، و `auth.ts` عبر `setDoc` مباشرة + Auth SDK) — المستدعيان الوحيدان داخليان في `api.ts:136` (`deleteUser`) و `api.ts:146` (`setUserDisabled`) وهما محميان transitively، (2) `assertOnline()` أول سطر في الدالة قبل أي `await` أو `Firestore` — حتى لو `saveProduct` يستدعي `updateDocument` داخليًا فالفحص المزدوج مقبول.
+- **تقييم أداء assertOnline (D-O8):** كل عملية كتابة تضيف round-trip واحد `getDocFromServer(counters/invoices)` قبل أن تبدأ — التأخير المتوقع: ~50-200ms على شبكة جيدة، حتى ~4s (مهلتان 2s+2s — retry مرة واحدة على offline-timeout) عند بطء الشبكة/portal — لا يمنع البيع في الزحمة لكنه يضيف انتظارًا محسوسًا لكل ضغطة "تأكيد". عدد القراءات: +1 قراءة Firestore لكل كتابة (تُحسب في حصة Spark الشهرية 50K/يوم — عند 100 بيع/يوم = +100 قراءة/يوم، مهمل؛ عند retry +2). تحسين لاحق مقترح (بعد OFF1-2): تخزين نتيجة آخر ping ناجح لثوانٍ قليلة (مثل 10s) بدل تكراره في نفس الجلسة — يُقيَّم بعد قياس 14 يومًا إن اشتكى الكاشير.
+- **نتيجة اختبار OFF1-2 على المحاكي (2026-09-22 — service-layer, emulator):** baseline → محاولة أوفلاين → مقارنة IndexedDB → تحقق Admin SDK — **21/21**: كل دالة رمت الخطأ العربي (`أنت غير متصل بالإنترنت…`) و `mutations 0→0` و `total` ثابت و `emu-final == emu-baseline` (بما فيها `closeDailyArchive/restoreData/factoryReset`) — `updateDocument` (22) مثبتة كودًا + transitively. Captive Portal — قياس خام بعد إصلاح retry (a9ce533): `processSale` رفض بعد **4021ms**، `closeDailyArchive` رفض بعد **2611ms** — **غير مفسَّر بالقياس** — مع `navigator.onLine=true` وحجب `127.0.0.1:8080` → `لا يوجد اتصال بالإنترنت — تحقق من الشبكة` — monitoring: لا استدعاء لها من `api.ts` أصلًا (من تشغيل 09-22). تصحيح: اختبار `slow1500` لم ينجح — الخام كان `fail:أنت غير متصل … elapsed 8` (navigator.onLine=false، لم يصل لمسار الـping أصلًا)؛ سطر "Slow3G success 356ms" بدون throttling لا يختبر الـretry ويُسحب.
+- **إغلاق OFF1-2 (2026-09-22 — Done):** 22 دالة محمية بـ`assertOnline()` على مستوى الخدمة + `OfflineGuardError` بعلامة مميزة (`code='offline-guard'`) تُمرر عبر 19 catch داخلية بلا استبدال + تمييز في 18 موقع UI (تعرض الرسالة العربية للحارس فقط، وأي خطأ آخر بسلوكه القديم) + اختبار مسار كان صامتًا بالكامل (`processPurchase` من SupplierAccountPage — صار يعرض التوست العربي + `mut 0→0`). ملاحظة: `handleStartDay` يميّز ثلاثيًا (حارس → رسالته، خطأ SDK له `code` → عامة، خطأ عمل عادي بلا `code` → رسالته) حتى لا تضيع رسائل اليومية المفيدة.
+- **قاعدة التصنيف (D-O8 — توثيق صريح):** `SettingsPage.handleStartDay`: تمييز ثلاثي — `OfflineGuardError` → رسالته، أي خطأ يحمل `.code` → رسالة عامة (افتراض: أخطاء SDK)، غير ذلك → رسالته الأصلية (افتراض: أخطاء عمل نصية عربية بلا `code`). تحذير مستقبلي: إن أضاف كود لاحقًا خطأ SDK بلا `code` أو خطأ عمل يحمل `code`، ينكسر التصنيف بصمت — راجع هذه القاعدة عند أي تغيير في أخطاء اليومية.
+- **فجوة تغطية اختبارية (OFF1-2 — مفتوح):** `assertOnline()` بلا تغطية اختبارية آلية (تجاوز كامل في `vitest` عبر `MODE==='test'`) — التحقق الوحيد يدوي (Playwright: 21/21 + Captive 2/2 مع القياس أعلاه). مطلوب لاحقًا: اختبار مخصص لـ`assertOnline` بمحاكاة الشبكة (`navigator.onLine` + حجب `getDocFromServer`) بدل تجاوزه بالكامل.
+- **فجوة مفتوحة — نجاح الـretry على ping بطيء لم يُقَس في المتصفح:** الحالة `أول ping >2s وثانيه ينجح` مثبتة فقط بمحاكاة منفصلة على mock، ولم تُقَس في المتصفح (اختبار `slow1500` كان أوفلاين فعلاً) — الحارس بلا اختبار آلي.
+- **حد معروف — انقطاع غير مغلق (OFF1-4):** لو أُغلق التبويب وهو أوفلاين، `logOfflineEnd` لا تُنفذ — الانقطاع يبقى `end: undefined` في IndexedDB إلى الأبد، ولا يدخل ضمن `getOfflineStats()` (يتطلب `durationMs` و`end`) ولا يُنظّف تلقائيًا — `MAX_ENTRIES` يحد الحجم فقط.
+- **الأساس المقاس (REQ-OFF1-0 2026-09-21 — HEAD 1ab34cd — tag pre-offline-p1):** `npx tsc --noEmit` نظيف (0) · `npx eslint . --quiet` 7 أخطاء معروفة (PERM backlog) · `npm run test:rules` **340/340 أخضر (32 ملف)** — 101.20s · `npm run build` نظيف (938.00 kB `index-Bp9vaXPN.js` — 19.62s) · `git status --short` نظيف بعد الوسم · `vite.config.ts`/`index.html`/`public/` بلا PWA · `OfflineNotifier.tsx` إشعار فقط · `processSale` بلا رفض فوري · الجرد الخام (ب→هـ) في تقرير REQ-OFF1-0.
+
+## OFFLINE-P1 — الفجوات المقبولة المجمعة (مؤقتة — 2026-09-23)
+
+> كلها موثقة كـ Accepted Risk مؤقت — لا تُعتبر حلًا نهائيًا، وتُراجع قبل P2.
+
+- **assertOnline() بلا تغطية آلية:** تجاوز كامل في `vitest` — التحقق الوحيد يدوي (Playwright 21/21 + Captive 2/2) — مطلوب: اختبار مخصص بمحاكاة الشبكة.
+- **انقطاع غير مغلق:** تبويب يُغلق وهو أوفلاين → `end: undefined` للأبد في IndexedDB — `MAX_ENTRIES` يحد الحجم فقط.
+- **تكلفة الأداء:** +1 `getDocFromServer` لكل كتابة (~50-200ms حتى ~4s مع retry مرة واحدة على offline-timeout) — يُقيَّم بعد 14 يومًا؛ مقترح cache لـping 10s.
+- **قاعدة تصنيف handleStartDay:** ثلاثي (`OfflineGuardError` / `.code` / غيره) — إن أضيف خطأ SDK بلا `code` أو عمل بـ`code` ينكسر بصمت.
+- **الأيقونات مؤقتة:** `maskable-512.png` نسخة من `icon-512.png` — تُستبدل بالشعار الحقيقي قبل النشر.
+- **بوابة النشر:** ممنوع `firebase deploy` حتى إغلاق P1 بالكامل — `registerType:'prompt'` بلا بانر يبقي نسخًا قديمة.
+- **خط Cairo أوفلاين:** `runtimeCaching:[]` — يقع على النظام — مقبول.
+- **مراجعة 14 يوم:** بعد ~2026-10-06 — المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON ويرسله للوكيل — عتبة P2: `count≥5` أو `avg≥2min` — الخطوة التالية منفصلة (P2) ومؤجلة حتى هذا القياس.
+
 ## AC-04 Follow-up — Roleless test accounts (2026-09-19)
 
 - `ramypro0120@gmail.com` (uid: `s162boAmSEbgaLDmRNG2SoisoN23`) — بلا `role` عمدًا، حساب تجريبي غير مستخدَم، مجدول للحذف بعد اكتمال الإنتاج النهائي. محروم من كل كتابة (Default-deny — BR-01) — لا أثر تشغيلي.
@@ -179,3 +220,18 @@ Incident: قواعد firestore.rules المحدّثة عبر REQ-P0-9 (d5d7d0f �
 Root Cause: قالب الـ REQ كان يطلب tsc/build/git diff فقط كأدلة — لا يغطي النشر الحي للقواعد، ونجاح البناء المحلي لا يعطي أي معلومات عن ما هو مُطبّق فعليًا في الإنتاج.
 Fix: إضافة قاعدة دائمة جديدة لقالب REQ (موثّقة في docs/req-template.md) — أي REQ يلمس firestore.rules يجب أن يحتوي AC إضافي يطلب تشغيل `firebase deploy --only firestore:rules` ولصق مخرجاته كدليل، ولا يُعتبر مكتملًا حتى يتم تأكيد النشر الحي.
 Status: Closed — Deployment gap resolved 2026-09-12
+
+## PERM-2026-09 — Known Issues (2026-09-21)
+
+- **حسابات بلا `role` لا تُعطَّل/تُحذف من `/users`:** الواجهة تخفي أزرار التعطيل/الحذف للحساب بلا دور صالح — الإجراء الوحيد عبر Console (Firestore + Auth) — لا أثر تشغيلي (Default-deny).
+- **قائمة مشوهة من Console تمنع تعطيل صاحبها من الواجهة:** إذا كُتبت `capGrants/capDenies` بقيمة غير `list` أو خارج `overridableCaps()` من Console، فإن `capListsValid` تفشل على `update` حتى لتعطيل الحساب — صحّح القائمة أولًا من Console ثم عطّل — الأمان لا يتأثر (الحساب مغلق fail-closed).
+- **تحذير `canOpenDay` غير مستخدمة:** `firestore.rules:32 canOpenDay` تظهر `[W] Unused function` بعد REQ-PERM-2 — الدالة استُبدلت بـ`hasCap('archive.open', [...])` — تُحذف في تنظيف لاحق — بلا أثر.
+- **وثائق `permissionAudit` لا تُحذف من التطبيق:** لا زر حذف ولا `delete` في القواعد (`update, delete: false`) — تنظيفها قبل الانطلاق يتم من Console فقط — خارج النسخ الاحتياطي وضبط المصنع عمدًا.
+- **منع `product.create` يخفي تبويب المنتجات:** `buildNavItems` يربط التبويب بهذه القدرة — منحها/منعها يظهر/يخفي التبويب كاملًا — مقصود.
+- **الواجهة بلا إشعار إصدار جديد:** لا يوجد تنبيه `New version available` بعد نشر الاستضافة — يحتاج تحديث يدوي للصفحة — Backlog.
+
+## OFFLINE-P1 — Known Issues / Open Items (2026-09-21 — REQ-OFF1-1)
+
+- **الأيقونات مؤقتة (REQ-OFF1-1):** `public/icons/maskable-512.png` نسخة مطابقة لـ `public/icons/icon-512.png` (نفس الـmd5) — والمانيفست يستخدم `purpose:'any maskable'` مدموجًا في مدخل واحد. تُستبدل بالشعار الحقيقي كمدخلين منفصلين (`any` / `maskable`) قبل أي نشر — بند مفتوح.
+- **بوابة النشر (OFFLINE-P1):** ممنوع `firebase deploy` لأي جزء من OFFLINE-P1 حتى إغلاق REQ-OFF1-3 — السبب: `registerType:'prompt'` بلا بانر يُبقي نسخًا قديمة عالقة بلا تحديث.
+- **قيد معروف — خط Cairo أوفلاين:** `runtimeCaching:[]` يعني خط Cairo (Google Fonts) لا يُخزَّن أوفلاين — يقع على خط النظام عند الانقطاع — متوقع ومقبول.

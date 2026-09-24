@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import { Plus, Edit, Trash2, Search, X, FolderCog, Barcode, Printer, RefreshCw } from 'lucide-react';
 import type { Product, Category } from '../types';
-import { getProductsPaginated, saveProduct, deleteDocument, addCategory, checkBarcodeExistsCloud, getProductById } from '../services/api';
+import { getProductsPaginated, saveProduct, deleteDocument, addCategory, checkBarcodeExistsCloud, getProductById, isOfflineGuardError } from '../services/api';
 import { subscribeToCollection } from '../services/dataCache';
 import { useDebounce } from '../hooks/useDebounce';
 import { generateUniqueBarcode } from '../utils/generateBarcode';
@@ -33,8 +33,12 @@ const CategoryManagerModal: React.FC<{
       await addCategory(newCategoryName);
       toast.success("تمت إضافة التصنيف");
       setNewCategoryName('');
-    } catch {
-      toast.error("فشلت إضافة التصنيف");
+    } catch (e) {
+      if (isOfflineGuardError(e)) {
+        toast.error((e as Error).message);
+      } else {
+        toast.error("فشلت إضافة التصنيف");
+      }
     }
   };
 
@@ -47,8 +51,12 @@ const CategoryManagerModal: React.FC<{
       try {
         await deleteDocument('categories', id);
         toast.success("تم حذف التصنيف");
-      } catch {
-        toast.error("فشل حذف التصنيف");
+      } catch (e) {
+        if (isOfflineGuardError(e)) {
+          toast.error((e as Error).message);
+        } else {
+          toast.error("فشل حذف التصنيف");
+        }
       }
     }
   };
@@ -485,8 +493,12 @@ export default function ProductsPage() {
       await saveProduct(productData);
       toast.success('id' in productData ? 'تم تحديث المنتج بنجاح' : 'تمت إضافة المنتج بنجاح');
       loadProducts(true);
-    } catch {
-      toast.error('فشلت عملية الحفظ');
+    } catch (e) {
+      if (isOfflineGuardError(e)) {
+        toast.error((e as Error).message);
+      } else {
+        toast.error('فشلت عملية الحفظ');
+      }
     }
   }, [loadProducts]);
 
@@ -500,8 +512,12 @@ export default function ProductsPage() {
         await deleteDocument('products', id);
         toast.success('تم حذف المنتج');
         loadProducts(true);
-      } catch {
-        toast.error('فشل حذف المنتج');
+      } catch (e) {
+        if (isOfflineGuardError(e)) {
+          toast.error((e as Error).message);
+        } else {
+          toast.error('فشل حذف المنتج');
+        }
       }
     }
   }, [confirm, loadProducts]);

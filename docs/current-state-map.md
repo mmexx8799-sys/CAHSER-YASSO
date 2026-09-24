@@ -1,11 +1,15 @@
-PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-19 — RBAC-2026-09 G0 measured baseline (commit e24fe3e)
-(Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10
-ويدّعي "Automated Tests: Not Started" وهو غير صحيح منذ أسابيع)
+PROJECT STATUS — Nour-Elrahman (casher-yasoo) — 2026-09-23 — **OFFLINE-P1 مكتمل** (REQ-OFF1-0…5 Done — precache 37 فريد، حارس 22 دالة، بانر تحديث + حماية كتابة جارية، تسجيل 14 يوم في الإعدادات) — P2 (الطابور) مؤجل حتى 2026-10-06
+(Stage-3 — الاختبارات: البنود 3.1/3.2/3.3 مغلقة — كان تاريخ هذا الملف 2026-09-10 — الآن PERM مغلقة)
+
+PERM-2026-09 — نموذج الصلاحيات
+- وثيقة `users/{uid}`: `role, disabled, capGrants?: string[], capDenies?: string[], permsUpdatedBy/At` — غياب الحقلين = السلوك القديم — `effectiveCan` يطبق: disabled/role فاسد → false, owner → مصفوفة, غير قابلة → مصفوفة, منع → false, منح (محاسب كتابة يُتجاهل) → true, وإلا مصفوفة — `capListsValid` تفرض `hasOnly(overridableCaps)` و`!hasAny` و`owner بلا حقول` و`accountant ⊆ ui`.
+- القابلة للتجاوز (17): طبقة A تُفرض في القواعد (13): `sell, return, customer.payment, supplier.ops, product.create, product.price, product.delete, category.write, settings.write, archive.open, archive.close, customer.write, supplier.write` — طبقة B واجهة فقط (4): `report.view, archive.view, dashboard.view, statement.export` — كلها في `utils/permissions.ts: OVERRIDABLE_CAPS` و`firestore.rules: overridableCaps()` — مواءمة regex في `tests/permissionsParity`.
+- غير قابلة (5): `users.manage, data.restore, data.reset, ledger.delete, backup.export` — `NON_OVERRIDABLE_CAPS` — منحها يُتجاهل.
 
 Core Architecture (React/TS/Firebase/Capacitor)   ✅ Stable
 Database (Firestore)                              🟡 Needs Review (indexes/rules ناقصين تاريخيًا)
 Authentication                                     ✅ Stable
-RBAC (صلاحيات admin/cashier)                        🟡 In Progress — RBAC-2026-09 G0 decisions signed 2026-09-19 (D-1: izatadel007@gmail.com owner, D-2:(أ) D-3:موافقة D-4:الآن D-5:Deferred D-6:يبقى D-7:لاحقًا) — P0-2 Accepted Risk لا يزال ساريًا (balance/الكميات لا تُقفل — backlog:22)
+RBAC (صلاحيات admin/cashier)                        ✅ Done — RBAC-2026-09 Done (REQ-RBAC-2 bc46c07 2026-09-19, REQ-RBAC-3 d61c246 2026-09-20, REQ-RBAC-4 b1ebb4b 2026-09-20, REQ-RBAC-5 e7771f2 2026-09-20 — `git log -1 --format=%ad --date=short <hash>` لكل hash) ثم وُسِّعت بـPERM-2026-09 (22 عضوًا في الأسطر 9-30 من utils/permissions.ts) — P0-2 Accepted Risk لا يزال ساريًا (balance/الكميات لا تُقفل — Declined بقرار المالك)
 Customers / Suppliers Accounts                     ✅ Complete (REQ-M6..M9-fix2)
 Statement / Excel Export                           ✅ Complete (web only) — APK path 🟡 Pending (مسار المشروع عربي)
 POS + Returns Cart UX                               ✅ Complete

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, Search, DollarSign } from 'lucide-react';
 import type { Customer } from '../types';
-import { getCustomersPaginated, updateCustomerProfile, deleteDocument, addCustomer } from '../services/api';
+import { getCustomersPaginated, updateCustomerProfile, deleteDocument, addCustomer, isOfflineGuardError } from '../services/api';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
@@ -210,8 +210,12 @@ export default function CustomersPage() {
         toast.success('تمت إضافة العميل');
         loadCustomers(true);
       }
-    } catch {
-      toast.error('فشلت عملية الحفظ');
+    } catch (e) {
+      if (isOfflineGuardError(e)) {
+        toast.error((e as Error).message);
+      } else {
+        toast.error('فشلت عملية الحفظ');
+      }
     }
   }, [loadCustomers]);
 
@@ -230,8 +234,12 @@ export default function CustomersPage() {
         await deleteDocument('customers', customer.id);
         toast.success('تم حذف العميل');
         loadCustomers(true);
-      } catch {
-        toast.error('فشل حذف العميل');
+      } catch (e) {
+        if (isOfflineGuardError(e)) {
+          toast.error((e as Error).message);
+        } else {
+          toast.error('فشل حذف العميل');
+        }
       }
     }
   }, [confirm, loadCustomers]);
