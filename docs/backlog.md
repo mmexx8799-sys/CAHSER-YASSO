@@ -8,13 +8,13 @@
 - REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — **Done 2026-09-22 (eb8bbe7)** — `offlineLog.ts` (14d window + 3s threshold) + `useOfflineLogger` + `OfflineStats` في الإعدادات — `idb-keyval@6.3.0`
 - REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23 (43d9031 + a9ce533)** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — إصلاح retry للـping (a9ce533: إعادة محاولة واحدة على offline-timeout) — الخطوة التالية: **P2 مؤجلة حتى 2026-10-06** (المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON)
 
-## In Progress — RBAC-2026-09 (REQ-RBAC-0…5) — started 2026-09-19 — base e24fe3e
-- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0 — هذا الملف) — **Done 2026-09-19 (f179fd1)**
-- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (rules-first: roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done code+tests 2026-09-19 (b926b6d) — معتمد فنيًا من المراجع، ⛔ W0 موقوف حتى جرد users الإنتاج (AC-04 فيتو)**
-- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — Pending
-- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر (utils/permissions.ts) — Pending
-- REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` (dry-run افتراضي + rollback) — Pending
-- REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق (users + حذف دفتري → owner-only + Live smoke B) — Pending
+## Done — RBAC-2026-09 (REQ-RBAC-0…5) — 2026-09-19 → 2026-09-20 — base e24fe3e — tag pre-perm-2026-09 = e7771f2 → PERM-2026-09 وسّعت الصلاحيات
+- REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0) — **Done 2026-09-19 (f179fd1)**
+- REQ-RBAC-1: طبقة القواعد — إضافات آمنة (roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done 2026-09-19 (b926b6d) — معتمد فنيًا**
+- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — **Done 2026-09-19 (bc46c07)**
+- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر — **Done 2026-09-19 (d61c246)** — MATRIX 22 قدرة (`utils/permissions.ts:8` 22 سطر `| '...'` — `grep -n "^\s\+| '"` = 22)
+- REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` — **Done 2026-09-19 (b1ebb4b)** — dry-run + rollback
+- REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق — **Done 2026-09-20 (e7771f2)** — `users` + حذف دفتري → owner-only — Live smoke B: **لا سجل في الدوكس — الحالة غير معروفة (بانتظار تأكيد المالك)**
 - **تنبيه صريح:** REQ-P0-2 (قفل `balance` الكامل) **يبقى Declined بقرار المالك (Ahmed 2026-09-16 + تأكيد 2026-09-19)** — هذه الدورة RBAC لا تمسّ `balance`/الكميات/إجماليات اليومية؛ المحاسب فقط هو الممنوع من الكتابة. لا يُعاد فتحه إلا بقرار مالك مكتوب جديد (known-issues BUG-P0-2 + backlog:22).
 
 ## In Progress (سابق — مغلق)

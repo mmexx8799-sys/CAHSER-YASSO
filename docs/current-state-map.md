@@ -9,7 +9,7 @@ PERM-2026-09 — نموذج الصلاحيات
 Core Architecture (React/TS/Firebase/Capacitor)   ✅ Stable
 Database (Firestore)                              🟡 Needs Review (indexes/rules ناقصين تاريخيًا)
 Authentication                                     ✅ Stable
-RBAC (صلاحيات admin/cashier)                        🟡 In Progress — RBAC-2026-09 G0 decisions signed 2026-09-19 (D-1: izatadel007@gmail.com owner, D-2:(أ) D-3:موافقة D-4:الآن D-5:Deferred D-6:يبقى D-7:لاحقًا) — P0-2 Accepted Risk لا يزال ساريًا (balance/الكميات لا تُقفل — backlog:22)
+RBAC (صلاحيات admin/cashier)                        ✅ Done — RBAC-2026-09 Done (REQ-RBAC-2 bc46c07, REQ-RBAC-3 d61c246, REQ-RBAC-4 b1ebb4b, REQ-RBAC-5 e7771f2 — 2026-09-19→20) ثم وُسِّعت بـPERM-2026-09 (22 قدرة — `utils/permissions.ts:8` 22 سطر `| '...'`)
 Customers / Suppliers Accounts                     ✅ Complete (REQ-M6..M9-fix2)
 Statement / Excel Export                           ✅ Complete (web only) — APK path 🟡 Pending (مسار المشروع عربي)
 POS + Returns Cart UX                               ✅ Complete
