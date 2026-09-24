@@ -24,11 +24,11 @@ Price Tampering Guard (unit price 50% floor)          ✅ Fixed (P0-3 — 2026-0
 Build Scaffold Cleanup (importmap aistudiocdn)       ✅ Fixed (P1-2 — 2026-09-12)
 Invoice/Receipt Modal (theme-adaptive Grid)         ✅ Fixed (UI-1 — 2026-09-12)
 Invoice/Receipt Credit Distinction (آجل badge)       ✅ Fixed (UI-1b — 2026-09-12)
-Automated Tests (vitest + Emulator)                ✅ Active — **130 اختبارًا** على المحاكيات (firestore/auth) عبر `npm run test:rules` — تسلسلي (--fileParallelism=false) — مقاس فعليًا 2026-09-19 على e24fe3e (كان «64» رقمًا قديمًا من 2026-09-17):
+Automated Tests (vitest + Emulator)                ✅ Active — **340 اختبارًا (32 ملف)** على المحاكيات (firestore/auth) عبر `npm run test:rules` — تسلسلي (--fileParallelism=false) — مقاس 2026-09-24 محليًا و CI #15 (تفصيل تاريخي — 130 عند G0 2026-09-19):
   archiveCalculations 6 (pure) · dashboardAggregation 12 · stockAlerts 14 · balanceOpeningFreeze 9 · changePassword 4 · clientErrorsRules 3 ·
   processReturn 8 (TEST-REG-P0-1) · productsRules 9 · sec1ProfileGuards 4 · countersRules 11 (منها N=5 بوابة ≥4/5 + N=20 توثيقي) ·
   backupCounters 5 (BUG-P0-15) · e2eJourney 1 (رحلة كاملة خدميًا — Stage-3 3.1) · concurrentSalesHigh 4 (N=10/N=12/N=15/متعدد — Stage-3 3.2) ·
-  posBarcodeSearch 16 · posBarcodeCloudFallback 8 · fixDashboard09 5 · barcodeGeneration 6 · cartAddResult 5 — الإجمالي 130/130 أخضر (18/18 ملف) — مدة 45.58s
+  posBarcodeSearch 16 · posBarcodeCloudFallback 8 · fixDashboard09 5 · barcodeGeneration 6 · cartAddResult 5 — الإجمالي 130/130 أخضر (18/18 ملف) — مدة 45.58s (تفصيل تاريخي — 130 عند G0 2026-09-19)
   تصحيح E-15: «64» كان من current-state-map 2026-09-17؛ الفارق 66 = باركود/داشبورد/تنبيهات مخزون أُضيفت بعد 2026-09-17 دون تحديث العداد (يثبت بالقياس أعلاه).
 E2E (Playwright/Chromium — حقيقي بالمتصفح)         ✅ Added (Stage-3 3.1 — يحتاج تشغيلًا يدويًا: `npm run test:e2e` بعد `npx playwright install --with-deps chromium`):
   e2e/happy-path.spec.ts — دخول → فتح أرشيف → بيع نقدي UI → مرتجع نقدي UI → إغلاق أرشيف → نسخ (download حقيقي) → استرجاع (filechooser حقيقي) — ضد المحاكيات فقط عبر VITE_USE_EMULATORS=1 (services/firebase.ts) — لا يلمس الإنتاج.
@@ -37,5 +37,5 @@ High-Concurrency Confidence (BUG-P0-14)             ✅ Raised (Stage-3 3.2 + G0
 Staging Environment                                 🟡 Partial — alias محجوز + runbook في DEPLOY.md (إنشاء المشروع من Console)
 Monitoring / Error Tracking                         ✅ Free tier نشط — مجموعة clientErrors + services/monitoring.ts (Stage-2 2.2-free)
 Android APK Build                                   ✅ Exists — `android/` موجود في الشجرة (فحص E-16 في R0: `git status` نظيف — ليس محذوفًا؛ كان يظهر D في أرشيف قديم لا في الشجرة الحالية)
-CI                                                  ✅ lint + typecheck + build + **الـ 130 اختبارًا** على كل PR (.github/workflows/ci.yml — كان يذكر 64؛ يُصحح في R0/AC-02) — نشر firestore:rules بعد الدمج + موافقة environment
-RBAC Baseline (G0 — 2026-09-19)                      📏 `npx tsc --noEmit` نظيف (0 أخطاء) · `npm run build` نظيف (ذروة 938.00 kB `index-C-4EqcBk.js` — 16.59s) · `npm run test:rules` **130/130 أخضر (18/18)** — 45.58s · `git status --short` نظيف · E-16: `android/` ليس محذوفًا · جرد users الإنتاج: يتطلب فحص Console يدويًا قبل W0 (لا مستخدم بلا role صالح — فيتو R1) — المحاكي بلا users
+CI                                                  ✅ lint + typecheck + build + **الـ 340 اختبارًا (32 ملف)** على كل PR (.github/workflows/ci.yml — كان يذكر 64؛ يُصحح في R0/AC-02) — مقاس 2026-09-24 محليًا و CI #15 — نشر firestore:rules بعد الدمج + موافقة environment
+RBAC Baseline (G0 — 2026-09-19)                      📏 `npx tsc --noEmit` نظيف (0 أخطاء) · `npm run build` نظيف (ذروة 938.00 kB `index-C-4EqcBk.js` — 16.59s) · `npm run test:rules` **130/130 أخضر (18/18)** — 45.58s (تاريخي — الحالي 340/340) · `git status --short` نظيف · E-16: `android/` ليس محذوفًا · جرد users الإنتاج: فيتو AC-04 حُلّ بالجرد النهائي 2026-09-19 (known-issues.md:61-66)

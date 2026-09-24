@@ -6,7 +6,8 @@
 - REQ-OFF1-2: رفض فوري على مستوى الخدمة (22 دالة — D-O8 أ) + `OfflineGuardError` — **Done 2026-09-22 (db50102 + 0599ac1)** — `tsc` نظيف · `test:rules` 340/340 · emulator: 21/21 + Captive 2/2
 - REQ-OFF1-3: تنبيه "يوجد إصدار جديد" — **Done 2026-09-22 (94619c8)** — `NewVersionBanner` + `withInFlightGuard` 22 + `registration.update()` كل 5د — بانر غير مُلح وقابل للإغلاق
 - REQ-OFF1-4: تسجيل الانقطاعات 14 يومًا — **Done 2026-09-22 (eb8bbe7)** — `offlineLog.ts` (14d window + 3s threshold) + `useOfflineLogger` + `OfflineStats` في الإعدادات — `idb-keyval@6.3.0`
-- REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23 (43d9031 + a9ce533)** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — إصلاح retry للـping (a9ce533: إعادة محاولة واحدة على offline-timeout) — الخطوة التالية: **P2 مؤجلة حتى 2026-10-06** (المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON)
+- REQ-OFF1-5: إغلاق وتوثيق — **Done 2026-09-23 (43d9031 + a9ce533)** — `backlog/changelog/current-state-map/known-issues` — **OFFLINE-P1 مكتمل** — إصلاح retry للـping (a9ce533) — الخطوة التالية: **P2 مؤجلة: 14 يومًا من تاريخ النشر الفعلي للنسخة (التسجيل يبدأ بعد النشر)** — المراجعة: المالك يفتح `الإعدادات → حالة الاتصال` أو يصدّر JSON
+- PR #5 اندمج في master بتاريخ 2026-09-24 (c70d3ea) — CI أخضر (lint+typecheck+build، emulator suite) — branch offline-p1 محدث حتى a90b695
 
 ## Done — RBAC-2026-09 (REQ-RBAC-0…5) — 2026-09-19 → 2026-09-20 — base e24fe3e — tag pre-perm-2026-09 = e7771f2 → PERM-2026-09 وسّعت الصلاحيات
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0) — **Done 2026-09-19 (f179fd1)**
@@ -26,7 +27,7 @@
 - **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
 - **PERM — عرض السجل بالبريد بدل UID:** `components/PermissionEditorModal.tsx` يعرض `by/targetUid` كـUID خام — يُستبدل ببريد من `users` cache.
 - **PERM — قدرة `product.view`:** فصل عرض المنتجات عن إنشائها — حاليًا `product.create` يخفي التبويب كاملًا — Backlog.
-- **PERM — إشعار إصدار جديد:** لا يوجد `New version available` بعد نشر الاستضافة — يحتاج service worker أو فحص نسخة.
+- **PERM — إشعار إصدار جديد:** **Done — أحيل إلى REQ-OFF1-3 (94619c8) — NewVersionBanner `registerType:'prompt'` + زر معطّل أثناء كتابة/أوفلاين**
 - Known Gap (pre-existing, out of RBAC scope — مراجعة R1 2026-09-19): `products.create` بلا حراسة سعر عند الإنشاء — `firestore.rules:62-63` تتحقق `quantity >=0` فقط؛ حراسة BUG-P0-3 (`price`/`retailCashPrice`…) موجودة فقط في `update` (سطر 69-73). أي `isStaff()` يستطيع تحديد سعر تعسفي عند إنشاء منتج جديد ثم لا يستطيع تعديله. ليس انحدار R1 — AC-09 نص "منطق BUG-P0-3 بلا تغيير" — يُسجل هنا للمتابعة لاحقًا، لا يُفتح له REQ الآن.
 - سياسة حد أدنى للخصم (50% مؤقت — REQ-P0-3) — Backlog: مراجعة نسبة الـ 50% كسياسة تسعير مستقبلًا (ليست ثغرة)
 - TECH-P0-1b — قفل نافذة TOCTOU race في processReturn (دفعة 2026-09-13): الخيار A الحالي يقرأ المرتجعات السابقة عبر getDocs() خارج الـ transaction — الحل المقترح: تخزين returnedQuantities داخل مستند الفاتورة نفسها وتحديثه ذريًا داخل نفس الـ transaction بدل الاعتماد على القراءة الخارجية (يُعاد التقييم عند نمو عدد الكاشيرين المتزامنين)

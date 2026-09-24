@@ -1,4 +1,4 @@
-# 2.3 — CI: lint + typecheck + build + الـ 64 اختبارًا على كل PR (Stage-3: +e2eJourney +concurrentSalesHigh).
+# 2.3 — CI: lint + typecheck + build + الـ 340 اختبارًا على كل PR.
 # نشر الـ rules للإنتاج فقط بعد الدمج في master + موافقة (environment).
 #
 # خطوات يدوية لمرة واحدة (لا تُنفَّذ من الكود):
@@ -41,7 +41,7 @@ jobs:
       - run: npm run build
 
   tests:
-    name: emulator suite (130 tests — was 64 before G0 re-measurement 2026-09-19)
+    name: emulator suite
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
