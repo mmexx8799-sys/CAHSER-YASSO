@@ -237,6 +237,7 @@ describe('PERM-2 characterization 2 — owner sets {disabled:true} on role-less 
     await seedRaw('norole-char2', { email: 'norole2@t.local' });
     const db = testEnv.authenticatedContext('owner-char2').firestore();
     // حرفي: يُسجَّل السلوك كما هو (ناجح أم مرفوض) — قارن مخرج قبل/بعد التعديل
+    // eslint-disable-next-line no-useless-assignment
     let outcome = 'unknown';
     try {
       await updateDoc(doc(db, 'users', 'norole-char2'), { disabled: true } as any);

@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // REQ-RBAC-4 — migration planning + emulator apply/idempotent/rollback (AC-01…07)
 // Run: firebase emulators:exec --only firestore,auth "npx vitest run tests/migrateRoles.test.ts"

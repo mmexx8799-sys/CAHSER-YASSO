@@ -3,11 +3,11 @@
 // G0: D-2 (أ) product.create=isStaff, D-6 يبقى supplier.ops=isStaff, D-4 الآن
 // Run: firebase emulators:exec --only firestore,auth "npx vitest run tests/rbacMatrix.test.ts"
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, beforeAll, afterAll } from 'vitest';
 import { initializeTestEnvironment, assertSucceeds, assertFails, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { PERMISSION_MATRIX, type Capability } from '../utils/permissions';
 import { UserRole } from '../types';
 

@@ -5,7 +5,7 @@ import { describe, it, beforeAll, afterAll } from 'vitest';
 import { initializeTestEnvironment, assertSucceeds, assertFails, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { doc, setDoc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { UserRole } from '../types';
 
 let testEnv: RulesTestEnvironment;
