@@ -12,7 +12,7 @@
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0) — **Done 2026-09-19 (f179fd1)**
 - REQ-RBAC-1: طبقة القواعد — إضافات آمنة (roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done 2026-09-19 (b926b6d) — معتمد فنيًا — فيتو AC-04 حُلّ بالجرد النهائي 2026-09-19 (known-issues.md:61-66)**
 - REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — **Done 2026-09-19 (bc46c07)**
-- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر — **Done 2026-09-20 (d61c246)** — MATRIX 22 قدرة (`utils/permissions.ts:8` 22 سطر `| '...'` — `findstr /n "| '" utils\permissions.ts` → 22 سطر 9-30)
+- REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر — **Done 2026-09-20 (d61c246)** — MATRIX 22 عضوًا في الأسطر 9-30 من utils/permissions.ts
 - REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` — **Done 2026-09-20 (b1ebb4b)** — dry-run + rollback
 - REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق — **Done 2026-09-20 (e7771f2)** — `users` + حذف دفتري → owner-only — Live smoke B: **لا سجل في الدوكس — الحالة غير معروفة (بانتظار تأكيد المالك)**
 - **تنبيه صريح:** REQ-P0-2 (قفل `balance` الكامل) **يبقى Declined بقرار المالك (Ahmed 2026-09-16 + تأكيد 2026-09-19)** — هذه الدورة RBAC لا تمسّ `balance`/الكميات/إجماليات اليومية؛ المحاسب فقط هو الممنوع من الكتابة. لا يُعاد فتحه إلا بقرار مالك مكتوب جديد (known-issues BUG-P0-2 + backlog:22).
