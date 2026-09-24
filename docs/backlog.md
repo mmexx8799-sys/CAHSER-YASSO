@@ -21,6 +21,7 @@
 - (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
+- **OFF1-2 — اختبار vitest لـassertOnline (مفتوح):** `assertOnline()` بلا تغطية آلية — مطلوب refactor يصدّر دالة داخلية بلا `MODE==='test'` bypass (مثل `assertOnlineCore(getDocFromServer, navigator)`) ثم اختبار vitest يمرر mock يحاكي `offline-timeout` و `unavailable` — لا يُنفذ الآن، يُسجل هنا فقط.
 - **PERM-2026-09 — تنظيف lint القديم (7 أخطاء اختبارات):** `tests/migrateRoles.test.ts: @ts-nocheck`, `permissionsRules: outcome`, `rbacEscalation/matrix: getDoc/expect`, `restorePreflight: empty block` — تُنظّف خارج الدورة — لا أثر تشغيلي.
 - **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
 - **PERM — عرض السجل بالبريد بدل UID:** `components/PermissionEditorModal.tsx` يعرض `by/targetUid` كـUID خام — يُستبدل ببريد من `users` cache.
