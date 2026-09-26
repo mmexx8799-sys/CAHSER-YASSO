@@ -7,7 +7,7 @@
 
 ## 2) Scope
 - **داخل النطاق:** `npm run build` للإنتاج (بلا emulator)، `firebase deploy --only hosting,firestore:rules,firestore:indexes` (و `storage` إن وجد — غير موجود حاليًا)، smoke tests يدوية على الموقع الحقيقي، توثيق Rollback.
-- **خارج النطاق:** أي تعديل كود وظيفي، أي seed/حسابات اختبار في Production، أي تغيير أيقونات (مؤقتة كما هي).
+- **خارج النطاق:** أي تعديل كود وظيفي، أي seed/حسابات اختبار في Production.
 
 ## 3) Files — كما اكتُشفت في الريبو
 | الملف | الدور | الملاحظة |
@@ -60,8 +60,9 @@
   ```
 - **الرجوع — Rules:**
   ```bash
-  firebase firestore:rules:release /tmp/rules.before.deploy-5ccd7e6 --project casher-yasoo
+  firebase firestore:rules:release /tmp/rules.before.deploy-$(git rev-parse --short HEAD) --project casher-yasoo
   ```
+  (استخدم اسم الملف الفعلي الذي طُبع وقت خطوة الحفظ أعلاه)
 - **الرجوع — Indexes:** لا رجوع تلقائي — الـindexes تراكمية؛ احفظ `firestore.indexes.json` الحالي قبل النشر.
 - **الرجوع — Git:** `git revert <deploy-commit>` أو إعادة نشر `origin/master~1`.
 
