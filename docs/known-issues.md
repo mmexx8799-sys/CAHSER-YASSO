@@ -234,6 +234,6 @@ Status: Closed — Deployment gap resolved 2026-09-12
 
 ## OFFLINE-P1 — Known Issues / Open Items (2026-09-21 — REQ-OFF1-1)
 
-- **الأيقونات مؤقتة (REQ-OFF1-1):** `public/icons/maskable-512.png` نسخة مطابقة لـ `public/icons/icon-512.png` (نفس الـmd5) — والمانيفست يستخدم `purpose:'any maskable'` مدموجًا في مدخل واحد. تُستبدل بالشعار الحقيقي كمدخلين منفصلين (`any` / `maskable`) قبل أي نشر — بند مفتوح.
+- **الأيقونات — مغلق 2026-09-26:** `icon-512.png` (MD5 `50221cc34d6023d1ff70adc945ee63e4`) ≠ `maskable-512.png` (MD5 `bed71e390f8e708a023f8cf1eae3ed97`) — الشعار النهائي من PR #8 — لم يعودا متطابقين (انظر القسم المجمّع أعلاه).
 - **بوابة النشر (OFFLINE-P1):** ممنوع `firebase deploy` لأي جزء من OFFLINE-P1 حتى إغلاق REQ-OFF1-3 — السبب: `registerType:'prompt'` بلا بانر يُبقي نسخًا قديمة عالقة بلا تحديث.
 - **قيد معروف — خط Cairo أوفلاين:** `runtimeCaching:[]` يعني خط Cairo (Google Fonts) لا يُخزَّن أوفلاين — يقع على خط النظام عند الانقطاع — متوقع ومقبول.
