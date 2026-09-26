@@ -43,10 +43,10 @@ try {
   // explicitly opted in via VITE_USE_EMULATORS=1 (dev/E2E only — never set in
   // production builds). Without this flag the app always talks to production.
   // Playwright run: VITE_USE_EMULATORS=1 vite + firebase emulators:start.
-  // NOTE: (import.meta as any) — the repo has no vite/client types wired
-  // (no vite-env.d.ts); this keeps `tsc --noEmit` green without new globals.
-  const viteEnv = (import.meta as any).env || {};
-  if (viteEnv.DEV && viteEnv.VITE_USE_EMULATORS === '1') {
+  // NOTE: direct import.meta.env access (no intermediate variable) so Vite
+  // statically replaces it and tree-shakes the emulator branch out of
+  // production builds entirely. Types via vite-env.d.ts (vite/client).
+  if (import.meta.env.DEV && import.meta.env.VITE_USE_EMULATORS === '1') {
     try {
       connectFirestoreEmulator(db, '127.0.0.1', 8080);
     } catch { /* already connected (HMR) — fine */ }
