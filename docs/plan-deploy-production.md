@@ -26,7 +26,7 @@
 - الخطة أولاً، لا تنفيذ قبل موافقتك.
 - الـbuild يُثبت خلوه من emulator (`grep` فارغ + `vite build` log يظهر `PWA` بلا `VITE_USE_EMULATORS`).
 - أعرض Project ID (`casher-yasoo`) و alias (`default`) وأنت تؤكد.
-- أعرض `diff` الـrules (الريبو vs المنشور) قبل النشر — سأحفظ المنشور الحالي عبر `firebase firestore:rules:get > /tmp/rules.before` ثم `diff`.
+- أعرض `diff` الـrules (الريبو vs المنشور) قبل النشر — عبر مقارنة يدوية من Firebase Console (لا يوجد أمر `firebase firestore:rules:get` في firebase-tools الحالي): انسخ النص من Console → Firestore → Rules إلى ملف محلي ثم `diff` ضد `firestore.rules`.
 - لا أسرار في اللوج/الـcommit — `FIREBASE_SERVICE_ACCOUNT` لا يُطبع.
 - لا بيانات تجريبية/seed في Production — كل الاختبارات على `emulator` فقط.
 - النشر من `branch` نظيف و `PR` (`git status` نظيف + `git log --oneline -3` مطابق للمراجع).
@@ -36,7 +36,7 @@
 1. `git status --short` → خالٍ، `git branch` على `master`، `git rev-parse --short HEAD` و `origin/master` متطابقان (المتوقع: آخر merge على master — يُقرأ وقت التنفيذ عبر `git rev-parse --short origin/master`، لا رقم ثابت).
 2. `npm run lint` (المتوقع 7 أخطاء PERM فقط → بعد تنظيف `29671ff` أصبح 0)، `npx tsc --noEmit` (0)، `npm run test:rules` (المتوقع **340/340** — 32 ملف، مقاس 2026-09-24 محليًا و CI #15)، `npm run build` (ذروة `938.00 kB`, `PWA precache 37`).
 3. `grep -R "VITE_USE_EMULATORS\|FIRESTORE_EMULATOR_HOST\|localhost:8080\|localhost:9099" dist/` → فارغ.
-4. `firebase firestore:rules:get` vs `firestore.rules` → `diff -u` معروض.
+4. مقارنة يدوية عبر Firebase Console (لا أمر CLI لها): انسخ قواعد Console إلى ملف مؤقت → `diff -u` ضد `firestore.rules` معروض (فارغ أو فروق متوقعة فقط).
 5. مراجعة `firestore.rules`: `allow read: if isAuthenticated` في كل مجموعة، `sell/return/customer.payment…` بـ `hasCap`، `users` owner-only، `permissionAudit` append-only.
 
 ## 6) Verification — بعد الـdeploy (أدلة خام)
@@ -51,18 +51,15 @@
   ```bash
   firebase hosting:channel:list --project casher-yasoo
   firebase hosting:clone casher-yasoo:live --project casher-yasoo  # أو احفظ release ID
-  firebase firestore:rules:get --project casher-yasoo > /tmp/rules.before.deploy-$(git rev-parse --short HEAD)
+  # لا أمر CLI لحفظ الـrules — انسخها يدويًا من Console → Firestore → Rules إلى:
+  # /tmp/rules.before.deploy-$(git rev-parse --short HEAD) (استخدم اسم الملف الفعلي أدناه)
   ```
 - **الرجوع — Hosting (إزاحة الإصدار السابق):**
   ```bash
   firebase hosting:clone casher-yasoo:live --project casher-yasoo --from <previous-release-id>
   # أو firebase hosting:rollback --project casher-yasoo (إن توفر)
   ```
-- **الرجوع — Rules:**
-  ```bash
-  firebase firestore:rules:release /tmp/rules.before.deploy-$(git rev-parse --short HEAD) --project casher-yasoo
-  ```
-  (استخدم اسم الملف الفعلي الذي طُبع وقت خطوة الحفظ أعلاه)
+- **الرجوع — Rules:** لا rollback عبر CLI (لا أمر `rules:get/release` في firebase-tools الحالي) — الرجوع يدوي: الصق محتوى ملف `/tmp/rules.before.deploy-*` المحفوظ أعلاه في Console → Firestore → Rules → انشر.
 - **الرجوع — Indexes:** لا رجوع تلقائي — الـindexes تراكمية؛ احفظ `firestore.indexes.json` الحالي قبل النشر.
 - **الرجوع — Git:** `git revert <deploy-commit>` أو إعادة نشر `origin/master~1`.
 
