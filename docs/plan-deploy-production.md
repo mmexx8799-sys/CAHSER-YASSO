@@ -1,9 +1,9 @@
-# خطة النشر — Production (Hosting + Rules + Indexes) — OFFLINE-P1 @ 5ccd7e6
+# خطة النشر — Production (Hosting + Rules + Indexes) — OFFLINE-P1 @ a6fbab6
 
 > **حالة:** خطة فقط — لا تنفيذ قبل موافقة صريحة. لا كود وظيفي يُعدل في هذه المهمة.
 
 ## 1) Goal
-نشر النسخة الحالية المثبتة محليًا (HEAD `5ccd7e6` — OFFLINE-P1 مكتمل: PWA 37 precache، حارس 22، بانر تحديث، تسجيل 14 يوم) إلى **Production** على نفس المشروع، بلا بيانات تجريبية، مع إثبات أن المنشور يطابق الريبو.
+نشر النسخة الحالية المثبتة محليًا (HEAD `a6fbab6` — OFFLINE-P1 مكتمل + أيقونات نهائية: PWA 37 precache، حارس 22، بانر تحديث، تسجيل 14 يوم) إلى **Production** على نفس المشروع، بلا بيانات تجريبية، مع إثبات أن المنشور يطابق الريبو.
 
 ## 2) Scope
 - **داخل النطاق:** `npm run build` للإنتاج (بلا emulator)، `firebase deploy --only hosting,firestore:rules,firestore:indexes` (و `storage` إن وجد — غير موجود حاليًا)، smoke tests يدوية على الموقع الحقيقي، توثيق Rollback.
@@ -19,7 +19,7 @@
 | `storage.rules` | غير موجود — لا deploy له | — |
 | `.env.local` / `services/firebase.ts:48` | `firebaseConfig` ثابت + شرط `VITE_USE_EMULATORS=1` | الشرط الآن `if (viteEnv.DEV && viteEnv.VITE_USE_EMULATORS==='1')` — في `build` الإنتاج (`MODE=production`, `DEV=false`) لا يُفعّل emulator — **الدليل المطلوب:** `grep -R "VITE_USE_EMULATORS\|FIRESTORE_EMULATOR_HOST\|localhost.*8080\|localhost.*9099" dist/` يجب أن يكون فارغًا |
 | `vite.config.ts:1` | `VitePWA` `disable: mode==='capacitor'` — `registerType:'prompt'`، `precache 37` | لا `.*log` في dist |
-| `public/icons/*` | `icon-192.png` (1967B), `icon-512.png`/`maskable-512.png` (7928B each) — مؤقتة متطابقة | لن تُعدل الآن — بند مفتوح |
+| `public/icons/*` | `icon-192.png` + `icon-512.png` + `maskable-512.png` — نهائية (شعار الشماعة+المحل، غير متطابقة، دُمجت في PR #8) | — |
 | `dist/*` بعد `build` | `index.html` (manifest link), `sw.js` (3152B), `manifest.webmanifest` (412B), `workbox-*` | PWA `v1.3.0` |
 
 ## 4) Constraints — كما طُلبت
@@ -33,7 +33,7 @@
 - الـSW: `registerType:'prompt'` + `cleanupOutdatedCaches:true` — النسخة الجديدة تظهر كبانر `يوجد إصدار جديد` وتتطلب ضغطة `تحديث الآن` — لا تعلق على القديمة (header `Cache-Control: no-cache` لـ `index.html`).
 
 ## 5) Verification — قبل الـdeploy (أدلة خام)
-1. `git status --short` → خالٍ، `git branch` على `master`، `git rev-parse --short HEAD` و `origin/master` متطابقان (المتوقع بعد merge PR #6: `5ccd7e6`).
+1. `git status --short` → خالٍ، `git branch` على `master`، `git rev-parse --short HEAD` و `origin/master` متطابقان (المتوقع: آخر merge على master — يُقرأ وقت التنفيذ عبر `git rev-parse --short origin/master`، لا رقم ثابت).
 2. `npm run lint` (المتوقع 7 أخطاء PERM فقط → بعد تنظيف `29671ff` أصبح 0)، `npx tsc --noEmit` (0)، `npm run test:rules` (المتوقع **340/340** — 32 ملف، مقاس 2026-09-24 محليًا و CI #15)، `npm run build` (ذروة `938.00 kB`, `PWA precache 37`).
 3. `grep -R "VITE_USE_EMULATORS\|FIRESTORE_EMULATOR_HOST\|localhost:8080\|localhost:9099" dist/` → فارغ.
 4. `firebase firestore:rules:get` vs `firestore.rules` → `diff -u` معروض.
@@ -51,7 +51,7 @@
   ```bash
   firebase hosting:channel:list --project casher-yasoo
   firebase hosting:clone casher-yasoo:live --project casher-yasoo  # أو احفظ release ID
-  firebase firestore:rules:get --project casher-yasoo > /tmp/rules.before.deploy-5ccd7e6
+  firebase firestore:rules:get --project casher-yasoo > /tmp/rules.before.deploy-$(git rev-parse --short HEAD)
   ```
 - **الرجوع — Hosting (إزاحة الإصدار السابق):**
   ```bash
@@ -67,10 +67,9 @@
 
 ## 8) Known gaps (توثيق فقط)
 - P2 حساسة للانقطاع الطويل الواحد، والسجل محلي على كل جهاز بلا اسم جهاز — `MAX_ENTRIES` يحد الحجم فقط.
-- `icon-512.png` و `maskable-512.png` مؤقتة متطابقة — تُستبدل قبل أي نشر واسع.
 
 ## 9) Definition of Done
-- الموقع الحقيقي يعمل بآخر commit `5ccd7e6` — `git rev-parse --short HEAD` == المنشور.
+- الموقع الحقيقي يعمل بآخر commit على master وقت التنفيذ (`git rev-parse --short HEAD` == المنشور — لا رقم ثابت).
 - `firestore.rules` و `firestore.indexes.json` المنشورة مطابقة للريبو (`diff` فاضي).
 - كل بنود Verification بعد النشر ناجحة بدليل (لقطات/لوج).
 - خطة Rollback مكتوبة ومجربة نظريًا (الأوامر أعلاه).
