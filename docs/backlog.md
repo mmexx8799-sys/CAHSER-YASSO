@@ -22,6 +22,7 @@
 - (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
 
 ## Backlog (by priority)
+- **PURCHASE-PRICE-REF — مرجع التحقق من سعر الشراء (معلّق — يحتاج قرار مالك، وليس Accepted Risk):** `processPurchase`/`processSupplierReturn` يتحققان الشكل فقط (REQ-SEC1-9: وجود المنتج، كمية >0، سعر ≥0) بلا تقاطع مع أسعار الكتالوج — ولا يوجد حقل "سعر تكلفة مرجعي" في `Product` يُقاس عليه، وسعر التكلفة الشرعي قد يقل عن 50% من أقل سعر بيع (بضاعة جملة) فتطبيق قاعدة BUG-P0-3 بحذافيرها قد يكسر شراءً شرعيًا. الخيارات المعلقة: سقف سعري؟ هامش أدنى فوق آخر سعر شراء مسجّل؟ مراجعة owner لاحقة للفواتير؟ — لا REQ ولا كود حتى يُحسم المرجع (فحص 2026-09-27).
 - **OFF1-2 — اختبار vitest لـassertOnline (مفتوح):** `assertOnline()` بلا تغطية آلية — مطلوب refactor يصدّر دالة داخلية بلا `MODE==='test'` bypass (مثل `assertOnlineCore(getDocFromServer, navigator)`) ثم اختبار vitest يمرر mock يحاكي `offline-timeout` و `unavailable` — لا يُنفذ الآن، يُسجل هنا فقط.
 - **PERM-2026-09 — تنظيف lint القديم (7 أخطاء 29671ff):** 5 أُصلحت فعلًا (`rbacEscalation: getDoc`, `rbacMatrix: expect/getDoc`, `restorePreflight: 2× empty block`) و2 سُكّتت بـ`eslint-disable` (`tests/migrateRoles.test.ts: @ts-nocheck` يبقى دينًا — الملف بلا فحص أنواع؛ `tests/permissionsRules.test.ts: outcome` — متغير تشخيصي) — لا أثر تشغيلي.
 - **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
@@ -38,11 +39,11 @@
 - AUDIT-2026-09-15 — مخرجات الـ Full Audit (تُفتح كدورات SpecKit مستقلة بعد إغلاق BUG-P0-15 وتجميد الأساس — لا تُبدأ الآن):
   - AUDIT-ARCH-1: تقسيم services/api.ts (ملف إلهي ~985 سطر) إلى وحدات (products/customers/sales/returns/archives/backup) + طبقة repositories تمنع استيراد firebase/firestore من pages/ مباشرة (الأخطر ReturnsPage:524-544 يتجاوز api.ts)
   - AUDIT-ARCH-2: إخراج toast من طبقة services/stores (double-toast + عدم قابلية الاختبار) + نقل ConfirmationProvider إلى contexts/ + فك coupling returnCartStore→posCartStore عبر utils/pricing.ts
-  - AUDIT-SEC-1: إغلاق generic add/update/deleteDocument (أي cashier يستطيع كتابة balance مباشرة — مرتبط بـ BUG-P0-2 Accepted Risk) + توحيد validation (processPurchase/SupplierReturn بلا فحص سعر/كمية)
+  - AUDIT-SEC-1: إغلاق generic add/update/deleteDocument (أي cashier يستطيع كتابة balance مباشرة — مرتبط بـ BUG-P0-2 Accepted Risk) + توحيد validation: تحقق الشكل موجود فعلًا عبر REQ-SEC1-9 في processPurchase/processSupplierReturn (وجود المنتج، كمية >0، سعر ≥0) — المتبقي فقط غياب التقاطع الكتالوجي (انظر بند PURCHASE-PRICE-REF المعلّق أعلاه).
   - AUDIT-SEC-2: إزالة cleartext:true + allowMixedContent:true من capacitor.config.ts + نقل seed scripts من argv إلى env + إصلاح deleteUser اليتيم (يحذف doc ويترك Auth account)
   - AUDIT-PERF-1: حدود limit للـ listeners غير المقيدة (Reports/Returns/Account pages) + مراجعة backup/deleteCollection غير المحدودة مقابل quota Spark
   - AUDIT-TEST-1: تغطية RBAC (users/appSettings/categories/dailyArchives) + backup/restore + price-floor + AuthContext/offline + إضافة coverage و lint/typecheck scripts
-  - AUDIT-TX-1 (اتساق صغير — توثيق أو إصلاح): توحيد runTransactionWithRetry على processReturn/processSupplierReturn/addCustomerPayment/addSupplierPayment — حاليًا فقط processSale/processPurchase يستخدمانها (مبرر محتمل: الأخيران فقط يلمسان counters، لكن القرار غير موثق)
+  - AUDIT-TX-1 (اتساق صغير — توثيق أو إصلاح): توحيد runTransactionWithRetry — processReturn/processSupplierReturn يستخدمانها فعلًا (services/api.ts:715/802)؛ المتبقي فقط addCustomerPayment/addSupplierPayment على runTransaction عادي بلا الغلاف (مبرر محتمل: الأخيران لا يلمسان counters، لكن القرار غير موثق) — تصحيح 2026-09-27 (الادعاء السابق كان معكوسًا جزئيًا).
 
 ## Deferred / Accepted Risk (Owner Decision)
 - REQ-P0-2 — تضييق صلاحيات RBAC على مستوى الحقول — Partially mitigated (Phase 0 live 2026-09-16: تجميد openingBalance + حواجز amount/total — Ref: tests/balanceOpeningFreeze.test.ts) — قفل balance الكامل عبر Functions/Blaze: Declined — Owner Decision (Ahmed, 2026-09-16) — لا يُعاد فتحه إلا بقرار مالك جديد مكتوب.
