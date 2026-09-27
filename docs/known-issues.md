@@ -225,6 +225,11 @@ Root Cause: قالب الـ REQ كان يطلب tsc/build/git diff فقط كأد
 Fix: إضافة قاعدة دائمة جديدة لقالب REQ (موثّقة في docs/req-template.md) — أي REQ يلمس firestore.rules يجب أن يحتوي AC إضافي يطلب تشغيل `firebase deploy --only firestore:rules` ولصق مخرجاته كدليل، ولا يُعتبر مكتملًا حتى يتم تأكيد النشر الحي.
 Status: Closed — Deployment gap resolved 2026-09-12
 
+INC-2026-09-27 — تعديل قواعدي لم يُطبَّق بصمت رغم تصريح نجاح (TECH-P0-1b)
+Incident: تعديل `allow update` في `match /invoices/{docId}` (استثناء `returnedQuantities`) أُبلغ عن نجاح تطبيقه، ثم فشلت 5 اختبارات برفض قواعدي — التحرّي أثبت بثلاث قراءات مستقلة (`git diff HEAD --stat` بلا القواعد + `findstr returnedQuantities` بلا نتيجة + النطاق الخام 169-185 بقاعدة `isAdmin()` الأصلية) أن التعديل لم يصل للقرص أصلًا. السبب التقني المرجّح: نص `oldString` متطابق في كتلتي `invoices` و`returns` — كان يجب أن يُرفض كـ"multiple matches".
+Fix (قاعدة دائمة): أي تعديل على `firestore.rules` تحديدًا يتطلب قراءة تحقق مستقلة فورية (أداة مختلفة: `findstr` أو نطاق PowerShell) تعرض النص على القرص فعليًا قبل أي خطوة تالية — رسالة نجاح أداة التعديل نفسها ليست دليلًا. طُبّقت القاعدة فورًا: أُعيد التطبيق بنص مثبّت الكتلة (`match /invoices` + سطر `sell`) وتُحقق منه بقراءتين قبل تشغيل أي تست.
+Status: Closed — rule verified on disk (175-180) + suite 361/361 (2026-09-27)
+
 ## PERM-2026-09 — Known Issues (2026-09-21)
 
 - **حسابات بلا `role` لا تُعطَّل/تُحذف من `/users`:** الواجهة تخفي أزرار التعطيل/الحذف للحساب بلا دور صالح — الإجراء الوحيد عبر Console (Firestore + Auth) — لا أثر تشغيلي (Default-deny).

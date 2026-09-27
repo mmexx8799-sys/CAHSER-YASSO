@@ -429,3 +429,103 @@ describe('REQ-DOCNUM-1: sequential return numbers (RET-xxxxxx)', () => {
     expect(numbered.invoiceNumber || numbered.returnNumber || numbered.id.slice(0, 6).toUpperCase()).toBe('RET-000007');
   });
 });
+
+// --- TECH-P0-1b: linked-return TOCTOU race closed by atomic returnedQuantities --
+// Pre-fix, the remaining-quantity check read prior returns via getDocs() OUTSIDE
+// the transaction: two same-tick linked returns both passed and double-committed.
+// Now the check reads max(priorMap, invoice.returnedQuantities) and the winner's
+// commit bumps the field on the invoice doc — the loser aborts on the invoice
+// write conflict, retries with a fresh field read, and rejects correctly.
+
+describe('TECH-P0-1b: concurrent linked returns serialize on the invoice doc', () => {
+  it('same-tick 6+6 linked on qty-10 invoice → 1 success + 1 reject, field == 6', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await seedFixtures(ctx, { invoiceItems: [{ id: 'prod-1', qty: 10 }] });
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    const results = await Promise.allSettled([
+      processReturn(makeRawCart(6), '2026-09-13', undefined, 'inv-1'),
+      processReturn(makeRawCart(6), '2026-09-13', undefined, 'inv-1'),
+    ]);
+    const ok = results.filter((r) => r.status === 'fulfilled');
+    const bad = results.filter((r) => r.status === 'rejected');
+    expect(ok.length).toBe(1);
+    expect(bad.length).toBe(1);
+    expect(String((bad[0] as PromiseRejectedResult).reason?.message ?? '')).toMatch(/تتجاوز|المتبقي/);
+
+    // Atomic field tracks exactly the committed return — no double count.
+    const invSnap = await getDoc(doc(db, 'invoices', 'inv-1'));
+    expect((invSnap.data() as any).returnedQuantities).toEqual({ 'prod-1': 6 });
+
+    const linked = (await getDocs(collection(db, 'returns'))).docs.filter(
+      (d) => (d.data() as any).originalInvoiceId === 'inv-1',
+    );
+    expect(linked.length).toBe(1);
+
+    // Stock inflated by 6 only (50 → 56), not 12; archive sees one return.
+    expect(((await getDoc(doc(db, 'products', 'prod-1'))).data() as any).quantity).toBe(56);
+    expect(((await getDoc(doc(db, 'dailyArchives', '2026-09-13'))).data() as any).totalReturns).toBe(600);
+  });
+
+  it('same-tick 4+4 linked on qty-10 invoice → both succeed, field == 8', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await seedFixtures(ctx, { invoiceItems: [{ id: 'prod-1', qty: 10 }] });
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    const results = await Promise.allSettled([
+      processReturn(makeRawCart(4), '2026-09-13', undefined, 'inv-1'),
+      processReturn(makeRawCart(4), '2026-09-13', undefined, 'inv-1'),
+    ]);
+    expect(results.filter((r) => r.status === 'fulfilled').length).toBe(2);
+
+    const invSnap = await getDoc(doc(db, 'invoices', 'inv-1'));
+    expect((invSnap.data() as any).returnedQuantities).toEqual({ 'prod-1': 8 });
+
+    const linked = (await getDocs(collection(db, 'returns'))).docs.filter(
+      (d) => (d.data() as any).originalInvoiceId === 'inv-1',
+    );
+    expect(linked.length).toBe(2);
+    expect(((await getDoc(doc(db, 'products', 'prod-1'))).data() as any).quantity).toBe(58);
+    expect(((await getDoc(doc(db, 'dailyArchives', '2026-09-13'))).data() as any).totalReturns).toBe(800);
+  });
+
+  it('legacy floor: directly-seeded prior return (no field) still counts via priorMap', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await seedFixtures(ctx, { invoiceItems: [{ id: 'prod-1', qty: 10 }] });
+      // Legacy return written before the field existed — invisible to it.
+      await setDoc(doc(db, 'returns', 'prior-legacy-1'), {
+        items: makeRawCart(4),
+        total: 400,
+        originalInvoiceId: 'inv-1',
+        dailyArchiveId: '2026-09-13',
+        createdAt: Date.now(),
+      } as any);
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    // Remaining is 6 (10 − legacy 4): 7 rejected, 6 accepted.
+    await expect(processReturn(makeRawCart(7), '2026-09-13', undefined, 'inv-1')).rejects.toThrow(/تتجاوز|المتبقي/);
+    await processReturn(makeRawCart(6), '2026-09-13', undefined, 'inv-1');
+
+    // Field holds the TRUE cumulative total (legacy 4 + new 6 = 10) — it heals
+    // the legacy gap automatically instead of freezing a partial number.
+    const invSnap = await getDoc(doc(db, 'invoices', 'inv-1'));
+    expect((invSnap.data() as any).returnedQuantities).toEqual({ 'prod-1': 10 });
+    const linked = (await getDocs(collection(db, 'returns'))).docs.filter(
+      (d) => (d.data() as any).originalInvoiceId === 'inv-1',
+    );
+    expect(linked.length).toBe(2);
+  });
+});

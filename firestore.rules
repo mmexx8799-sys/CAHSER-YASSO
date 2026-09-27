@@ -171,7 +171,13 @@ service cloud.firestore {
       allow create: if hasCap('sell', ['owner', 'admin', 'supervisor', 'cashier'])
         && request.resource.data.total >= 0;
       allow update: if isAdmin()
-        && request.resource.data.total >= 0;
+        && request.resource.data.total >= 0
+        // TECH-P0-1b: كتابة staff الوحيدة المسموحة على الفواتير — حقل عدّاد
+        // المرتجعات الذي تكتبه processReturn داخل نفس transaction الفحص
+        // (التضارب على المستند يُسلسل الفحص). hasOnly يغطي حتى تحديث no-op.
+        || (hasCap('return', ['owner', 'admin', 'supervisor', 'cashier'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['returnedQuantities'])
+          && request.resource.data.get('returnedQuantities', {}) is map);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 

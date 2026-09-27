@@ -130,6 +130,7 @@ export interface Invoice {
   customerName?: string; // Denormalized for faster report display
   createdAt: number;
   dailyArchiveId: string;
+  returnedQuantities?: Record<string, number>; // TECH-P0-1b: item.id → إجمالي المرتجع (اختياري للموروث)
 }
 
 export interface Return {

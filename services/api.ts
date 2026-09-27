@@ -1099,6 +1099,11 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
             const productRefs = items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
+            // TECH-P0-1b: خريطة التراكم الذري — تُبنى في كتلة الفحص أدناه وتُكتب
+            // في PHASE 2. داخل closure المحاولة فيُعاد بناؤها من الصفر مع كل
+            // إعادة تشغيل بعد ABORTED — لا تراكم قديم أبدًا.
+            let pendingRQ: Record<string, number> | null = null;
+
             // REQ-DOCNUM-1: قراءة عدّاد المرتجعات (atomic — نفس الـ transaction، ما زلنا في مرحلة القراءات)
             const counterRef = doc(db, 'counters', 'returns');
             const counterDoc = await transaction.get(counterRef);
@@ -1130,12 +1135,18 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
                 }
                 // حساب الكميات المرتجعة سابقًا لنفس الفاتورة — محسوب قبل الـ transaction (BUG-P0-1 خيار A)
                 // فحص فوري للكمية المتبقية لكل صنف (BR-1: لا يتجاوز المجموع الكمية الأصلية)
+                // TECH-P0-1b: max(الأرضية القديمة priorMap، الحقل الذري) — الموروث
+                // بلا حقل يُغطّيه priorMap، والجديد يُغطّيه الحقل.
+                pendingRQ = {};
                 for (const item of items) {
                     const invItem = (invoiceData.items || []).find((i: CartItem) => i.id === item.id);
                     if (!invItem) {
                         throw new Error(`الصنف ${item.name || item.id} غير موجود في الفاتورة الأصلية`);
                     }
-                    const alreadyReturned = priorMap.get(item.id) || 0;
+                    const alreadyReturned = Math.max(
+                        priorMap.get(item.id) || 0,
+                        ((invoiceData.returnedQuantities || {})[item.id]) || 0,
+                    );
                     const remaining = (invItem.buyQuantity || 0) - alreadyReturned;
                     if (remaining <= 0) {
                         throw new Error(`الصنف ${item.name} لا يوجد له كمية متبقية للإرجاع في الفاتورة الأصلية`);
@@ -1143,6 +1154,7 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
                     if (item.buyQuantity > remaining) {
                         throw new Error(`كمية الإرجاع للصنف ${item.name} (${item.buyQuantity}) تتجاوز المتبقي (${remaining}) في الفاتورة الأصلية`);
                     }
+                    pendingRQ[item.id] = alreadyReturned + item.buyQuantity;
                 }
             }
 
@@ -1176,6 +1188,13 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
                 ...(linkedInvoiceId && { originalInvoiceId: linkedInvoiceId }),
             };
             transaction.set(returnRef, newReturn);
+            // TECH-P0-1b: كتابة الحقل الذري — التضارب على مستند الفاتورة هو ما
+            // يُسلسل الفحص: الخاسر يُجهَض فيعيد الـSDK (ثم الغلاف) التشغيل بقراءة
+            // حقل طازجة فيُقبل/يُرفض بشكل صحيح — الرفض plain Error بلا .code
+            // فلا إعادة محاولة له (نمط E-4).
+            if (linkedInvoiceId && pendingRQ) {
+                transaction.update(doc(db, 'invoices', linkedInvoiceId), { returnedQuantities: pendingRQ });
+            }
 
             items.forEach((item, idx) => {
                 const productDoc = productDocs[idx];

@@ -82,3 +82,36 @@ describe('Ledger immutability — non-admin cannot update ledger docs (SR-05)', 
     await assertSucceeds(deleteDoc(doc(dbOwner, 'invoices', 'inv-del-ledger')));
   });
 });
+
+// TECH-P0-1b — narrow staff exception: return-cap holders may update ONLY
+// returnedQuantities on invoices (the atomic counter processReturn bumps inside
+// its own transaction). Everything else on the doc stays admin-only.
+
+describe('TECH-P0-1b: invoices.returnedQuantities staff exception', () => {
+  it('cashier/supervisor single-key update succeeds; total/multi-key/non-map/accountant still denied', async () => {
+    await testEnv.clearFirestore();
+    await seedUser('cashier-rq', UserRole.Cashier);
+    await seedUser('sup-rq', UserRole.Supervisor);
+    await seedUser('acct-rq', UserRole.Accountant);
+    await seedDoc('invoices', 'inv-rq', { total: 1000, subtotal: 1000, items: [] });
+    const dbCash = testEnv.authenticatedContext('cashier-rq').firestore();
+    const dbSup = testEnv.authenticatedContext('sup-rq').firestore();
+    const dbAcct = testEnv.authenticatedContext('acct-rq').firestore();
+
+    // Single-key map update — the processReturn write shape — ALLOWED.
+    await assertSucceeds(updateDoc(doc(dbCash, 'invoices', 'inv-rq'), { returnedQuantities: { 'prod-1': 6 } }));
+    await assertSucceeds(updateDoc(doc(dbSup, 'invoices', 'inv-rq'), { returnedQuantities: { 'prod-1': 8 } }));
+
+    // Same key, non-map value — DENIED by the is-map guard.
+    await assertFails(updateDoc(doc(dbCash, 'invoices', 'inv-rq'), { returnedQuantities: 'x' } as any));
+
+    // Mixed with a ledger field — DENIED by hasOnly.
+    await assertFails(updateDoc(doc(dbCash, 'invoices', 'inv-rq'), { returnedQuantities: { 'prod-1': 1 }, total: 999 } as any));
+
+    // Plain total touch — DENIED (SR-05 intact).
+    await assertFails(updateDoc(doc(dbCash, 'invoices', 'inv-rq'), { total: 999 } as any));
+
+    // Accountant holds no return cap — DENIED even single-key.
+    await assertFails(updateDoc(doc(dbAcct, 'invoices', 'inv-rq'), { returnedQuantities: { 'prod-1': 1 } }));
+  });
+});
