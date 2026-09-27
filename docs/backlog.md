@@ -12,7 +12,7 @@
 ## Done — RBAC-2026-09 (REQ-RBAC-0…5) — 2026-09-19 → 2026-09-20 — base e24fe3e — tag pre-perm-2026-09 = e7771f2 → PERM-2026-09 وسّعت الصلاحيات
 - REQ-RBAC-0: قرارات المالك + خط الأساس + جرد المستخدمين (G0) — **Done 2026-09-19 (f179fd1)**
 - REQ-RBAC-1: طبقة القواعد — إضافات آمنة (roles + isStaff + ledger immutability + archive transitions + owner guard) — **Done 2026-09-19 (b926b6d) — معتمد فنيًا — فيتو AC-04 حُلّ بالجرد النهائي 2026-09-19 (known-issues.md:61-66)**
-- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — **Done 2026-09-19 (bc46c07)**
+- REQ-RBAC-2: مسار الكتابة — Preflight + fail-fast (restore/reset/addUser) — **Done 2026-09-19 (bc46c07)** — تصحيح 2026-09-27 (S-1): `addUser` لم يكن يحمل `assertCan` فعليًا (فقط فحص صحة الدور) — أُضيف `assertCan('users.manage')` بعد فحص الدور وقبل أي Auth (يمنع حساب Auth يتيمًا لغير المالك) — Ref: `tests/addUserGuards.test.ts` (2/2) — `test:rules` 352/352
 - REQ-RBAC-3: الواجهة — صلاحيات موحدة المصدر — **Done 2026-09-20 (d61c246)** — MATRIX 22 عضوًا في الأسطر 9-30 من utils/permissions.ts
 - REQ-RBAC-4: ترحيل الأدوار — تعيين المالك `izatadel007@gmail.com` — **Done 2026-09-20 (b1ebb4b)** — dry-run + rollback
 - REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق — **Done 2026-09-20 (e7771f2)** — `users` + حذف دفتري → owner-only — Live smoke B: **لا سجل في الدوكس — الحالة غير معروفة (بانتظار تأكيد المالك)**

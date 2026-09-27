@@ -133,6 +133,12 @@ export const addUser = withInFlightGuard(async (email: string, password: string,
     if (!Object.values(UserRole).includes(role)) {
         throw new Error("دور المستخدم غير صالح");
     }
+    // S-1: fail-fast على قدرة المتصل قبل إنشاء أي حساب Auth — users.manage حصري
+    // للمالك منذ R5. الترتيب مقصود: فحص الدور أولًا (اختبار restorePreflight
+    // 'addUser rejects invalid role' يعتمد عليه)، ثم القدرة. بدون هذا السطر كان
+    // غير المالك ينشئ حساب Auth يتيمًا (createUserWithEmailAndPassword ينجح) ثم
+    // يُرفض setDoc بقواعد Firestore — حساب بلا وثيقة دور.
+    await assertCan('users.manage');
     // A secondary app is used to create a user without signing out the current admin user.
     const tempApp = initializeApp(firebaseConfig, `secondary-auth-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
