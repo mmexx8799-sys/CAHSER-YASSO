@@ -277,3 +277,87 @@ describe('BUG-P0-15: counters rules — cashier still restricted, admin bypass d
     await assertFails(setDoc(doc(db, 'counters', 'probe-anon'), { lastNumber: 1 }));
   });
 });
+
+// --- REQ-DOCNUM-1: returns/supplierReturns counters ---------------------------
+// A v2 backup taken after returnNumber existed but before counters/returns
+// docs existed restores with NO returns counter docs at all (deleteCollection
+// wiped counters, backup had none of the new ids). Restore must reconcile to
+// max(live, highest restored RET-/SRET-) unconditionally (no schemaVersion gate).
+
+describe('REQ-DOCNUM-1: v2 backup without returns counters derives them from restored numbers', () => {
+  it('backup returns up to RET-000009/SRET-000004, no counter docs → live becomes 9/4', async () => {
+    await testEnv.clearFirestore();
+    await signInAdmin();
+
+    const backup = v1BackupSkeleton({
+      schemaVersion: 2,
+      counters: [{ id: 'invoices', lastNumber: 1 }],
+      returns: [
+        { id: 'ret-8', returnNumber: 'RET-000008', total: 100, createdAt: Date.now() },
+        { id: 'ret-9', returnNumber: 'RET-000009', total: 100, createdAt: Date.now() },
+      ],
+      supplierReturns: [
+        { id: 'sret-4', returnNumber: 'SRET-000004', total: 50, createdAt: Date.now() },
+      ],
+    } as any);
+    await restoreData(backup);
+
+    const db = getDB();
+    expect(await getCounter(db, 'returns')).toBe(9);
+    expect(await getCounter(db, 'supplierReturns')).toBe(4);
+  });
+
+  it('never moves returns counter backwards: backup counters returns=20 + docs max=9 → stays 20', async () => {
+    await testEnv.clearFirestore();
+    await signInAdmin();
+
+    // NOTE: v2 restores wipe + re-seed counters from the backup, so "live" at
+    // reconciliation time = the restored backup counters. A backup whose
+    // counters/returns doc (20) exceeds its own docs max (9) must keep 20.
+    const backup = v1BackupSkeleton({
+      schemaVersion: 2,
+      counters: [{ id: 'returns', lastNumber: 20 }],
+      returns: [
+        { id: 'ret-9', returnNumber: 'RET-000009', total: 100, createdAt: Date.now() },
+      ],
+    } as any);
+    await restoreData(backup);
+
+    expect(await getCounter(getDB(), 'returns')).toBe(20);
+  });
+
+  it('derived wins when higher: backup counters returns=3 + docs max=9 → becomes 9', async () => {
+    await testEnv.clearFirestore();
+    await signInAdmin();
+
+    const backup = v1BackupSkeleton({
+      schemaVersion: 2,
+      counters: [{ id: 'returns', lastNumber: 3 }],
+      returns: [
+        { id: 'ret-9', returnNumber: 'RET-000009', total: 100, createdAt: Date.now() },
+      ],
+    } as any);
+    await restoreData(backup);
+
+    expect(await getCounter(getDB(), 'returns')).toBe(9);
+  });
+});
+
+describe('REQ-DOCNUM-1: counters/{docId} generic rule covers returns + supplierReturns', () => {
+  it('cashier first-use create (lastNumber=1) succeeds; arbitrary jump rejected — no rule change', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await setDoc(doc(db, 'users', 'cashier-docnum'), { email: 'c@t.local', role: 'cashier' });
+      await setDoc(doc(db, 'counters', 'returns'), { lastNumber: 5 });
+    });
+
+    const cashierDb = testEnv.authenticatedContext('cashier-docnum').firestore();
+    // New doc id covered by the generic rule: first-use shape allowed…
+    await assertSucceeds(setDoc(doc(cashierDb, 'counters', 'supplierReturns'), { lastNumber: 1 }));
+    // …non-+1 write rejected.
+    await assertFails(updateDoc(doc(cashierDb, 'counters', 'returns'), { lastNumber: 999 }));
+    await assertSucceeds(updateDoc(doc(cashierDb, 'counters', 'returns'), { lastNumber: 6 }));
+    expect(await getCounter(cashierDb, 'returns')).toBe(6);
+  });
+});

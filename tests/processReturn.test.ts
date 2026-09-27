@@ -29,7 +29,7 @@ import {
 import type { Product, Invoice, DailyArchive, CartItem } from '../types';
 
 // tests/setup.ts already mocks react-hot-toast before this import.
-const { processReturn } = await import('../services/api');
+const { processReturn, processSupplierReturn } = await import('../services/api');
 const { getDB, getAuthInstance } = await import('../services/firebase');
 
 let testEnv: RulesTestEnvironment;
@@ -345,3 +345,87 @@ function makeRawCart(qty: number): CartItem[] {
     priceType: 'retail',
   } as CartItem];
 }
+
+// --- REQ-DOCNUM-1: sequential return numbering --------------------------------
+
+describe('REQ-DOCNUM-1: sequential return numbers (RET-xxxxxx)', () => {
+  it('two sequential returns → RET-000001 then RET-000002, no clash with invoices counter', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await seedFixtures(ctx);
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    await processReturn(makeRawCart(1), '2026-09-13');
+    await processReturn(makeRawCart(1), '2026-09-13');
+
+    const snap = await getDocs(collection(db, 'returns'));
+    const numbers = snap.docs.map((d) => (d.data() as any).returnNumber).sort();
+    expect(numbers).toEqual(['RET-000001', 'RET-000002']);
+
+    const counterSnap = await getDoc(doc(db, 'counters', 'returns'));
+    expect((counterSnap.data() as any).lastNumber).toBe(2);
+
+    // Invoices counter untouched by returns.
+    const invCounter = await getDoc(doc(db, 'counters', 'invoices'));
+    expect(invCounter.exists()).toBe(false);
+  });
+
+  it('N=10 concurrent returns → 10 unique sequential numbers via runTransactionWithRetry', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await seedFixtures(ctx);
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () => processReturn(makeRawCart(1), '2026-09-13'))
+    );
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    expect(ok).toBe(10);
+
+    const snap = await getDocs(collection(db, 'returns'));
+    const numbers = snap.docs.map((d) => (d.data() as any).returnNumber).filter(Boolean);
+    expect(numbers.length).toBe(10);
+    expect(new Set(numbers).size).toBe(10);
+    expect([...numbers].sort()).toEqual(
+      Array.from({ length: 10 }, (_, i) => `RET-${String(i + 1).padStart(6, '0')}`)
+    );
+  });
+
+  it('sequential supplier returns → SRET-000001 then SRET-000002', async () => {
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      await seedFixtures(ctx);
+      await setDoc(doc(db, 'suppliers', 'sup-1'), { name: 'مورد اختبار', balance: 0, createdAt: Date.now() } as any);
+    });
+    const uid = await signInTestUser();
+    await seedUserDocWithRulesDisabled(testEnv, uid);
+    const db = getDB();
+
+    await processSupplierReturn(makeRawCart(1), 'sup-1');
+    await processSupplierReturn(makeRawCart(1), 'sup-1');
+
+    const snap = await getDocs(collection(db, 'supplierReturns'));
+    const numbers = snap.docs.map((d) => (d.data() as any).returnNumber).sort();
+    expect(numbers).toEqual(['SRET-000001', 'SRET-000002']);
+
+    const counterSnap = await getDoc(doc(db, 'counters', 'supplierReturns'));
+    expect((counterSnap.data() as any).lastNumber).toBe(2);
+  });
+
+  it('display fallback: legacy doc without returnNumber falls back to id (no crash)', async () => {
+    // Pure parity check of the ReportsPage/InvoiceDetailModal priority expression:
+    // invoiceNumber || returnNumber || id.slice(0,6).toUpperCase()
+    const legacy: any = { id: 'abcdef123456' };
+    const shown = legacy.invoiceNumber || legacy.returnNumber || legacy.id.slice(0, 6).toUpperCase();
+    expect(shown).toBe('ABCDEF');
+    const numbered: any = { id: 'xyz', returnNumber: 'RET-000007' };
+    expect(numbered.invoiceNumber || numbered.returnNumber || numbered.id.slice(0, 6).toUpperCase()).toBe('RET-000007');
+  });
+});

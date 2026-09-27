@@ -34,9 +34,11 @@ export const InvoiceDetailModal: React.FC<{
     const isReturnTx = isReturn; // for totals coloring
 
     // Document number chip — monospace only here (legitimate use for reference code)
+    // REQ-DOCNUM-1: أولوية invoiceNumber → returnNumber → id (fallback للسجلات القديمة)
     const docNumber: string | null = (() => {
         if ('invoiceNumber' in transaction && (transaction as any).invoiceNumber) return (transaction as any).invoiceNumber as string;
-        // returns / supplierReturns: use id (shortened for display but full in chip title)
+        if ('returnNumber' in transaction && (transaction as any).returnNumber) return (transaction as any).returnNumber as string;
+        // returns / supplierReturns القديمة (بلا returnNumber): use id (shortened for display but full in chip title)
         return (transaction as any).id || null;
     })();
 

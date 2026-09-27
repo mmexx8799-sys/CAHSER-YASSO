@@ -142,7 +142,7 @@ export default function ReportsPage() {
                             <div className="flex items-center space-x-3 space-x-reverse">
                                 {isReturn ? <Undo2 className="text-red-500" size={18} aria-hidden="true" /> : <FileText className="text-blue-500" size={18} aria-hidden="true" />}
                                 <div>
-                                    <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">#{item.id.slice(0, 6).toUpperCase()}</span>
+                                    <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">#{((item as any).invoiceNumber || (item as any).returnNumber || item.id.slice(0, 6).toUpperCase())}</span>
                                     {'customerName' in item && <span className="text-xs text-gray-600 dark:text-gray-300 block">العميل: {item.customerName}</span>}
                                 </div>
                             </div>

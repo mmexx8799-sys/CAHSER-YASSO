@@ -809,6 +809,13 @@ export const processSupplierReturn = withInFlightGuard(async (items: CartItem[],
             const productRefs = items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
 
+            // REQ-DOCNUM-1: قراءة عدّاد مرتجعات المورد (atomic — نفس الـ transaction، ما زلنا في مرحلة القراءات)
+            const counterRef = doc(db, 'counters', 'supplierReturns');
+            const counterDoc = await transaction.get(counterRef);
+            const lastNumber = counterDoc.exists() ? (counterDoc.data().lastNumber || 0) : 0;
+            const newNumber = lastNumber + 1;
+            const generatedReturnNumber = `SRET-${String(newNumber).padStart(6, '0')}`;
+
             // REQ-SEC1-9: تحقق الكمية/السعر/الوجود/المخزون لأصناف مرتجع المورد
             // — قبل أي كتابة (نفس أسلوب processSale/processPurchase).
             items.forEach((item, idx) => {
@@ -829,12 +836,20 @@ export const processSupplierReturn = withInFlightGuard(async (items: CartItem[],
             });
 
             // --- PHASE 2: ALL WRITES ---
+            // REQ-DOCNUM-1: تحديث عدّاد مرتجعات المورد ذريًا مع باقي الكتابات (commit واحد)
+            if (counterDoc.exists()) {
+                transaction.update(counterRef, { lastNumber: newNumber });
+            } else {
+                transaction.set(counterRef, { lastNumber: newNumber });
+            }
+
             const currentBalance = supplierDoc.data().balance || 0;
             transaction.update(supplierRef, { balance: currentBalance - totalReturnAmount });
 
             const newReturn: Omit<SupplierReturn, 'id'> = {
                 items,
                 total: totalReturnAmount,
+                returnNumber: generatedReturnNumber,
                 supplierId,
                 supplierName,
                 createdAt: serverTimestamp() as unknown as number,
@@ -1064,7 +1079,7 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
     }
 
     try {
-        await runTransaction(db, async (transaction) => {
+        await runTransactionWithRetry('processReturn', async (transaction) => {
             const returnRef = doc(collection(db, 'returns'));
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
 
@@ -1077,6 +1092,13 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
 
             const productRefs = items.map(item => doc(db, 'products', item.id));
             const productDocs = await Promise.all(productRefs.map(ref => transaction.get(ref)));
+
+            // REQ-DOCNUM-1: قراءة عدّاد المرتجعات (atomic — نفس الـ transaction، ما زلنا في مرحلة القراءات)
+            const counterRef = doc(db, 'counters', 'returns');
+            const counterDoc = await transaction.get(counterRef);
+            const lastNumber = counterDoc.exists() ? (counterDoc.data().lastNumber || 0) : 0;
+            const newNumber = lastNumber + 1;
+            const generatedReturnNumber = `RET-${String(newNumber).padStart(6, '0')}`;
 
             let customerDoc: any = null;
             let customerRef: any = null;
@@ -1131,9 +1153,17 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
             });
 
             // --- PHASE 2: ALL WRITES ---
+            // REQ-DOCNUM-1: تحديث عدّاد المرتجعات ذريًا مع باقي الكتابات (commit واحد)
+            if (counterDoc.exists()) {
+                transaction.update(counterRef, { lastNumber: newNumber });
+            } else {
+                transaction.set(counterRef, { lastNumber: newNumber });
+            }
+
             const newReturn: Omit<Return, 'id'> = {
                 items,
                 total: totalReturnAmount,
+                returnNumber: generatedReturnNumber,
                 createdAt: serverTimestamp() as unknown as number,
                 dailyArchiveId,
                 ...(customer && { customerId: customer.id, customerName: customer.name }),
@@ -1245,7 +1275,7 @@ export const closeDailyArchive = withInFlightGuard(async (id: string) => {
 // restore wiped invoices but left counters at their live values (or a
 // factoryReset wiped counters while invoices were restored with existing
 // numbers) → duplicate invoiceNumbers after restore. Counters are tiny
-// (2 fixed docs: invoices, purchaseInvoices) so backup cost is negligible.
+// (4 fixed docs: invoices, purchaseInvoices, returns, supplierReturns) so backup cost is negligible.
 // RBAC-2026-09 R2 AC-03: ترتيب حذف fail-fast — المجموعات التي ستصبح owner-only في R5 أولًا، بحيث أي رفض قواعدي يقع في أول دفعة
 const BUSINESS_DATA_COLLECTIONS = [
     'dailyArchives',
@@ -1416,21 +1446,44 @@ export const restoreData = withInFlightGuard(async (backupData: any) => {
     // invoices exceed the live counter (e.g. live=10, backup up to
     // INV-000050) would produce INV-000011 next — a real duplicate.
     // Never move a counter backwards: final = max(live, derived).
+    // REQ-DOCNUM-1: maxNumbered معممة على اسم الحقل (invoiceNumber vs returnNumber).
+    const maxNumbered = (items: any[] | undefined, prefix: string, field = 'invoiceNumber'): number => {
+        let max = 0;
+        for (const item of items || []) {
+            const raw = item?.[field];
+            const match = typeof raw === 'string' ? raw.match(new RegExp(`^${prefix}-(\\d+)$`)) : null;
+            if (match) max = Math.max(max, parseInt(match[1], 10));
+        }
+        return max;
+    };
     if (backupData.schemaVersion === 1) {
-        const maxNumbered = (items: any[] | undefined, prefix: string): number => {
-            let max = 0;
-            for (const item of items || []) {
-                const raw = item?.invoiceNumber;
-                const match = typeof raw === 'string' ? raw.match(new RegExp(`^${prefix}-(\\d+)$`)) : null;
-                if (match) max = Math.max(max, parseInt(match[1], 10));
-            }
-            return max;
-        };
         const liveCountersSnap = await getDocs(collection(db, 'counters'));
         const live = new Map(liveCountersSnap.docs.map(d => [d.id, (d.data() as any)?.lastNumber || 0]));
         const targets: Record<string, number> = {
             invoices: Math.max(live.get('invoices') || 0, maxNumbered(backupData.invoices, 'INV')),
             purchaseInvoices: Math.max(live.get('purchaseInvoices') || 0, maxNumbered(backupData.purchaseInvoices, 'PUR')),
+        };
+        const counterBatch = writeBatch(db);
+        let hasCounterWrites = false;
+        for (const [counterId, lastNumber] of Object.entries(targets)) {
+            if (lastNumber > 0 && lastNumber !== (live.get(counterId) || 0)) {
+                counterBatch.set(doc(db, 'counters', counterId), { lastNumber });
+                hasCounterWrites = true;
+            }
+        }
+        if (hasCounterWrites) await counterBatch.commit();
+    }
+
+    // REQ-DOCNUM-1: توفيق عدادَي المرتجعات بلا شرط schemaVersion — دائمًا max(live, derived).
+    // السبب: نسخة v2 أُخذت بعد إدخال returnNumber لكن قبل وجود مستندَي counters/returns
+    // ستُستعاد بمجموعة counters ناقصة، فأول مرتجع بعدها سيبدأ من RET-000001 رغم وجود
+    // مرتجعات مُستعادة أعلى. المبدأ نفسه: لا يتراجع العداد للخلف أبدًا.
+    {
+        const liveCountersSnap = await getDocs(collection(db, 'counters'));
+        const live = new Map(liveCountersSnap.docs.map(d => [d.id, (d.data() as any)?.lastNumber || 0]));
+        const targets: Record<string, number> = {
+            returns: Math.max(live.get('returns') || 0, maxNumbered(backupData.returns, 'RET', 'returnNumber')),
+            supplierReturns: Math.max(live.get('supplierReturns') || 0, maxNumbered(backupData.supplierReturns, 'SRET', 'returnNumber')),
         };
         const counterBatch = writeBatch(db);
         let hasCounterWrites = false;

@@ -74,6 +74,7 @@ export interface PurchaseInvoice {
 
 export interface SupplierReturn {
   id: string;
+  returnNumber?: string; // REQ-DOCNUM-1: عداد تسلسلي SRET-xxxxxx (اختياري للتوافق مع السجلات القديمة)
   items: CartItem[];
   total: number;
   supplierId: string;
@@ -133,6 +134,7 @@ export interface Invoice {
 
 export interface Return {
     id: string;
+    returnNumber?: string; // REQ-DOCNUM-1: عداد تسلسلي RET-xxxxxx (اختياري للتوافق مع السجلات القديمة)
     items: CartItem[];
     total: number;
     createdAt: number; // serverTimestamp
