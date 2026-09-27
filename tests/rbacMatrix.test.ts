@@ -45,7 +45,10 @@ function opFor(cap: Capability): { col: string; id: string; data: any; kind: 'cr
     case 'supplier.ops': return { col: 'purchaseInvoices', id: 'pur-matrix', data: { total: 200, subtotal: 200, items: [] }, kind: 'create' };
     case 'customer.write': return { col: 'customers', id: 'cust-matrix', data: { name: 'عميل', balance: 0, openingBalance: 0, createdAt: Date.now() }, kind: 'create' };
     case 'supplier.write': return { col: 'suppliers', id: 'sup-matrix', data: { name: 'مورد', balance: 0, openingBalance: 0, createdAt: Date.now() }, kind: 'create' };
-    case 'product.create': return { col: 'products', id: 'prod-matrix', data: { name: 'منتج', code: 'C1', quantity: 5, price: 10, categoryId: 'cat1', searchableIndex: [] }, kind: 'create' };
+    // PPRICE-CREATE: zero price isolates the create-capability under test —
+    // nonzero prices for non-holders are denied by the price gate (covered in
+    // productsRules.test.ts), not by the capability matrix.
+    case 'product.create': return { col: 'products', id: 'prod-matrix', data: { name: 'منتج', code: 'C1', quantity: 5, price: 0, categoryId: 'cat1', searchableIndex: [] }, kind: 'create' };
     case 'product.price': return { col: 'products', id: 'prod-price', data: { price: 999 }, kind: 'update', seed: { name: 'منتج', code: 'C1', quantity: 5, price: 10, categoryId: 'cat1', searchableIndex: [] } };
     case 'product.delete': return { col: 'products', id: 'prod-del', data: {}, kind: 'delete', seed: { name: 'منتج', code: 'C1', quantity: 5, price: 10, categoryId: 'cat1', searchableIndex: [] } };
     case 'category.write': return { col: 'categories', id: 'cat-matrix', data: { name: 'تصنيف' }, kind: 'create' };

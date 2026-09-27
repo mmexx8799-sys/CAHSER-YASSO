@@ -25,6 +25,7 @@
 - **OFF1-2 — اختبار vitest لـassertOnline (مفتوح):** `assertOnline()` بلا تغطية آلية — مطلوب refactor يصدّر دالة داخلية بلا `MODE==='test'` bypass (مثل `assertOnlineCore(getDocFromServer, navigator)`) ثم اختبار vitest يمرر mock يحاكي `offline-timeout` و `unavailable` — لا يُنفذ الآن، يُسجل هنا فقط.
 - **PERM-2026-09 — تنظيف lint القديم (7 أخطاء 29671ff):** 5 أُصلحت فعلًا (`rbacEscalation: getDoc`, `rbacMatrix: expect/getDoc`, `restorePreflight: 2× empty block`) و2 سُكّتت بـ`eslint-disable` (`tests/migrateRoles.test.ts: @ts-nocheck` يبقى دينًا — الملف بلا فحص أنواع؛ `tests/permissionsRules.test.ts: outcome` — متغير تشخيصي) — لا أثر تشغيلي.
 - **PERM — رسالة اليومية عند permission-denied:** `POSPage/ReturnsPage: getOpenDailyArchive().catch` تتخطى `permission-denied` حاليًا بفحص نصي واسع — تُحسّن لفحص `hasRealUser/disabled` صريح.
+- **PPRICE-CREATE متمم — تحسين واجهة:** إخفاء حقول السعر عند "إضافة منتج جديد" لغير owner/admin (متمم لإغلاق ثغرة `products.create` — القاعدة تسمح حاليًا بسعر 0 لغير المخوّل كـAccepted Residual، والفورم يبعث الأصفار افتراضيًا).
 - **PERM — عرض السجل بالبريد بدل UID:** `components/PermissionEditorModal.tsx` يعرض `by/targetUid` كـUID خام — يُستبدل ببريد من `users` cache.
 - **PERM — قدرة `product.view`:** فصل عرض المنتجات عن إنشائها — حاليًا `product.create` يخفي التبويب كاملًا — Backlog.
 - **PERM — إشعار إصدار جديد:** **Done — أحيل إلى REQ-OFF1-3 (94619c8) — NewVersionBanner `registerType:'prompt'` + زر معطّل أثناء كتابة/أوفلاين**

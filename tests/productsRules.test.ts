@@ -2,8 +2,11 @@
 //
 // Rule under test (firestore.rules → match /products/{docId}):
 //   - read: any active user
-//   - create: active user AND quantity >= 0 (NO diff() check — a new doc has
-//     no "old" prices; split from update on purpose).
+//   - create: active user AND quantity >= 0 AND (product.price holder OR all
+//     five price fields absent-or-zero — PPRICE-CREATE, backlog:31: a new doc
+//     has no "old" prices so update-style diff() is impossible; get(f, 0)==0
+//     covers both absent and explicit-0, matching what ProductsPage always
+//     sends).
 //   - update: active user AND quantity >= 0 AND (admin OR every price field
 //     untouched: price, retailCashPrice, retailCreditPrice,
 //     wholesaleCashPrice, wholesaleCreditPrice).
@@ -170,26 +173,68 @@ describe('BUG-P0-3: cashier stock flow unaffected (AC-03)', () => {
   });
 });
 
-// --- AC-04: create path has no diff() crash -------------------------------------
+// --- AC-04: create path price gate (PPRICE-CREATE, backlog:31) ------------------
+// Non-price-holders (cashier/supervisor) may only create with absent-or-zero
+// prices; owner/admin keep a free price. (Pre-fix AC-04 asserted cashier could
+// create at price 80 — that assertion encoded the vulnerability itself.)
 
-describe('BUG-P0-3: product creation (AC-04)', () => {
-  it('AC-04: cashier can create a full new product (UI allows it — no admin gate)', async () => {
+function mkZeroPriceDoc(docPrice: number, quantity: number) {
+  return { ...mkProductDoc(docPrice, quantity) };
+}
+
+describe('PPRICE-CREATE: non-holder create with nonzero price rejected', () => {
+  it('cashier create with price 80 is rejected (was allowed pre-fix)', async () => {
     await testEnv.clearFirestore();
-    await seedActiveUser('cashier-p03e');
-    const db = testEnv.authenticatedContext('cashier-p03e').firestore();
+    await seedActiveUser('cashier-ppc1');
+    const db = testEnv.authenticatedContext('cashier-ppc1').firestore();
 
-    // Full shape as ProductsPage saves it (prices included) — must NOT crash
-    // on diff() against a non-existent doc.
-    await assertSucceeds(setDoc(doc(db, 'products', 'prod-p03-new'), mkProductDoc(80, 20)));
-    expect(await getPrice(db, 'prod-p03-new')).toBe(80);
+    await assertFails(setDoc(doc(db, 'products', 'prod-ppc-1'), mkProductDoc(80, 20)));
+    expect(await getPrice(db, 'prod-ppc-1')).toBeUndefined(); // nothing written
   });
 
-  it('AC-04: create with negative quantity is still rejected', async () => {
+  it('supervisor create with price 50 is rejected (second non-holder role)', async () => {
     await testEnv.clearFirestore();
-    await seedActiveUser('cashier-p03f');
-    const db = testEnv.authenticatedContext('cashier-p03f').firestore();
+    await seedActiveUser('sup-ppc1', 'supervisor');
+    const db = testEnv.authenticatedContext('sup-ppc1').firestore();
 
-    await assertFails(setDoc(doc(db, 'products', 'prod-p03-neg'), mkProductDoc(80, -3)));
+    await assertFails(setDoc(doc(db, 'products', 'prod-ppc-2'), mkProductDoc(50, 20)));
+    expect(await getPrice(db, 'prod-ppc-2')).toBeUndefined();
+  });
+
+  it('cashier create with all-zero prices succeeds (matches ProductsPage defaults)', async () => {
+    await testEnv.clearFirestore();
+    await seedActiveUser('cashier-ppc2');
+    const db = testEnv.authenticatedContext('cashier-ppc2').firestore();
+
+    await assertSucceeds(setDoc(doc(db, 'products', 'prod-ppc-3'), mkZeroPriceDoc(0, 20)));
+    expect(await getPrice(db, 'prod-ppc-3')).toBe(0);
+  });
+
+  it('cashier create with price keys absent succeeds (get(field, 0) treats missing as 0)', async () => {
+    await testEnv.clearFirestore();
+    await seedActiveUser('cashier-ppc3');
+    const db = testEnv.authenticatedContext('cashier-ppc3').firestore();
+
+    const noPrice: any = { ...mkProductDoc(0, 20) };
+    for (const f of ['price', 'retailCashPrice', 'retailCreditPrice', 'wholesaleCashPrice', 'wholesaleCreditPrice']) delete noPrice[f];
+    await assertSucceeds(setDoc(doc(db, 'products', 'prod-ppc-4'), noPrice));
+  });
+
+  it('owner create with free price succeeds (product.price holder, no extra gate)', async () => {
+    await testEnv.clearFirestore();
+    await seedActiveUser('owner-ppc1', 'owner');
+    const db = testEnv.authenticatedContext('owner-ppc1').firestore();
+
+    await assertSucceeds(setDoc(doc(db, 'products', 'prod-ppc-5'), mkProductDoc(80, 20)));
+    expect(await getPrice(db, 'prod-ppc-5')).toBe(80);
+  });
+
+  it('create with negative quantity is still rejected (zero prices isolate the quantity guard)', async () => {
+    await testEnv.clearFirestore();
+    await seedActiveUser('cashier-ppc4');
+    const db = testEnv.authenticatedContext('cashier-ppc4').firestore();
+
+    await assertFails(setDoc(doc(db, 'products', 'prod-ppc-neg'), mkProductDoc(0, -3)));
   });
 });
 

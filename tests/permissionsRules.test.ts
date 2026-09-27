@@ -49,7 +49,10 @@ async function doCapOp(db: any, cap: string): Promise<void> {
     case 'supplier.ops': await setDoc(doc(db, 'purchaseInvoices', 'p2-pur'), { total: 200, subtotal: 200, items: [] }); return;
     case 'customer.write': await setDoc(doc(db, 'customers', 'p2-cust'), { name: 'عميل', balance: 0, openingBalance: 0, createdAt: Date.now() }); return;
     case 'supplier.write': await setDoc(doc(db, 'suppliers', 'p2-sup'), { name: 'مورد', balance: 0, openingBalance: 0, createdAt: Date.now() }); return;
-    case 'product.create': await setDoc(doc(db, 'products', 'p2-prod'), { ...PROD_SEED }); return;
+    // PPRICE-CREATE: zero price isolates the create-capability under test —
+    // nonzero prices for non-holders are denied by the price gate (covered in
+    // productsRules.test.ts), not by the capability layer.
+    case 'product.create': await setDoc(doc(db, 'products', 'p2-prod'), { ...PROD_SEED, price: 0 }); return;
     case 'product.price': await updateDoc(doc(db, 'products', 'p2-price'), { price: 999 }); return;
     case 'product.delete': await deleteDoc(doc(db, 'products', 'p2-del')); return;
     case 'category.write': await setDoc(doc(db, 'categories', 'p2-cat'), { name: 'تصنيف' }); return;

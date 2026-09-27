@@ -46,6 +46,8 @@ let testEnv: RulesTestEnvironment;
 const PROJECT_ID = 'casher-yasoo'; // must match services/firebase.ts config
 const CASHIER_EMAIL = 'cashier-sec1@test.local'; // distinct from other test files
 const CASHIER_PASSWORD = 'secret123';
+const OWNER_EMAIL = 'owner-sec1@test.local'; // PPRICE-CREATE: privileged create path
+const OWNER_PASSWORD = 'secret123';
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
@@ -58,6 +60,11 @@ beforeAll(async () => {
   try { await firebaseSignOut(fbAuth); } catch { /* not signed in */ }
   try {
     await createUserWithEmailAndPassword(fbAuth, CASHIER_EMAIL, CASHIER_PASSWORD);
+  } catch (e: any) {
+    if (String(e?.code).indexOf('email-already-in-use') < 0) throw e;
+  }
+  try {
+    await createUserWithEmailAndPassword(fbAuth, OWNER_EMAIL, OWNER_PASSWORD);
   } catch (e: any) {
     if (String(e?.code).indexOf('email-already-in-use') < 0) throw e;
   }
@@ -78,6 +85,21 @@ async function signInCashier() {
   await testEnv.withSecurityRulesDisabled(async (ctx) => {
     const db = ctx.firestore();
     await setDoc(doc(db, 'users', uid), { email: CASHIER_EMAIL, role: 'cashier' });
+  });
+  return uid;
+}
+
+// PPRICE-CREATE: privileged (owner) service-level create path — saveProduct
+// uses the emulator-wired Firestore singleton only (no secondary Auth app),
+// so this is emulator-safe (unlike addUser's owner path).
+async function signInOwner() {
+  const fbAuth = getAuthInstance();
+  try { await firebaseSignOut(fbAuth); } catch { /* not signed in */ }
+  await signInWithEmailAndPassword(fbAuth, OWNER_EMAIL, OWNER_PASSWORD);
+  const uid = fbAuth.currentUser!.uid;
+  await testEnv.withSecurityRulesDisabled(async (ctx) => {
+    const db = ctx.firestore();
+    await setDoc(doc(db, 'users', uid), { email: OWNER_EMAIL, role: 'owner' });
   });
   return uid;
 }
@@ -147,7 +169,7 @@ describe('REQ-SEC1-7: saveProduct whitelist + validation', () => {
 
     const id = await saveProduct({
       code: 'SEC1-001', name: 'منتج حماية', categoryId: 'cat-1',
-      quantity: 10, price: 100, retailCashPrice: 100,
+      quantity: 10, price: 0, retailCashPrice: 0,
       buyQuantity: 999, balance: 99999,
     } as any);
     expect(typeof id).toBe('string');
@@ -175,5 +197,27 @@ describe('REQ-SEC1-7: saveProduct whitelist + validation', () => {
       code: 'SEC1-003', name: '   ', categoryId: 'cat-1',
       quantity: 5, price: 100,
     } as any)).rejects.toThrow(/مطلوب/);
+  });
+
+  // PPRICE-CREATE (backlog:31): service-level create enforces the rules price
+  // gate — cashier with a nonzero price is rejected; owner is not.
+  it('cashier saveProduct with nonzero price is rejected; owner succeeds', async () => {
+    await testEnv.clearFirestore();
+    await signInCashier();
+
+    await expect(saveProduct({
+      code: 'SEC1-004', name: 'منتج سعر ممنوع', categoryId: 'cat-1',
+      quantity: 10, price: 100, retailCashPrice: 100,
+    } as any)).rejects.toThrow(/Failed to save product/);
+
+    await testEnv.clearFirestore();
+    await signInOwner();
+
+    const id = await saveProduct({
+      code: 'SEC1-005', name: 'منتج مالك', categoryId: 'cat-1',
+      quantity: 10, price: 100, retailCashPrice: 100,
+    } as any);
+    expect(typeof id).toBe('string');
+    expect((await readDoc('products', id as string)).price).toBe(100);
   });
 });

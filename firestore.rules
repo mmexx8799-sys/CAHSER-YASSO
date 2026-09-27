@@ -120,7 +120,24 @@ service cloud.firestore {
     match /products/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('product.create', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.quantity >= 0;
+        && request.resource.data.quantity >= 0
+        // PPRICE-CREATE (backlog:31 — متمم BUG-P0-3 على create): من لا يملك
+        // product.price (owner/admin) لا يحدد سعرًا تعسفيًا عند الإنشاء —
+        // الحقول الخمسة إما غائبة أو == 0 (الفورم يبعثها 0 افتراضيًا دائمًا،
+        // وget(field, 0) يعامل الغائب كصفر في الحالتين). سعر 0 متعمد لغير
+        // المخوّل يبقى ممكنًا (Accepted Residual — يُغلق بإخفاء الحقول في
+        // الواجهة كبند backlog منفصل).
+        && (
+          hasCap('product.price', ['owner', 'admin'])
+          ||
+          (
+            request.resource.data.get('price', 0) == 0
+            && request.resource.data.get('retailCashPrice', 0) == 0
+            && request.resource.data.get('retailCreditPrice', 0) == 0
+            && request.resource.data.get('wholesaleCashPrice', 0) == 0
+            && request.resource.data.get('wholesaleCreditPrice', 0) == 0
+          )
+        );
       allow update: if isStaff()
         && request.resource.data.quantity >= 0
         && (
