@@ -273,3 +273,36 @@ Status: Closed — Deployment gap resolved 2026-09-12
 **فجوة معروفة متبقية (Accepted Risk):** تزامن مرتجعات **مربوطة بنفس الفاتورة الأصلية**
 (`originalInvoiceId`) لم يُختبر تحت حمل عالٍ — نفس نافذة `BUG-P0-1` خيار A، تمتد الآن
 لتشمل عداد `RET-`. مرتجعات غير مربوطة (unlinked) مختبرة تحت تزامن N=10 بنجاح.
+
+---
+
+### REQ-ARCHIVE-1 — ذرية startNewDailyArchive (مغلق 2026-09-27)
+
+**المشكلة (E-4):** `startNewDailyArchive` (`services/api.ts`) كانت قراءتين مستقلتين
+(`getOpenDailyArchive()` ثم `getDoc(archiveRef)`) ثم `setDoc` — فجوة زمنية حقيقية
+تسمح لنداء متزامن (ضغطة مزدوجة/جهازان لنفس المالك) بالكتابة فوق يومية بدأت للتو
+(فقد `startTime` الحقيقي).
+
+**الحل:**
+- فحص + إنشاء مستند *نفس اليوم* داخل `runTransactionWithRetry` (مرجع مباشر
+  `transaction.get(archiveRef)` في PHASE 1 ثم `transaction.set` في PHASE 2) —
+  نفس بنية `processSale`.
+- فحص "يومية مفتوحة" (`getOpenDailyArchive`) بقي `query` خارجيًا إجباريًا — قيد
+  firebase v10 (`transaction.get` يقبل `DocumentReference` فقط — سابقة `BUG-P0-1`
+  الموثقة عند `services/api.ts:1050`) — وآمن لأن المعرّف مشتق من التاريخ: أي
+  pre-check قديم (stale) يؤدي لمحاولة كتابة نفس `today-doc` فيصطدم بالفحص الذري
+  ويُرفض.
+- `runTransactionWithRetry` آمن هنا: خطأ العمل العربي `plain Error` بلا `.code`
+  فلا يُعاد إطلاقًا (يُرفض من أول مرة) — الغلاف يحمي فقط من أخطاء SDK العابرة.
+- صفر تغيير في الرسالتين العربيتين والقيمة المُرجعة للعميل؛ `closeDailyArchive`
+  وأي دالة أخرى لم تُمس. `getOpenDailyArchive` نفسها باقية (تُستخدم في
+  `POSPage.tsx:534` و`ReturnsPage.tsx:528` و`SettingsPage.tsx:272`).
+
+**التحقق:** `tests/dailyArchiveConcurrency.test.ts` (2/2 أخضر: تزامن same-tick →
+نجاح واحد + رفض واحد بـ"موجودة ومغلقة بالفعل"، `dailyArchives.size === 1`؛
++ انحدار المسار العادي بنفس النصوص حرفيًا) — `test:rules` كامل **350/350**
+(348 + 2) بلا رجوع — `tsc --noEmit` نظيف — الأدلة الخام (diff + grep) راجعها
+المالك قبل الإغلاق.
+
+**متبقٍ مقبول:** رفض كاذب عابر (liveness فقط) لو الـpre-check كان stale — يُحل
+بإعادة الضغط؛ لا احتمال lost update على الكتابة الفعلية.

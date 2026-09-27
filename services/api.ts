@@ -1221,6 +1221,11 @@ export const getOpenDailyArchive = async (): Promise<DailyArchive | null> => {
 
 export const startNewDailyArchive = withInFlightGuard(async (): Promise<DailyArchive> => {
     await assertOnline();
+    // E-4 (REQ-ARCHIVE-1): فحص "يومية مفتوحة" يبقى query خارجيًا إجباريًا —
+    // transaction.get() في firebase v10 يقبل DocumentReference فقط (نفس قيد BUG-P0-1
+    // الموثق عند processReturn)، فإدخال الـquery داخل الـtransaction سيعيد نفس الفشل.
+    // السلامة محفوظة رغم ذلك: المعرّف مشتق من التاريخ، فأي pre-check قديم (stale)
+    // يؤدي لمحاولة كتابة نفس today-doc، والفحص الذري داخل الـtransaction يرفضها.
     const openArchive = await getOpenDailyArchive();
     if (openArchive) {
         throw new Error(`لا يمكن بدء يومية جديدة. اليومية ${openArchive.id} ما زالت مفتوحة.`);
@@ -1228,11 +1233,6 @@ export const startNewDailyArchive = withInFlightGuard(async (): Promise<DailyArc
 
     const today = new Date().toISOString().split('T')[0];
     const archiveRef = doc(db, 'dailyArchives', today);
-    const docSnap = await getDoc(archiveRef);
-
-    if (docSnap.exists()) {
-        throw new Error(`يومية ${today} موجودة ومغلقة بالفعل. لا يمكن إعادة فتحها.`);
-    }
 
     const newArchiveForClient: Omit<DailyArchive, 'id' | 'endTime'> = {
         startTime: Date.now(),
@@ -1253,8 +1253,22 @@ export const startNewDailyArchive = withInFlightGuard(async (): Promise<DailyArc
         startTime: serverTimestamp(),
     };
 
-    await setDoc(archiveRef, newArchiveForFirestore);
-    return { id: today, ...newArchiveForClient };
+    // E-4: الجزء الحرج (فحص + إنشاء مستند نفس اليوم) داخل transaction واحدة —
+    // نداءان متزامنان لنفس today-doc: واحد ينجح والآخر يرى exists() فيُرفض،
+    // فلا كتابة فوق كتابة أبدًا. runTransactionWithRetry آمن هنا: خطأ العمل
+    // العربي plain Error بلا .code فلا يُعاد إطلاقًا (يُرفض من أول مرة)،
+    // والغلاف يحمي فقط من أخطاء SDK العابرة (aborted/unavailable/permission-denied).
+    return await runTransactionWithRetry('startNewDailyArchive', async (transaction) => {
+        // --- PHASE 1: READ (مرجع مباشر — متوافق مع قيود v10) ---
+        const docSnap = await transaction.get(archiveRef);
+        if (docSnap.exists()) {
+            throw new Error(`يومية ${today} موجودة ومغلقة بالفعل. لا يمكن إعادة فتحها.`);
+        }
+
+        // --- PHASE 2: WRITE ---
+        transaction.set(archiveRef, newArchiveForFirestore);
+        return { id: today, ...newArchiveForClient };
+    });
 });
 
 export const closeDailyArchive = withInFlightGuard(async (id: string) => {
