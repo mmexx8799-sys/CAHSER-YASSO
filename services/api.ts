@@ -62,44 +62,69 @@ export const isOfflineGuardError = (e: any): boolean =>
   !!e && (e instanceof OfflineGuardError || e?.code === 'offline-guard' || e?.name === 'OfflineGuardError');
 
 // OFFLINE-P1 D-O8 (أ): رفض فوري على مستوى الخدمة — أول سطر في كل دالة كتابة قبل أي await/Firestore
-async function assertOnline(): Promise<void> {
-  // تجاوز الحارس في بيئة الاختبار (vitest / emulator) — الاختبارات لا تختبر الأوفلاين هنا
-  const viteEnv = (import.meta as any).env || {};
-  if (viteEnv.MODE === 'test' || viteEnv.VITEST || (typeof process !== 'undefined' && (process as any).env?.VITEST)) return;
-  if (typeof navigator === 'undefined') return;
-  if (!navigator.onLine) {
-    throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
-  }
-  // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
-  // عند فشل ping الأول بـ offline-timeout فقط، أعد محاولة واحدة إضافية بنفس المهلة قبل الرفض
-  try {
-    const ping = getDocFromServer(doc(db, 'counters', 'invoices'));
-    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
-    await Promise.race([ping, timeout]);
-  } catch (e: any) {
-    if (String(e?.message || '').includes('offline-timeout')) {
-      try {
-        const ping2 = getDocFromServer(doc(db, 'counters', 'invoices'));
-        const timeout2 = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('offline-timeout')), 2000));
-        await Promise.race([ping2, timeout2]);
-      } catch (e2: any) {
-        const m2 = String(e2?.message || '').toLowerCase();
-        const c2 = String(e2?.code || '').toLowerCase();
-        if (m2.includes('offline-timeout') || c2.includes('unavailable') || c2.includes('network') || m2.includes('network') || m2.includes('offline') || !navigator.onLine) {
-          throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+export interface OnlineDeps {
+    /** بديل navigator.onLine — دالة تُستدعى طازجة عند كل فحص (3 نقاط قراءة)، لا قيمة مخزنة */
+    isOnline: () => boolean;
+    /** بديل getDocFromServer(counters/invoices) — قد ينجح أو يرفض أو يُعلَّق */
+    ping: () => Promise<unknown>;
+    /** بديل setTimeout — الإنتاج: مؤقت حقيقي؛ الاختبار: مؤقت فوري */
+    delay: (ms: number) => Promise<unknown>;
+    /** مهلة الـping — default 2000 (القيمة الحالية حرفيًا) */
+    timeoutMs?: number;
+}
+
+// OFF1-2: نواة الحارس القابلة للاختبار — نفس منطق assertOnline حرفيًا مع حقن
+// التبعيات. كل قراءة لـisOnline() نداء دالة حقيقي في لحظتها (الفحص الأولي +
+// شرطا الرفض في مساري الـcatch) — لا تخزين في متغير. ملاحظة موثقة لا إصلاح:
+// الـtimer الخاسر للسباق يرفض لاحقًا بلا handler — نفس السلوك الحالي حرفيًا.
+export async function assertOnlineCore(deps: OnlineDeps): Promise<void> {
+    const timeoutMs = deps.timeoutMs ?? 2000;
+    // مؤقت جديد طازج مع كل سباق (لا يُعاد استخدام مؤقت محلول — السباق الثاني
+    // يحتاج مهلة كاملة خاصة به).
+    const timeoutRacer = () => deps.delay(timeoutMs).then(() => {
+        throw new Error('offline-timeout');
+    });
+    if (!deps.isOnline()) {
+        throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+    }
+    // preflight خفيف (ج): getDocFromServer بمهلة 2s — يكشف Captive Portal حيث navigator.onLine true كاذب
+    // عند فشل ping الأول بـ offline-timeout فقط، أعد محاولة واحدة إضافية بنفس المهلة قبل الرفض
+    try {
+        await Promise.race([deps.ping(), timeoutRacer()]);
+    } catch (e: any) {
+        if (String(e?.message || '').includes('offline-timeout')) {
+            try {
+                await Promise.race([deps.ping(), timeoutRacer()]);
+            } catch (e2: any) {
+                const m2 = String(e2?.message || '').toLowerCase();
+                const c2 = String(e2?.code || '').toLowerCase();
+                if (m2.includes('offline-timeout') || c2.includes('unavailable') || c2.includes('network') || m2.includes('network') || m2.includes('offline') || !deps.isOnline()) {
+                    throw new OfflineGuardError("لا يوجد اتصال بالإنترنت — تحقق من الشبكة");
+                }
+                // permission-denied / not-found etc — treat as online, don't block
+            }
+            return;
         }
-        // permission-denied / not-found etc — treat as online, don't block
-      }
-      return;
+        // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين وترفض من أول مرة
+        const code = String(e?.code || '').toLowerCase();
+        const msg = String(e?.message || '').toLowerCase();
+        if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !deps.isOnline()) {
+            throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
+        }
+        // أخطاء أخرى (مثل permission-denied / not-found) تعني الاتصال موجود — لا تمنع الكتابة
     }
-    // أخطاء الشبكة الحقيقية (unavailable/network-request-failed) — تعامل كأوفلاين وترفض من أول مرة
-    const code = String(e?.code || '').toLowerCase();
-    const msg = String(e?.message || '').toLowerCase();
-    if (code.includes('unavailable') || code.includes('network') || msg.includes('network') || msg.includes('offline') || !navigator.onLine) {
-      throw new OfflineGuardError("أنت غير متصل بالإنترنت — لا يمكن إتمام العملية أوفلاين");
-    }
-    // أخطاء أخرى (مثل permission-denied / not-found) تعني الاتصال موجود — لا تمنع الكتابة
-  }
+}
+
+async function assertOnline(): Promise<void> {
+    // تجاوز الحارس في بيئة الاختبار (vitest / emulator) — الاختبارات لا تختبر الأوفلاين هنا
+    const viteEnv = (import.meta as any).env || {};
+    if (viteEnv.MODE === 'test' || viteEnv.VITEST || (typeof process !== 'undefined' && (process as any).env?.VITEST)) return;
+    if (typeof navigator === 'undefined') return;
+    await assertOnlineCore({
+        isOnline: () => navigator.onLine,
+        ping: () => getDocFromServer(doc(db, 'counters', 'invoices')),
+        delay: (ms) => new Promise((res) => setTimeout(res, ms)),
+    });
 }
 
 // --- App Settings API ---
