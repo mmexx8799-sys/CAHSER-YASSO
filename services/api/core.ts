@@ -8,13 +8,15 @@ import {
     doc,
     getDoc,
     getDocFromServer,
-    runTransaction
+    runTransaction,
+    deleteDoc
 } from "firebase/firestore";
 import { getDB } from '../firebase';
 import {
     getAuth
 } from "firebase/auth";
 import { can } from '../../utils/permissions';
+import { withInFlightGuard } from '../inflight';
 
 
 export const db = getDB();
@@ -171,3 +173,15 @@ export async function runTransactionWithRetry<T>(label: string, attemptFn: (tran
     }
     throw lastError;
 }
+
+// Generic function to delete a document
+export const deleteDocument = withInFlightGuard(async (collectionPath: string, id: string) => {
+    await assertOnline();
+    try {
+        await deleteDoc(doc(db, collectionPath, id));
+    } catch (e) {
+        if (isOfflineGuardError(e)) throw e;
+        console.error("Error deleting document: ", e);
+        throw new Error("Failed to delete document");
+    }
+});
