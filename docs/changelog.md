@@ -1,5 +1,8 @@
 # Changelog — Nour-Elrahman
 
+## Unreleased — ARCH-1 (2026-09-28)
+- **REQ-ARCH1-0 — النواة (core.ts):** استخراج `OfflineGuardError/isOfflineGuardError/OnlineDeps/assertOnlineCore/TxRetryInfo/runTransactionWithRetry/assertCan` + الداخليات المشتركة (`db/assertOnline/RETRYABLE_TX_CODES/sleepMs/getDefinedPrices/isPriceAccepted`) حرفيًا من `services/api.ts` (1633→1499 سطر) إلى `services/api/core.ts` الجديد — visibility-only (الستة الداخلية أصبحت مُصدَّرة بين الوحدات فقط، لا عبر البارل) — صفر تغيير منطقي — التحقق: `tsc` نظيف · `test:rules` **381/381** · `build` ناجح (api chunk ‏23.84kB مقابل 23.85kB أساس) · AC-07: مجموعة الـ41 اسمًا العامة مطابقة قبل/بعد · صفر لمس لـ`pages/`/`components/`/`tests/` — **Done 2026-09-28**
+
 ## Unreleased — OFFLINE-P1 (2026-09-21 → 2026-09-23) — **OFFLINE-P1 مكتمل**
 - **REQ-OFF1-0 — الأساس:** وسم `pre-offline-p1` على `1ab34cd` + قرارات D-O1…D-O8 — لا كود — **Done 2026-09-21**
 - **REQ-OFF1-1 — فتح أوفلاين:** التطبيق يفتح أوفلاين بعد زيارة واحدة (PWA) — لا صفحة ديناصور — تحديث `vite-plugin-pwa` مع مؤشر `أوفلاين` في الهيدر — **Done 2026-09-21**
