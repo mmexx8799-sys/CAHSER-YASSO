@@ -105,7 +105,8 @@ const ProductFormModal: React.FC<{
   product?: Product | null;
   categories: Category[];
   existingBarcodes: string[];
-}> = ({ isOpen, onClose, onSave, product, categories, existingBarcodes }) => {
+  canSetPrice: boolean;
+}> = ({ isOpen, onClose, onSave, product, categories, existingBarcodes, canSetPrice }) => {
   const { confirm } = useConfirmation();
   const initialFormState = {
     code: '',
@@ -269,6 +270,7 @@ const ProductFormModal: React.FC<{
             <label htmlFor="prodMinQuantity" className="block text-base font-medium mb-1 text-gray-700 dark:text-gray-300">الحد الأدنى للمخزون</label>
             <input id="prodMinQuantity" name="minQuantity" type="number" value={formData.minQuantity} onChange={handleChange} className="w-full p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md text-lg" min="0" />
           </div>
+          {canSetPrice && (
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
             <p className="text-base font-bold mb-3 text-gray-900 dark:text-gray-100">الأسعار</p>
             <div className="grid grid-cols-2 gap-4">
@@ -290,6 +292,10 @@ const ProductFormModal: React.FC<{
               </div>
             </div>
           </div>
+          )}
+          {!canSetPrice && !product && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">سيتم تحديد الأسعار بواسطة الإدارة.</p>
+          )}
           <div className="flex justify-end space-x-2 space-x-reverse pt-4">
             <button type="button" onClick={onClose} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md font-semibold text-lg">إلغاء</button>
             <button type="submit" className="py-2 px-4 bg-primary-600 text-white rounded-md font-semibold text-lg">حفظ</button>
@@ -679,7 +685,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <ProductFormModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} onSave={handleSaveProduct} product={editingProduct} categories={categories} existingBarcodes={existingBarcodes} />
+      <ProductFormModal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditingProduct(null); }} onSave={handleSaveProduct} product={editingProduct} categories={categories} existingBarcodes={existingBarcodes} canSetPrice={can('product.price')} />
       <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={() => setIsCategoryModalOpen(false)} categories={categories} />
       {sheetProducts && (
         <BarcodeLabelSheet products={sheetProducts} onClose={() => setSheetProducts(null)} />
