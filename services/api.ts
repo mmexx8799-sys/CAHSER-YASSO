@@ -971,7 +971,10 @@ function isPriceAccepted(submittedPrice: number, productData: any): boolean {
 const RETRYABLE_TX_CODES = ['permission-denied', 'aborted', 'unavailable'];
 const sleepMs = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction: any) => Promise<T>, maxAttempts = 4): Promise<T> {
+// E-5 load-test instrumentation (نمط OFF1-2/OnlineDeps): اختياري دائم، صفر أثر إنتاجي عند undefined.
+export type TxRetryInfo = { label: string; attempt: number; code: string; nextDelayMs: number };
+
+async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction: any) => Promise<T>, maxAttempts = 4, onRetry?: (info: TxRetryInfo) => void): Promise<T> {
     let lastError: any;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
@@ -979,9 +982,19 @@ async function runTransactionWithRetry<T>(label: string, attemptFn: (transaction
         } catch (error: any) {
             lastError = error;
             const retryable = RETRYABLE_TX_CODES.includes(String(error?.code || ''));
-            if (!retryable || attempt === maxAttempts) throw error;
-            // Jittered backoff 100–400ms to break herd collisions.
-            await sleepMs(100 + Math.floor(Math.random() * 300));
+            if (!retryable) throw error;
+            if (attempt === maxAttempts) {
+                // استنفاد retryable فقط يُوسم — أخطاء البيزنس (بلا .code) تخرج من الفرع أعلاه بلا وسم أبدًا.
+                (error as any)._txExhausted = true;
+                (error as any)._txAttempts = maxAttempts;
+                (error as any)._txLabel = label;
+                throw error;
+            }
+            // E-5: backoff أسّي مكبوت يكسر القطيع: min(150 * 2^(attempt-1), 1200) + [0,150)ms
+            // attempt=1 → ~150, 2 → ~300, 3 → ~600, 4+ → ~1200 (+jitter) — أسوأ حالة لـ7 محاولات ≈ 4-5s.
+            const nextDelayMs = Math.min(150 * 2 ** (attempt - 1), 1200) + Math.floor(Math.random() * 150);
+            if (onRetry) { try { onRetry({ label, attempt, code: String(error?.code || ''), nextDelayMs }); } catch { /* قياس فقط — لا يتدخل */ } }
+            await sleepMs(nextDelayMs);
         }
     }
     throw lastError;
@@ -1120,7 +1133,7 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
 // TEST-REG-P0-1 (tests/processReturn.test.ts) أثبت الانهيار هذا قبل الإصلاح.
 // الإصلاح (خيار A، قرار مالك المنتج 2026-09-13): نقل قراءة المرتجعات السابقة
 // إلى getDocs() عادية قبل بدء runTransaction — Atomicity خيار B مؤجل كـ TECH-P0-1b.
-export const processReturn = withInFlightGuard(async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string) => {
+export const processReturn = withInFlightGuard(async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string, __testOnRetry?: (info: TxRetryInfo) => void) => {
     await assertOnline();
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
@@ -1143,6 +1156,7 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
     }
 
     try {
+        // E-5: 7 = 1 + 6 إعادات — نطاق محدود على هذا المسار فقط، الافتراضي (4) يبقى للباقي.
         await runTransactionWithRetry('processReturn', async (transaction) => {
             const returnRef = doc(collection(db, 'returns'));
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
@@ -1276,12 +1290,25 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
                 updates.totalReturnsCash = (archiveDoc.data().totalReturnsCash || 0) + totalReturnAmount;
             }
             transaction.update(archiveRef, updates);
-        });
+        }, 7, __testOnRetry);
         toast.success('تمت عملية الإرجاع بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
         console.error("Error processing return:", error);
-        toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
+        if ((error as any)?._txExhausted === true) {
+            // BUG-P0-14c: تنافس العدّاد يظهر كـpermission-denied — لا يجوز تضليل
+            // كاشير مُعطَّل/ناقص الصلاحيات برسالة "زحمة".
+            const code = String((error as any)?.code || '');
+            if (code === 'aborted' || code === 'unavailable') {
+                toast.error('تعذر الإتمام بسبب زحمة متزامنة على نفس الفاتورة — حاول مجددًا.');
+            } else if (code === 'permission-denied') {
+                toast.error('تعذر الإتمام — حاول مجددًا، وإن تكرر راجع صلاحياتك.');
+            } else {
+                toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
+            }
+        } else {
+            toast.error(error.message || 'حدث خطأ أثناء عملية الإرجاع.');
+        }
         throw error;
     }
 });
