@@ -194,6 +194,12 @@ export const addUser = withInFlightGuard(async (email: string, password: string,
 });
 
 // FIX: Implement deleteUser to remove a user's role document from firestore.
+// AUDIT-SEC-2 (يتيم الحذف — موثق، بلا كود جديد عمدًا): يحذف users/{uid} فقط؛
+// حساب Auth يبقى حيًا (قيد Firebase client SDK — لا يقدر يحذف حساب مستخدم آخر).
+// اليتيم محروم فعليًا من كل شيء (لا وثيقة → assertCan والقواعد ترفض)، لكن إعادة
+// إضافة نفس البريد تصطدم بـemail-already-in-use. الإتمام اليدوي عبر
+// scripts/deleteAuthUser.mjs (Admin SDK + تأكيد تفاعلي). مقترح مستقبلي (UX فقط):
+// تحذير واجهة بعد الحذف يوجّه لتشغيل السكريبت — مسجل في backlog.
 export const deleteUser = async (uid: string) => {
     try {
         await deleteDocument('users', uid);
