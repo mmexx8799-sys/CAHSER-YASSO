@@ -32,6 +32,7 @@ import {
 } from "firebase/auth";
 import { can } from '../utils/permissions';
 import { withInFlightGuard } from './inflight';
+import { reportError } from './monitoring';
 
 
 const db = getDB();
@@ -1296,6 +1297,16 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
         if (isOfflineGuardError(error)) throw error;
         console.error("Error processing return:", error);
         if ((error as any)?._txExhausted === true) {
+            // E-5-MON: تسجيل الاستنفاد في clientErrors — fire-and-forget بلا await
+            // (فشله لا يغيّر الخطأ ولا الـtoast ولا زمن الرمي). الشكل يلتزم حارس
+            // القواعد الحالي (message/source فقط من المفاتيح الستة — بلا مفاتيح جديدة).
+            try {
+                const errAny = error as any;
+                reportError(
+                    new Error(`[TX_EXHAUSTED] label=processReturn code=${String(errAny?.code || 'unknown')} attempts=${Number(errAny?._txAttempts || 7)} invoice=${linkedInvoiceId || 'none'} ts=${Date.now()}`),
+                    { source: 'processReturn' },
+                );
+            } catch { /* التسجيل لا يتدخل إطلاقًا */ }
             // BUG-P0-14c: تنافس العدّاد يظهر كـpermission-denied — لا يجوز تضليل
             // كاشير مُعطَّل/ناقص الصلاحيات برسالة "زحمة".
             const code = String((error as any)?.code || '');
