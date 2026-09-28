@@ -734,12 +734,29 @@ export const addSupplierPayment = withInFlightGuard(async (payment: Omit<Supplie
     }
 });
 
+// PURCHASE-PRICE-REF: عتبة الانحراف ±40% (symmetric).
+// التقلب الطبيعي للموردين عادة <20%؛ أخطاء الإدخال (صفر زائد/ناقص، سعر بيع بدل شراء)
+// كلها >40% بفارق مريح. ثابت مسمى واحد قابل للضبط لاحقًا من قياس حي.
+export const PURCHASE_PRICE_DEVIATION_THRESHOLD = 0.4;
+
+// Pure وقابلة للاختبار بلا Firestore. الغائب/الصفر/غير الصالح = أول شراء → false (تأسيس بلا فحص).
+export function isPurchasePriceDeviated(
+    ref: unknown,
+    price: number,
+    threshold: number = PURCHASE_PRICE_DEVIATION_THRESHOLD,
+): boolean {
+    if (typeof ref !== 'number' || !Number.isFinite(ref) || ref <= 0) return false;
+    if (typeof price !== 'number' || !Number.isFinite(price)) return false;
+    return Math.abs(price - ref) / ref > threshold;
+}
+
 // Purchase invoice — increases product quantities + supplier.balance, records PurchaseInvoice
 export const processPurchase = withInFlightGuard(async (purchaseData: {
     items: CartItem[];
     subtotal: number;
     total: number;
     supplierId: string;
+    // ملاحظة مقصودة: لا options هنا — التأكيد شأن UI، والتوثيق شأن priceFlagged المحسوب أدناه.
 }) => {
     await assertOnline();
     try {
@@ -797,6 +814,14 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
                 transaction.set(purchaseCounterRef, { lastNumber: newPurchaseNumber });
             }
 
+            // PURCHASE-PRICE-REF: مصدر الحقيقة — من القراءات الطازجة داخل نفس الـtransaction.
+            const priceFlagged = purchaseData.items.some((item, idx) =>
+                isPurchasePriceDeviated(
+                    productDocs[idx].exists() ? (productDocs[idx].data() as any).lastPurchasePrice : undefined,
+                    item.price,
+                )
+            );
+
             const newPurchase: Omit<PurchaseInvoice, 'id'> = {
                 invoiceNumber: purchaseInvoiceNumber,
                 items: purchaseData.items,
@@ -804,6 +829,7 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
                 total: purchaseData.total,
                 supplierId: purchaseData.supplierId,
                 supplierName,
+                priceFlagged,
                 createdAt: serverTimestamp() as unknown as number,
             };
             transaction.set(purchaseRef, newPurchase);
@@ -813,7 +839,8 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
                 if (productDoc.exists()) {
                     const currentQuantity = productDoc.data().quantity || 0;
                     const newQuantity = currentQuantity + item.buyQuantity;
-                    transaction.update(productRefs[idx], { quantity: newQuantity });
+                    // ذري مع الفاتورة: المخزون + تحديث المرجع لسعر الشراء الحالي.
+                    transaction.update(productRefs[idx], { quantity: newQuantity, lastPurchasePrice: item.price });
                 }
             });
         });

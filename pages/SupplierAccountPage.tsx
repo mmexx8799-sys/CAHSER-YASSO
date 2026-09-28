@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, ShoppingCart, Undo2, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import type { Supplier, SupplierPayment, PurchaseInvoice, SupplierReturn, Product, Category } from '../types';
-import { addSupplierPayment, processPurchase, processSupplierReturn, isOfflineGuardError } from '../services/api';
+import { addSupplierPayment, processPurchase, processSupplierReturn, isOfflineGuardError, isPurchasePriceDeviated } from '../services/api';
 import { subscribeToCollection, subscribeToDocument } from '../services/dataCache';
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
@@ -852,7 +852,7 @@ const PurchaseModal: React.FC<{
             if (existing) {
                 return prev.map(i => i.product.id === product.id ? { ...i, buyQuantity: i.buyQuantity + 1 } : i);
             }
-            return [...prev, { product, buyQuantity: 1, price: product.price }];
+            return [...prev, { product, buyQuantity: 1, price: product.lastPurchasePrice ?? product.price }];
         });
     };
 
@@ -869,6 +869,17 @@ const PurchaseModal: React.FC<{
     };
 
     const subtotal = items.reduce((sum, i) => sum + i.price * i.buyQuantity, 0);
+
+    // PURCHASE-PRICE-REF: تحذير best-effort من الكاش الحي (الحكم النهائي للـtransaction في processPurchase).
+    const flaggedItems = items
+        .map(i => {
+            const ref = products.find(p => p.id === i.product.id)?.lastPurchasePrice ?? i.product.lastPurchasePrice;
+            if (typeof ref !== 'number' || !Number.isFinite(ref) || ref <= 0) return null;
+            if (!isPurchasePriceDeviated(ref, i.price)) return null;
+            const pct = Math.round(Math.abs(i.price - ref) / ref * 100);
+            return { id: i.product.id, name: i.product.name, ref, price: i.price, pct };
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null);
 
     const handleConfirmPurchase = async () => {
         if (items.length === 0) return;
@@ -1009,6 +1020,20 @@ const PurchaseModal: React.FC<{
                         <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
                             إجمالي الفاتورة <span className="font-bold">{subtotal.toFixed(2)} ج.م</span> هيتضاف على مديونية المورد "{supplier.name}" وكميات المخزون هتتحدث. متأكد؟
                         </p>
+                        {flaggedItems.length > 0 && (
+                            <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-400 dark:border-amber-600">
+                                <p className="font-bold text-amber-800 dark:text-amber-200 mb-2">
+                                    ⚠ تحذير سعر الشراء (انحراف &gt; 40% عن آخر سعر مسجّل) — التأكيد يعني الإتمام مع تعليم الفاتورة:
+                                </p>
+                                <ul className="list-disc pr-5 space-y-1 text-sm text-amber-900 dark:text-amber-100">
+                                    {flaggedItems.map(f => (
+                                        <li key={f.id}>
+                                            {f.name}: من {f.ref.toFixed(2)} إلى {f.price.toFixed(2)} ({f.pct}%)
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmationOpen(false)} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">إلغاء</button>
                             <button

@@ -23,6 +23,9 @@ export interface Product {
   createdAt: number;
   searchableIndex: string[];
   barcode?: string; // REQ-BARCODE: باركود داخلي اختياري (MKT…) منفصل عن code — لا Migration للبيانات القديمة
+  // PURCHASE-PRICE-REF: آخر سعر شراء مسجّل — يؤسَّس من أول فاتورة شراء ناجحة
+  // (الغائب = لم يُشترَ بعد → أول عملية تمر بلا فحص). يُكتب فقط من processPurchase.
+  lastPurchasePrice?: number;
 }
 
 export interface Customer {
@@ -70,6 +73,9 @@ export interface PurchaseInvoice {
   supplierId: string;
   supplierName?: string;
   createdAt: number;
+  // PURCHASE-PRICE-REF: true لو أي صنف انحرف > العتبة عن مرجعه وقت التسجيل.
+  // تحذير مؤكد (مش رفض). الغائب في الفواتير القديمة = false حكمًا.
+  priceFlagged?: boolean;
 }
 
 export interface SupplierReturn {
