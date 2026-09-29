@@ -56,7 +56,7 @@ describe('statesToLists — cleaning no-effect', () => {
 
 describe('permissionAudit outside backup', () => {
   it('permissionAudit not in BUSINESS_DATA_COLLECTIONS', () => {
-    const apiText = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../services/api.ts'), 'utf8');
+    const apiText = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../services/api/backup.ts'), 'utf8');
     const m = apiText.match(/const BUSINESS_DATA_COLLECTIONS = \[([\s\S]*?)\] as const/);
     expect(m).not.toBeNull();
     expect(m![1]).not.toContain('permissionAudit');
