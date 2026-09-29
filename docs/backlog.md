@@ -18,8 +18,8 @@
 - REQ-RBAC-5: التشديد النهائي للمالك + الإغلاق — **Done 2026-09-20 (e7771f2)** — `users` + حذف دفتري → owner-only — Live smoke B: **لا سجل في الدوكس — الحالة غير معروفة (بانتظار تأكيد المالك)**
 - **تنبيه صريح:** REQ-P0-2 (قفل `balance` الكامل) **يبقى Declined بقرار المالك (Ahmed 2026-09-16 + تأكيد 2026-09-19)** — هذه الدورة RBAC لا تمسّ `balance`/الكميات/إجماليات اليومية؛ المحاسب فقط هو الممنوع من الكتابة. لا يُعاد فتحه إلا بقرار مالك مكتوب جديد (known-issues BUG-P0-2 + backlog:22).
 
-## In Progress (سابق — مغلق)
-- (لا يوجد — backlog النشط فارغ بعد REQ-UI-1b — نُقل إلى RBAC أعلاه)
+## In Progress — AUDIT-SEC-1 + AUDIT-TX-1 (2026-09-29)
+- **REQ-SEC1-A1 — Done 2026-09-29:** runtime allowlist في `addCustomer`/`addSupplier` (ستة حقول فقط) + `tests/customerSupplierAllowlist.test.ts` (5) — `tsc` نظيف · `test:rules` **386/386** (381 قديم بلا رجوع + 5 جديد) · برهان طفرة: إخفاء الإنتاج يُسقط 3/5 (drops-extra-keys ×2 + no-undefined) وينجح 2/5 (preserve + derivation).
 
 ## Backlog (by priority)
 - **PURCHASE-PRICE-REF — مرجع سعر الشراء الديناميكي (مغلق 2026-09-28 — ليس live-verified عمدًا):** حقل `Product.lastPurchasePrice` يؤسَّس من أول فاتورة شراء ناجحة بلا فحص؛ من الثانية `|new-ref|/ref > 40%` (ثابت `PURCHASE_PRICE_DEVIATION_THRESHOLD` + pure `isPurchasePriceDeviated`) → تحذير صريح بأسماء الأصناف (قديم/جديد/نسبة%) داخل مودال الشراء المحلي القائم، والتأكيد يُتمم الفاتورة مع تعليمها `priceFlagged: true` (تحذير مؤكد، مش رفض)؛ المرجع يتحدّث ذريًا مع كل فاتورة (`quantity + lastPurchasePrice` بنفس الـtransaction، والافتراضي في الإدخال = آخر سعر مسجّل) — لا تغيير في `firestore.rules` ولا `processSupplierReturn` (المرتجع ليس شراءً بقرار صريح) ولا `saveProduct` (whitelist تبقى مغلقة حتى لا يُزوَّر المرجع) إطلاقًا فلا نشر مطلوب (بنمط OFF1-2). التقارير لاحقًا: `purchaseInvoices where priceFlagged == true` (الغائب في القديم = false حكمًا). التحقق: `tsc` نظيف + `tests/purchasePriceRef.test.ts` (6: حدود ±40% الدقيقة + تأسيس بلا فحص + تعليم +50% مع تقدم المرجع + عدم تعليم +10% + توافق cashier/BUG-P0-3) + `test:rules` كامل **373/373** (367 قديم بلا رجوع + 6 جديد) (commit `e75c1ab`).

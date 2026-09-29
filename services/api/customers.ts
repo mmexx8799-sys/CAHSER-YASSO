@@ -93,8 +93,15 @@ export const addCustomer = withInFlightGuard(async (customerData: Omit<Customer,
     await assertOnline();
     try {
         const openingBalance = Number(customerData.balance) || 0;
+        // REQ-SEC1-A1 (AUDIT-SEC-1): runtime allowlist — ONLY these six keys
+        // reach Firestore. `id` / smuggled `createdAt` / `openingBalance` /
+        // any unknown key in `customerData` is dropped here. `?? ''` keeps
+        // the form contract (phone/address are always strings, never
+        // undefined) byte-identical to the old verbatim spread.
         const docRef = await addDoc(collection(db, 'customers'), {
-            ...customerData,
+            name: customerData.name,
+            phone: customerData.phone ?? '',
+            address: customerData.address ?? '',
             balance: openingBalance,
             openingBalance, // saved explicitly (0 when left empty) — never touched by any later operation
             createdAt: serverTimestamp(),
