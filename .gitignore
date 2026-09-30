@@ -44,3 +44,6 @@ vite.config.ts.timestamp-*.mjs
 
 # Firebase CLI local cache (hosting deploy metadata)
 .firebase/
+
+# Local scratch dir (agent working notes — never commit)
+.scratch/
