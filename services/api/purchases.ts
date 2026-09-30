@@ -29,8 +29,16 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
 }) => {
     await assertOnline();
     try {
+        // REQ-TX2-PURCHASE (AUDIT-TX-2): purchaseRef hoisted outside the
+        // callback so every attempt of one call addresses the SAME doc.
+        const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+
         await runTransactionWithRetry('processPurchase', async (transaction) => {
-            const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+            // Idempotency guard (READ phase): a retried attempt whose first
+            // commit succeeded server-side (response lost) finds its own doc
+            // and returns with NO writes.
+            const existingPur = await transaction.get(purchaseRef);
+            if (existingPur.exists()) return;
 
             // --- PHASE 1: ALL READS FIRST ---
             const supplierRef = doc(db, 'suppliers', purchaseData.supplierId);
