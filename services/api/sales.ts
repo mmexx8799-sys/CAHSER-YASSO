@@ -22,8 +22,16 @@ import {
 export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
     await assertOnline();
     try {
+        // REQ-TX2-SALE (AUDIT-TX-2): invoiceRef hoisted outside the callback
+        // so every attempt of one call addresses the SAME doc.
+        const invoiceRef = doc(collection(db, 'invoices'));
+
         await runTransactionWithRetry('processSale', async (transaction) => {
-            const invoiceRef = doc(collection(db, 'invoices'));
+            // Idempotency guard (READ phase): a retried attempt whose first
+            // commit succeeded server-side (response lost) finds its own doc
+            // and returns with NO writes — same value shape as line 129 below.
+            const existingInv = await transaction.get(invoiceRef);
+            if (existingInv.exists()) return invoiceRef.id;
 
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
             const customerRef = (invoiceData.paymentMethod === 'آجل' && invoiceData.customerId)
