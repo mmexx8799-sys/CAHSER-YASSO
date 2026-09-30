@@ -15,7 +15,6 @@ import {
     addDoc,
     updateDoc,
     serverTimestamp,
-    runTransaction,
 } from "firebase/firestore";
 import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore";
 import type { Supplier, SupplierPayment } from '../../types';
@@ -24,6 +23,7 @@ import { withInFlightGuard } from '../inflight';
 import {
     db,
     assertOnline,
+    runTransactionWithRetry,
     isOfflineGuardError,
 } from './core';
 
@@ -124,11 +124,17 @@ export const addSupplierPayment = withInFlightGuard(async (payment: Omit<Supplie
         const supplierRef = doc(db, "suppliers", payment.supplierId);
         const paymentRef = doc(collection(db, "supplierPayments"));
 
-        await runTransaction(db, async (transaction) => {
+        await runTransactionWithRetry('addSupplierPayment', async (transaction) => {
             const freshSupplierDoc = await transaction.get(supplierRef);
             if (!freshSupplierDoc.exists()) {
                 throw new Error("Supplier not found");
             }
+            // REQ-TX-1 OPTION A (Q6): idempotency guard — paymentRef is
+            // created outside the callback, so a retried attempt whose first
+            // commit succeeded server-side (response lost) becomes a no-op
+            // instead of deducting the balance a second time.
+            const existingPay = await transaction.get(paymentRef);
+            if (existingPay.exists()) return;
             const currentBalance = freshSupplierDoc.data().balance;
             const newBalance = currentBalance - payment.amount;
             transaction.update(supplierRef, { balance: newBalance });
