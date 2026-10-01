@@ -29,8 +29,16 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
 }) => {
     await assertOnline();
     try {
+        // REQ-TX2-PURCHASE (AUDIT-TX-2): purchaseRef hoisted outside the
+        // callback so every attempt of one call addresses the SAME doc.
+        const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+
         await runTransactionWithRetry('processPurchase', async (transaction) => {
-            const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+            // Idempotency guard (READ phase): a retried attempt whose first
+            // commit succeeded server-side (response lost) finds its own doc
+            // and returns with NO writes.
+            const existingPur = await transaction.get(purchaseRef);
+            if (existingPur.exists()) return;
 
             // --- PHASE 1: ALL READS FIRST ---
             const supplierRef = doc(db, 'suppliers', purchaseData.supplierId);
@@ -126,8 +134,17 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
 export const processSupplierReturn = withInFlightGuard(async (items: CartItem[], supplierId: string) => {
     await assertOnline();
     try {
+        // REQ-TX2-SUPRET (AUDIT-TX-2): returnRef hoisted outside the
+        // callback so every attempt of one call addresses the SAME doc.
+        const returnRef = doc(collection(db, 'supplierReturns'));
+
         await runTransactionWithRetry('processSupplierReturn', async (transaction) => {
-            const returnRef = doc(collection(db, 'supplierReturns'));
+            // Idempotency guard (READ phase, before the stock check below):
+            // a retried attempt whose first commit succeeded server-side
+            // (response lost) finds its own doc and returns with NO writes.
+            // The stock guard stays unchanged as the second line of defense.
+            const existingRet = await transaction.get(returnRef);
+            if (existingRet.exists()) return;
 
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
 
