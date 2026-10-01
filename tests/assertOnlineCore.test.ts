@@ -20,7 +20,7 @@ const MSG_A = /أنت غير متصل بالإنترنت/;
 const MSG_B = /تحقق من الشبكة/;
 
 // Immediate delay: timeouts win instantly, tests never wait real seconds.
-const immediateDelay = async (_ms: number) => {};
+const immediateDelay = async () => {};
 // Never-settling ping: simulates a hung network (Captive Portal blackhole).
 const hang = (): Promise<unknown> => new Promise(() => {});
 const failWith = (err: any): Promise<unknown> => Promise.reject(err);
