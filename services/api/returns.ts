@@ -56,9 +56,19 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
     }
 
     try {
+        // REQ-TX2-RETURN (AUDIT-TX-2): returnRef hoisted outside the
+        // callback so every attempt of one call addresses the SAME doc.
+        const returnRef = doc(collection(db, 'returns'));
+
         // E-5: 7 = 1 + 6 إعادات — نطاق محدود على هذا المسار فقط، الافتراضي (4) يبقى للباقي.
         await runTransactionWithRetry('processReturn', async (transaction) => {
-            const returnRef = doc(collection(db, 'returns'));
+            // Idempotency guard (READ phase, before every other read): a
+            // retried attempt whose first commit succeeded server-side
+            // (response lost) finds its own doc and returns with NO writes.
+            // The remaining-quantity check below stays unchanged.
+            const existingRet = await transaction.get(returnRef);
+            if (existingRet.exists()) return;
+
             const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
 
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
