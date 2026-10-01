@@ -263,4 +263,40 @@ describe('REQ-TX2-RETURN: return lost-commit is idempotent', () => {
     expect.soft(observed.stock).toBe(104);
     expect.soft(observed.counter).toBe(before + 1);
   });
+
+  it('unlinked-cash-no-customer: 2×12, no customer → 1 doc, stock 102, cash +24, onAccount 0, counter +1', async () => {
+    await testEnv.clearFirestore();
+    await seed('products', 'tx2r-cash-prod', mkProductDoc(100));
+    await seed('dailyArchives', 'tx2r-cash-day', mkArchiveDoc());
+    await signInCashier();
+    const before = await readCounter();
+
+    loseFirstResponse();
+    let threw: string | null = null;
+    try {
+      await processReturn([mkItem('tx2r-cash-prod', 2)], 'tx2r-cash-day');
+    } catch (e: any) {
+      threw = String(e?.message ?? e);
+    }
+
+    const arch = ((await getDoc(doc(getDB(), 'dailyArchives', 'tx2r-cash-day'))).data() as any);
+    const observed = {
+      attempts: runTxMock.mock.calls.length,
+      threw,
+      docs: (await getDocs(collection(getDB(), 'returns'))).size,
+      stock: ((await getDoc(doc(getDB(), 'products', 'tx2r-cash-prod'))).data() as any).quantity,
+      totalReturns: arch.totalReturns,
+      cash: arch.totalReturnsCash,
+      onAccount: arch.totalReturnsOnAccount,
+      counter: await readCounter(),
+    };
+    expect.soft(observed.attempts).toBe(2);
+    expect.soft(observed.threw).toBeNull();
+    expect.soft(observed.docs).toBe(1);
+    expect.soft(observed.stock).toBe(102);
+    expect.soft(observed.totalReturns).toBe(24);
+    expect.soft(observed.cash).toBe(24);
+    expect.soft(observed.onAccount).toBe(0);
+    expect.soft(observed.counter).toBe(before + 1);
+  });
 });
