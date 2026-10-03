@@ -22,6 +22,12 @@ import {
     isOfflineGuardError,
 } from './core';
 import type { TxRetryInfo } from './core';
+import {
+    docFingerprint,
+    fingerprintsEqual,
+    assertValidOpKey,
+    OpKeyMismatchError,
+} from './opKey';
 
 // Returns API — REQ-P0-1: يدعم ربط المرتجع بفاتورة أصلية مع فحص الكمية المتبقية
 // BUG-P0-1 ROOT CAUSE (للمراجع المستقل — يُحذف هذا السطر مع merge التعليقات):
@@ -33,7 +39,11 @@ import type { TxRetryInfo } from './core';
 // TEST-REG-P0-1 (tests/processReturn.test.ts) أثبت الانهيار هذا قبل الإصلاح.
 // الإصلاح (خيار A، قرار مالك المنتج 2026-09-13): نقل قراءة المرتجعات السابقة
 // إلى getDocs() عادية قبل بدء runTransaction — Atomicity خيار B مؤجل كـ TECH-P0-1b.
-export const processReturn = withInFlightGuard(async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string, __testOnRetry?: (info: TxRetryInfo) => void) => {
+export const processReturn = withInFlightGuard(async (items: CartItem[], dailyArchiveId: string, customer?: { id: string; name: string }, originalInvoiceId?: string, __testOnRetry?: (info: TxRetryInfo) => void, opts?: { opKey?: string }) => {
+    // TX3 key validation FIRST — pure sync check, before assertOnline() and
+    // before the pre-transaction getDocs(returnsQuery) below. Old callers
+    // send nothing (undefined → random-id path, unchanged).
+    assertValidOpKey(opts?.opKey);
     await assertOnline();
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
@@ -58,7 +68,24 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
     try {
         // REQ-TX2-RETURN (AUDIT-TX-2): returnRef hoisted outside the
         // callback so every attempt of one call addresses the SAME doc.
-        const returnRef = doc(collection(db, 'returns'));
+        // REQ-TX3-RETURN (AUDIT-TX-3): with a stable key the id is
+        // deterministic across re-presses; without one it stays random.
+        const opKey = opts?.opKey;
+        const returnRef = opKey
+            ? doc(db, 'returns', opKey)
+            : doc(collection(db, 'returns'));
+        // THE stored-total formula, hoisted VERBATIM from the write path
+        // below (was `items.reduce(...)` inside the callback): raw float
+        // sum, NO rounding. One value feeds BOTH the request fingerprint
+        // and the write — identical expression on identical inputs yields
+        // identical doubles, so a legitimate re-press can NEVER
+        // false-mismatch (worse than a duplicate). round2 inside
+        // buildFingerprint absorbs float repr dust at compare time.
+        const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+        // Fingerprint uses the NORMALIZED linkedInvoiceId (trimmed,
+        // '' → undefined — same value the write path stores), never the raw
+        // param; party = customer?.id ?? null.
+        const reqFp = docFingerprint({ items, total: totalReturnAmount, customerId: customer?.id }, 'customerId');
 
         // E-5: 7 = 1 + 6 إعادات — نطاق محدود على هذا المسار فقط، الافتراضي (4) يبقى للباقي.
         await runTransactionWithRetry('processReturn', async (transaction) => {
@@ -67,9 +94,21 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
             // (response lost) finds its own doc and returns with NO writes.
             // The remaining-quantity check below stays unchanged.
             const existingRet = await transaction.get(returnRef);
-            if (existingRet.exists()) return;
-
-            const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+            if (existingRet.exists()) {
+                // TX3 compare (still READ phase, before the counter read so a
+                // mismatch never consumes a number): fingerprint (pairs +
+                // total + customerId) PLUS the link fields, each
+                // null-normalized on BOTH sides.
+                const stored = existingRet.data() as any;
+                const docFp = docFingerprint(stored, 'customerId');
+                const linksMatch =
+                    (stored.originalInvoiceId ?? null) === (linkedInvoiceId ?? null) &&
+                    (stored.dailyArchiveId ?? null) === (dailyArchiveId ?? null);
+                if (!fingerprintsEqual(reqFp, docFp) || !linksMatch) {
+                    throw new OpKeyMismatchError();
+                }
+                return;
+            }
 
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
             const archiveRef = doc(db, 'dailyArchives', dailyArchiveId);
@@ -204,6 +243,11 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
         toast.success('تمت عملية الإرجاع بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
+        if (error instanceof OpKeyMismatchError) {
+            // Shown ONCE with its own Arabic text — never the generic toast.
+            toast.error(error.message);
+            throw error;
+        }
         console.error("Error processing return:", error);
         if ((error as any)?._txExhausted === true) {
             // E-5-MON: تسجيل الاستنفاد في clientErrors — fire-and-forget بلا await
