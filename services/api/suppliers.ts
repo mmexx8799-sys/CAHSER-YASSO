@@ -26,6 +26,12 @@ import {
     runTransactionWithRetry,
     isOfflineGuardError,
 } from './core';
+import {
+    assertValidOpKey,
+    docFingerprint,
+    fingerprintsEqual,
+    OpKeyMismatchError,
+} from './opKey';
 
 // REQ-SEC1-2 (AUDIT-SEC-1): profile-only supplier update. Same pattern as
 // updateCustomerProfile — {name, phone, address} EXPLICITLY, balance/
@@ -115,14 +121,28 @@ export const addSupplier = withInFlightGuard(async (supplierData: Omit<Supplier,
 });
 
 // Supplier payment — reduces supplier.balance (we paid, our debt decreased)
-export const addSupplierPayment = withInFlightGuard(async (payment: Omit<SupplierPayment, 'id' | 'date'>) => {
+export const addSupplierPayment = withInFlightGuard(async (payment: Omit<SupplierPayment, 'id' | 'date'> & { opKey?: string }) => {
+    // TX3 key validation FIRST — pure sync check, before the amount check
+    // and before assertOnline(). Old callers send no opKey (undefined →
+    // random-id path, unchanged).
+    assertValidOpKey(payment.opKey);
+    // TX3 (AUDIT-TX-3): opKey travels inside the payment object but is NEVER
+    // stored — paymentData (without it) is the only thing written.
+    const { opKey, ...paymentData } = payment;
     await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");
     }
     try {
         const supplierRef = doc(db, "suppliers", payment.supplierId);
-        const paymentRef = doc(collection(db, "supplierPayments"));
+        // REQ-TX3-PAYMENTS (AUDIT-TX-3): with a stable key the id is
+        // deterministic across re-presses; without one it stays random.
+        const paymentRef = opKey
+            ? doc(db, "supplierPayments", opKey)
+            : doc(collection(db, "supplierPayments"));
+        // Payment fingerprint = amount + party (total=amount, no items;
+        // `notes` is display-only and stays outside identity).
+        const reqFp = docFingerprint({ items: [], total: paymentData.amount, supplierId: paymentData.supplierId }, 'supplierId');
 
         await runTransactionWithRetry('addSupplierPayment', async (transaction) => {
             const freshSupplierDoc = await transaction.get(supplierRef);
@@ -134,16 +154,33 @@ export const addSupplierPayment = withInFlightGuard(async (payment: Omit<Supplie
             // commit succeeded server-side (response lost) becomes a no-op
             // instead of deducting the balance a second time.
             const existingPay = await transaction.get(paymentRef);
-            if (existingPay.exists()) return;
+            if (existingPay.exists()) {
+                // TX3 compare directly after the existence guard (read
+                // order above unchanged): stored doc vs request. Payment
+                // docs store the money value as `amount`, so it is mapped
+                // to the fingerprint's `total` slot on the stored side
+                // (request side passes total=amount) — same shape both ways.
+                const stored = existingPay.data() as any;
+                const docFp = docFingerprint({ ...stored, total: stored.amount }, 'supplierId');
+                if (!fingerprintsEqual(reqFp, docFp)) {
+                    throw new OpKeyMismatchError();
+                }
+                return;
+            }
             const currentBalance = freshSupplierDoc.data().balance;
             const newBalance = currentBalance - payment.amount;
             transaction.update(supplierRef, { balance: newBalance });
-            transaction.set(paymentRef, { ...payment, date: serverTimestamp() });
+            transaction.set(paymentRef, { ...paymentData, date: serverTimestamp() });
         });
 
         toast.success('تم تسجيل دفعة المورد بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
+        if (error instanceof OpKeyMismatchError) {
+            // Shown ONCE with its own Arabic text — never the generic toast.
+            toast.error(error.message);
+            throw error;
+        }
         console.error("Error adding supplier payment:", error);
         toast.error("حدث خطأ أثناء تسجيل دفعة المورد.");
         throw error;

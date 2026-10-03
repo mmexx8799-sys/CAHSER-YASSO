@@ -82,9 +82,10 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
         // false-mismatch (worse than a duplicate). round2 inside
         // buildFingerprint absorbs float repr dust at compare time.
         const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
-        // Fingerprint uses the NORMALIZED linkedInvoiceId (trimmed,
-        // '' → undefined — same value the write path stores), never the raw
-        // param; party = customer?.id ?? null.
+        // Request fingerprint = pairs + total + customerId (party).
+        // The NORMALIZED linkedInvoiceId (trimmed, '' → undefined — same
+        // value the write path stores) and dailyArchiveId are compared in
+        // linksMatch below, each null-normalized on both sides.
         const reqFp = docFingerprint({ items, total: totalReturnAmount, customerId: customer?.id }, 'customerId');
 
         // E-5: 7 = 1 + 6 إعادات — نطاق محدود على هذا المسار فقط، الافتراضي (4) يبقى للباقي.
