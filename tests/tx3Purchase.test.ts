@@ -65,6 +65,8 @@ const K_DEADLINE = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 const K_MISMATCH = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 const K_PAR = 'ffffffff-ffff-4fff-8fff-ffffffffffff';
 const K_SESS = '99999999-9999-4999-8999-999999999999';
+const K_DIFFSUP = '11111111-1111-4111-8111-111111111111';
+const K_DIFFPROD = '22222222-2222-4222-8222-222222222222';
 
 const MISMATCH_MSG = 'سُجّلت العملية مسبقًا بمحتوى مختلف، راجع آخر فاتورة';
 const PUR_OK_TOAST = 'تم تسجيل فاتورة الشراء بنجاح!';
@@ -324,5 +326,66 @@ describe('REQ-TX3-PURCHASE: stable key lost-commit is idempotent', () => {
     }
     expect.soft(String(thrown?.message ?? '')).toMatch('مفتاح العملية غير صالح');
     expect.soft(runTxMock).not.toHaveBeenCalled();
+  });
+
+  it('different-supplier-same-key: seeded supplier A, same items/total with supplier B → OpKeyMismatchError, nothing moves', async () => {
+    await testEnv.clearFirestore();
+    await seed('purchaseInvoices', K_DIFFSUP, {
+      items: [{ id: 'tx3p-prod', name: 'صنف', price: 50, buyQuantity: 2 }],
+      subtotal: 100, total: 100, supplierId: 'tx3p-supA',
+      invoiceNumber: 'PUR-000001', createdAt: Date.now(),
+    });
+    await signInAs(CASHIER_EMAIL, 'cashier');
+    const before = await readCounter();
+
+    let thrown: any = null;
+    try {
+      await processPurchase(mkPurchase('tx3p-supB'), { opKey: K_DIFFSUP } as any);
+    } catch (e) {
+      thrown = e;
+    }
+    expect.soft(thrown?.code).toBe('opkey-mismatch');
+    expect.soft(thrown?.message).toBe(MISMATCH_MSG);
+    // Business error: single attempt, no retry.
+    expect.soft(runTxMock.mock.calls.length).toBe(1);
+    // Fixed toast exactly once — never the generic failure copy.
+    expect.soft(toastErrorMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls[0][0]).toBe(MISMATCH_MSG);
+    expect.soft(toastErrorMock.mock.calls.map((c) => c[0])).not.toContain(PUR_FAIL_TOAST);
+    // Nothing moved: seeded doc keeps supplier A, counter untouched.
+    expect.soft(((await getDoc(doc(getDB(), 'purchaseInvoices', K_DIFFSUP))).data() as any).supplierId).toBe('tx3p-supA');
+    expect.soft(await readCounter()).toBe(before);
+    expect.soft(await countDocs()).toBe(1);
+  });
+
+  it('different-product-same-total-key: seeded X×1/100, call Y×1/100 same key → OpKeyMismatchError', async () => {
+    await testEnv.clearFirestore();
+    await seed('purchaseInvoices', K_DIFFPROD, {
+      items: [{ id: 'tx3p-prodX', name: 'صنف س', price: 100, buyQuantity: 1 }],
+      subtotal: 100, total: 100, supplierId: 'tx3p-sup',
+      invoiceNumber: 'PUR-000001', createdAt: Date.now(),
+    });
+    await signInAs(CASHIER_EMAIL, 'cashier');
+    const before = await readCounter();
+
+    let thrown: any = null;
+    try {
+      await processPurchase({
+        items: [{ id: 'tx3p-prodY', name: 'صنف ص', price: 100, buyQuantity: 1 }],
+        subtotal: 100, total: 100, supplierId: 'tx3p-sup',
+      } as any, { opKey: K_DIFFPROD } as any);
+    } catch (e) {
+      thrown = e;
+    }
+    expect.soft(thrown?.code).toBe('opkey-mismatch');
+    expect.soft(thrown?.message).toBe(MISMATCH_MSG);
+    expect.soft(runTxMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls[0][0]).toBe(MISMATCH_MSG);
+    expect.soft(toastErrorMock.mock.calls.map((c) => c[0])).not.toContain(PUR_FAIL_TOAST);
+    // Nothing moved: seeded doc keeps product X, counter untouched.
+    expect.soft(((await getDoc(doc(getDB(), 'purchaseInvoices', K_DIFFPROD))).data() as any).items[0].id).toBe('tx3p-prodX');
+    expect.soft(await readCounter()).toBe(before);
+    expect.soft(await countDocs()).toBe(1);
   });
 });
