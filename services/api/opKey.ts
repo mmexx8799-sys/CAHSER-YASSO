@@ -6,8 +6,9 @@
 export const OP_KEY_MISMATCH_CODE = 'opkey-mismatch';
 
 // UUID v4 (also matches crypto.randomUUID() output; never contains '/',
-// hence always a legal document id).
-const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// hence always a legal document id). Exported for REQ-UI-0 (TX3-UI key mint
+// validation) — additive export, no behavior change.
+export const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Fail fast on a malformed key BEFORE any Firestore contact. `undefined`
 // (old callers / old builds) passes through to the random-id path.

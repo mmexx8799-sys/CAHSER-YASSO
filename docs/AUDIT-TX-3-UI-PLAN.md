@@ -109,10 +109,14 @@ async function submitWithOpKey(
   إعادة رمي غيره) · `rotate(flow) → key` · `clear(flow)` (ذاكرة + جلسة، عند النجاح
   وعند عدم التطابق) · `forget(flow)` (ذاكرة فقط) · `sweep(now?)` (منتهي TTL فقط) ·
   `peek(flow)` (للتشخيص/الاختبار).
+- **قاعدة الإخفاق (ملزمة):** فشل `getRecordDoc` (رفض أو مهلة ~5 ثوانٍ) في مساري
+  (b)/(c) → `{aborted, reason:'lookup-failed'}` بلا إرسال وبلا مسح للسجل — يُعاد
+  الحسم تلقائيًا عند الضغط التالي.
 - **الحقن (Injectable seams) للاختبار بلا متصفح:** `storage: KeyValueStorage`
   (الإنتاج: مغلف `sessionStorage`؛ الاختبار: `Map`-backed fake)، `now: () => number`
   (ساعة مزيفة)،   `getRecordDoc: (flow, key) => Promise<{exists, number?, amount?}>`
-  (الإنتاج: `getDoc` من `services/firebase`؛ الاختبار: fake). الوحدة نفسها **بلا
+  (الإنتاج: `getDoc` من `services/firebase`؛ الاختبار: fake — ويُمرَّر أيضًا لكل
+  إرسال عبر `SubmitDeps.getRecordDoc` فيبقى المفرد المشترك نقيًا). الوحدة نفسها **بلا
   React وبلا firebase** — جدول `FLOW_META` (المجموعة + الأسماء، §5) يُضمَّن
   كبيانات.
 - **الصيغة واحدة:** الوحدة تستورد `buildFingerprint`/`docFingerprint`/`fingerprintsEqual`
@@ -210,8 +214,9 @@ async function submitWithOpKey(
   `UUID_V4_RE` (المصدَّر من `opKey.ts`)؛ مصفوفة `submitWithOpKey`: `fresh→sent` +
   مسح، `reuse→sent`، `needs-decision→finish/proceed-new/abort` (بلا إرسال/بتدوير/
   بلا تغيير)، `send` ترمي mismatch → `clear` فوري + `{mismatch}`، `send` ترمي غيره →
-  إعادة رمي والمفتاح باقٍ. + **اختبار تعاقد**: هوية مبنية من تجهيزات `tx3*` تطابق
-  بصمة الخدمة (`fingerprintsEqual` على الجانبين).
+  إعادة رمي والمفتاح باقٍ؛ إخفاق البحث (رفض/تعليق بساعة مزيفة) → `{aborted,
+  lookup-failed}` بلا إرسال وبلا مسح للسجل. + **اختبار تعاقد**: هوية مبنية
+  من تجهيزات `tx3*` تطابق بصمة الخدمة (`fingerprintsEqual` على الجانبين).
 - **المكوّن المخصص** (`OpKeySettleDialog`) لا يُختبر آليًا (بلا DOM) — QA يدوي: الأزرار
   المسماة لكل حالة، الافتراضي الآمن (Enter/Esc)، الظهور فوق مودالات الشراء/المرتجع.
 - **تكامل ضمن الإعداد الحالي:** مغطى خدميًا (`tx3*`: 68 اختبارًا). ربط الصفحات **لا يمكن**
@@ -219,6 +224,12 @@ async function submitWithOpKey(
   الاعتماد المباشر، وsingletons تحتاج محاكيًا) — يُتحقق **يدويًا** بقائمة per-screen:
   نجاح يمسح المفتاح+السلة؛ فشل غامض + إعادة ضغط = no-op؛ تعديل السلة = إشعار + الخياران؛
   عدم تطابق = بلا مسح؛ reload + إعادة بناء = مسار restored؛ TTL.
+  - **بيئة QA اليدوي (emulators بدل الإنتاج — مدعوم صراحة):** طرفية 1:
+    `firebase emulators:start --only firestore,auth` (المنافذ `firebase.json:7-8`)؛
+    طرفية 2: `VITE_USE_EMULATORS=1 npm run dev` (على Windows cmd:
+  `set VITE_USE_EMULATORS=1 && npm run dev`) — يربط التطبيق بالمحاكي
+  (`services/firebase.ts:49-56`)، وبدون المتغير يتحدث للإنتاج دائمًا. المحاكي
+    يبدأ فارغًا: يلزم إنشاء مستخدم ومنتج ويومية يدويًا قبل سيناريوهات البيع.
 - **المخاطر:** (1) انحراف هوية الواجهة عن مقارنة الخدمة → يُخفَّف ببناء الهوية من كائن
   الوسائط نفسه وإعادة استخدام `opKey.ts` (صيغة واحدة)؛ (2) toast مزدوج عند عدم التطابق →
   فرع `code` يكتم عام الصفحة (toast الخدمة الوحيد + الإشعار)؛ والمفتاح يُمسح فورًا

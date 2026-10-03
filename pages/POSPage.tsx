@@ -13,6 +13,12 @@ import { BarcodeCameraModal } from '../components/BarcodeCameraModal';
 import { toast } from 'react-hot-toast';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { usePosCartStore } from '../stores/posCartStore';
+import { opKeyStore, settleLabels, FLOW_META } from '../utils/opKeyStore';
+import type { DecideInfo, DecideChoice } from '../utils/opKeyStore';
+import { firebaseRecordDoc } from '../utils/opKeyRecordDoc';
+import { docFingerprint } from '../services/api/opKey';
+import { OpKeySettleDialog } from '../components/OpKeySettleDialog';
+import type { SettleDialogChoice } from '../components/OpKeySettleDialog';
 import { usePermissions } from '../hooks/usePermissions';
 import { FloatingCartButton } from '../components/FloatingCartButton';
 import { ProductSearch } from '../components/ProductSearch';
@@ -145,6 +151,15 @@ const CartModal: React.FC<{
     const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, recalcCartPrices } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    // REQ-UI-1-fix: re-entry guard checked FIRST line and set before any
+    // await (setIsProcessing stays for display only). Both the original press
+    // and the mismatch-notice resend go through runSale.
+    const processingRef = useRef<boolean>(false);
+    // REQ-UI-1: settle dialog state for the TX3-UI key flow (null = no dialog).
+    const [settle, setSettle] = useState<null | {
+        title: string; message: string; primaryLabel: string; secondaryLabel: string;
+        resolve: (c: SettleDialogChoice) => void;
+    }>(null);
 
     const getCategoryName = useCallback((categoryId: string) => {
         return categories.find(c => c.id === categoryId)?.name || 'غير مصنف';
@@ -157,20 +172,67 @@ const CartModal: React.FC<{
             message: "هل أنت متأكد من رغبتك في إفراغ السلة؟"
         });
         if (confirmed) {
+            // clearCart() centrally drops the sale key memory (posCartStore).
             clearCart();
             toast.success('تم إفراغ السلة بنجاح!');
         }
     }
 
-    const handleProcessSale = async (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => {
+    // REQ-UI-1 (TX3-UI sale binding): settle-dialog driver for submitWithOpKey.
+    // Maps the custom dialog's named buttons onto decide outcomes.
+    const decideSale = (info: DecideInfo): Promise<DecideChoice> => {
+        return new Promise<DecideChoice>((resolve) => {
+            const labels = info.context === 'restored-same'
+                ? settleLabels('sale', 'restored-same')
+                : settleLabels('sale', 'changed');
+            const recordedBit = info.recorded.number ? ` (برقم ${info.recorded.number})` : '';
+            const message = info.context === 'restored-same'
+                ? `سُجل بيع بنفس المحتوى مسبقًا${recordedBit}.`
+                : `سُجل بيع بمحتوى مختلف مسبقًا${recordedBit}.`;
+            setSettle({
+                title: 'عملية مسجلة مسبقًا — بيع',
+                message,
+                primaryLabel: labels.primary,
+                secondaryLabel: labels.secondary,
+                resolve: (c: SettleDialogChoice) => {
+                    setSettle(null);
+                    if (c === 'secondary') resolve('proceed-new');
+                    else if (c === 'primary') resolve(info.context === 'restored-same' ? 'finish' : 'abort');
+                    else resolve('abort');
+                },
+            });
+        });
+    };
+
+    const openSaleMismatchNotice = (resend: () => void) => {
+        const labels = settleLabels('sale', 'mismatch');
+        setSettle({
+            title: FLOW_META.sale.mismatchTitle,
+            message: FLOW_META.sale.mismatchBody,
+            primaryLabel: labels.primary,
+            secondaryLabel: labels.secondary,
+            resolve: (c: SettleDialogChoice) => {
+                setSettle(null);
+                if (c === 'secondary') resend();
+            },
+        });
+    };
+
+    // REQ-UI-1-fix: unified sale runner. Called by the original press AND by
+    // the mismatch-notice resend button (and any other path) — every send is
+    // covered by the same guard + try/catch/finally.
+    const runSale = async (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => {
+        if (processingRef.current) return;
         if (!dailyArchive) {
             toast.error("لا يمكن إتمام البيع، لم يتم فتح اليومية.");
             return;
         }
-        if (isProcessing) return;
+        processingRef.current = true;
         setIsProcessing(true);
         try {
-            await processSale({
+            // REQ-UI-1: identity built from the exact service-arg object
+            // (customerId as sent — '' for cash — never normalized here).
+            const invoiceData = {
                 items: cart,
                 subtotal,
                 discount,
@@ -178,10 +240,40 @@ const CartModal: React.FC<{
                 paymentMethod,
                 customerId,
                 dailyArchiveId: dailyArchive.id
-            });
-            clearCart();
-            setIsPaymentModalOpen(false);
-            onSaleComplete();
+            };
+            const identity = {
+                fp: docFingerprint(invoiceData, 'customerId'),
+                extra: { paymentMethod: paymentMethod as string },
+            };
+            const attempt = async (): Promise<void> => {
+                const result = await opKeyStore.submitWithOpKey(
+                    'sale',
+                    identity,
+                    (key) => processSale(invoiceData, { opKey: key }),
+                    { decide: decideSale, getRecordDoc: firebaseRecordDoc },
+                );
+                if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+                    clearCart();
+                    setIsPaymentModalOpen(false);
+                    onSaleComplete();
+                    if (result.outcome === 'finished-without-send') {
+                        toast.success('تمت عملية البيع بنجاح!');
+                    }
+                    return;
+                }
+                if (result.outcome === 'mismatch') {
+                    // Cart intentionally kept; the key was already cleared by
+                    // the store so the next press mints fresh. Resend goes
+                    // through runSale (guard + try/catch), never bare.
+                    openSaleMismatchNotice(() => { void runSale(paymentMethod, customerId, subtotal, discount, total); });
+                    return;
+                }
+                // aborted (user) or aborted (lookup-failed): nothing was sent.
+                if (result.outcome === 'aborted' && result.reason === 'lookup-failed') {
+                    toast.error('تعذر التحقق من العملية المسجلة — تحقق من الاتصال وحاول مجددًا.');
+                }
+            };
+            await attempt();
         } catch (error) {
             if (isOfflineGuardError(error)) {
                 toast.error((error as Error).message);
@@ -190,6 +282,7 @@ const CartModal: React.FC<{
             }
             console.error(error);
         } finally {
+            processingRef.current = false;
             setIsProcessing(false);
         }
     }
@@ -198,6 +291,14 @@ const CartModal: React.FC<{
     const handlePaymentMethodChange = (paymentMethod: PaymentMethod) => {
         recalcCartPrices(paymentMethod);
     }
+
+    // REQ-UI-1: closing the payment step without success drops the
+    // in-session key (the session record stays for the restored path).
+    const closePaymentModal = () => {
+        if (isProcessing) return;
+        opKeyStore.forget('sale');
+        setIsPaymentModalOpen(false);
+    };
 
     if (!isCartModalOpen) return null;
 
@@ -317,13 +418,22 @@ const CartModal: React.FC<{
             </div>
             <PaymentModal
                 isOpen={isPaymentModalOpen}
-                onClose={() => !isProcessing && setIsPaymentModalOpen(false)}
+                onClose={closePaymentModal}
                 subtotal={subtotal}
                 customers={customers}
-                onSubmit={handleProcessSale}
+                onSubmit={runSale}
                 onPaymentMethodChange={handlePaymentMethodChange}
                 isProcessing={isProcessing}
             />
+            {settle && (
+                <OpKeySettleDialog
+                    title={settle.title}
+                    message={settle.message}
+                    primaryLabel={settle.primaryLabel}
+                    secondaryLabel={settle.secondaryLabel}
+                    onResolve={settle.resolve}
+                />
+            )}
         </>
     )
 }
@@ -524,6 +634,9 @@ export default function POSPage() {
     }, [debouncedSearchQuery, selectedCategory, dailyArchive]);
 
     useEffect(() => {
+        // REQ-UI-1: drop expired TX3-UI key records on POS load (TTL sweep;
+        // non-expired records stay for the restored path).
+        opKeyStore.sweep();
         const customerConstraints: QueryConstraint[] = [orderBy('name')];
         const unsubscribeCustomers = subscribeToCollection<Customer>('customers', setCustomers, customerConstraints);
 
