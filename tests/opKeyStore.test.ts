@@ -502,6 +502,50 @@ describe('REQ-UI-0-fix: getRandomValues failure falls back', () => {
   });
 });
 
+// --- per-submit getRecordDoc override (pages inject the firebase adapter) ------------
+
+describe('REQ-UI-1: per-submit getRecordDoc override', () => {
+  it('store without constructor getter + per-call getter → restored reuse works', async () => {
+    const storage = fakeStorage();
+    const seeder = createOpKeyStore({ storage, uuid: stubUuid });
+    const v0 = await seeder.prepare(FLOW, saleIdentity());
+    if (v0.kind !== 'fresh') throw new Error('expected fresh');
+    seeder.forget(FLOW);
+    // Fresh instance AND no constructor getter — lookup comes per submit:
+    const store = createOpKeyStore({ storage, uuid: stubUuid });
+    let sentKey: string | null = null;
+    const r = await store.submitWithOpKey(
+      FLOW, saleIdentity(),
+      async (key) => { sentKey = key; },
+      {
+        decide: async () => 'abort',
+        getRecordDoc: async () => ({ exists: false }),
+      },
+    );
+    expect(r).toEqual({ outcome: 'sent' });
+    expect(sentKey).toBe(v0.key);
+  });
+
+  it('needs-decision via per-submit getter (no constructor getter)', async () => {
+    const storage = fakeStorage();
+    const seeder = createOpKeyStore({ storage, uuid: stubUuid });
+    await seeder.prepare(FLOW, saleIdentity());
+    seeder.forget(FLOW);
+    const store = createOpKeyStore({ storage, uuid: stubUuid });
+    let sent = false;
+    const r = await store.submitWithOpKey(
+      FLOW, saleIdentity(),
+      async () => { sent = true; },
+      {
+        decide: async () => 'finish',
+        getRecordDoc: async () => ({ exists: true, number: 'INV-1' }),
+      },
+    );
+    expect(r).toEqual({ outcome: 'finished-without-send' });
+    expect(sent).toBe(false);
+  });
+});
+
 // --- corrupt record / unavailable storage --------------------------------------------------
 
 describe('REQ-UI-0: corrupt record and unavailable storage', () => {

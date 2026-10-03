@@ -262,6 +262,9 @@ export interface OpKeyStoreDeps {
 
 export interface SubmitDeps {
     decide: (info: DecideInfo) => Promise<DecideChoice>;
+    // Per-submit record lookup (pages inject firebaseRecordDoc here, keeping
+    // the shared singleton firebase-free at module level).
+    getRecordDoc?: (flow: TxFlow, key: string) => Promise<RecordedInfo>;
 }
 
 function identitiesEqual(a: OpIdentity, b: OpIdentity): boolean {
@@ -351,7 +354,11 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
         }
     }
 
-    function lookup(flow: TxFlow, key: string): Promise<RecordedInfo> {
+    function lookup(
+        flow: TxFlow,
+        key: string,
+        get: (flow: TxFlow, key: string) => Promise<RecordedInfo>,
+    ): Promise<RecordedInfo> {
         return new Promise<RecordedInfo>((resolve, reject) => {
             let done = false;
             const t = timer.setTimeout(() => {
@@ -363,7 +370,7 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
             // inside getRecordDoc also lands here → OpKeyLookupFailedError
             // with the timer cleaned (never a raw leak).
             Promise.resolve()
-                .then(() => getRecordDoc(flow, key))
+                .then(() => get(flow, key))
                 .then(
                     (info) => {
                         if (done) return;
@@ -391,7 +398,12 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
         return identitiesEqual(mem.identity, identity) ? { key: mem.key } : null;
     }
 
-    async function prepare(flow: TxFlow, identity: OpIdentity): Promise<Verdict> {
+    async function prepare(
+        flow: TxFlow,
+        identity: OpIdentity,
+        getRecordDocOverride?: (flow: TxFlow, key: string) => Promise<RecordedInfo>,
+    ): Promise<Verdict> {
+        const get = getRecordDocOverride ?? getRecordDoc;
         const hit = memoryHit(flow, identity);
         if (hit) {
             return { kind: 'reuse', key: hit.key, via: 'memory' };
@@ -403,14 +415,14 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
             return { kind: 'fresh', key, rotated: false };
         }
         if (identitiesEqual(rec.identity, identity)) {
-            const info = await lookup(flow, rec.key);
+            const info = await lookup(flow, rec.key, get);
             if (info.exists) {
                 return { kind: 'needs-decision', key: rec.key, context: 'restored-same', recorded: info };
             }
             memory.set(flow, { key: rec.key, identity: rec.identity, createdAt: now() });
             return { kind: 'reuse', key: rec.key, via: 'restored' };
         }
-        const info = await lookup(flow, rec.key);
+        const info = await lookup(flow, rec.key, get);
         if (info.exists) {
             return { kind: 'needs-decision', key: rec.key, context: 'changed', recorded: info };
         }
@@ -466,7 +478,7 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
     ): Promise<SubmitResult> {
         let verdict: Verdict;
         try {
-            verdict = await prepare(flow, identity);
+            verdict = await prepare(flow, identity, opts?.getRecordDoc);
         } catch (e) {
             // Lookup failure (reject OR timeout) in paths (b)/(c): abort with
             // lookup-failed — NO send, NO record clearing (settle re-runs on

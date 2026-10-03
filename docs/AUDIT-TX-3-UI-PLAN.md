@@ -115,7 +115,8 @@ async function submitWithOpKey(
 - **الحقن (Injectable seams) للاختبار بلا متصفح:** `storage: KeyValueStorage`
   (الإنتاج: مغلف `sessionStorage`؛ الاختبار: `Map`-backed fake)، `now: () => number`
   (ساعة مزيفة)،   `getRecordDoc: (flow, key) => Promise<{exists, number?, amount?}>`
-  (الإنتاج: `getDoc` من `services/firebase`؛ الاختبار: fake). الوحدة نفسها **بلا
+  (الإنتاج: `getDoc` من `services/firebase`؛ الاختبار: fake — ويُمرَّر أيضًا لكل
+  إرسال عبر `SubmitDeps.getRecordDoc` فيبقى المفرد المشترك نقيًا). الوحدة نفسها **بلا
   React وبلا firebase** — جدول `FLOW_META` (المجموعة + الأسماء، §5) يُضمَّن
   كبيانات.
 - **الصيغة واحدة:** الوحدة تستورد `buildFingerprint`/`docFingerprint`/`fingerprintsEqual`
