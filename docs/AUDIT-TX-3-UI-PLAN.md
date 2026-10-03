@@ -1,4 +1,11 @@
-# TX3-UI — خطة التنفيذ (وثيقة فقط، بلا كود)
+# TX3-UI — خطة التنفيذ v2 (وثيقة فقط، بلا كود)
+
+- **v2 — تعديلات قبل أي كود** (قرارات المالك: (1) نافذة مخصصة بأزرار مسماة والإجراء
+  الآمن افتراضي؛ (2) إبقاء نص الخدمة + نسخ الصفحات؛ (3) ترك التوست المزدوج):
+  (أ) حسم الحالات الثلاث in-session/restored/changed (§2)؛ (ب) `clear(flow)` فوري عند
+  عدم التطابق (§4-4)؛ (ج) نافذة مخصصة بأزرار مسماة والإجراء الآمن افتراضي (§5)؛
+  (د) دالة `submitWithOpKey` النقية (§2/§6)؛ (هـ) مولد UUID احتياطي (§2)؛
+  (و) `forget(flow)` وسلوك غياب التخزين (§2).
 
 - **الحالة:** خطة على فرع `docs/audit-tx-3-ui-plan` مبنية على `origin/master = 7dccf91`
   (دمج طبقة API لـ AUDIT-TX-3 — PR #16). هذه الوثيقة وحدها هي ناتج هذه الخطوة؛
@@ -50,21 +57,58 @@ interface OpIdentity { fp: OpFingerprint; extra: Record<string, string | null>; 
   // extra حسب المسار: sale {paymentMethod} · return {originalInvoiceId, dailyArchiveId} · الباقي {}
 interface OpRecord { key: string; identity: OpIdentity; createdAt: number; }
 interface KeyValueStorage { getItem(k: string): string | null; setItem(k: string, v: string): void; removeItem(k: string): void; }
+interface RecordedInfo { exists: boolean; number?: string; amount?: number; }
+// الحسم — ثلاث حالات محسومة (لا غموض):
 type Verdict =
-  | { kind: 'fresh' }                          // بلا سجل → مفتاح جديد
-  | { kind: 'reuse'; key: string }             // سجل بنفس الهوية → نفس المفتاح
-  | { kind: 'needs-decision'; key: string; recorded?: { number?: string; amount?: number } };
-    // سجل بهوية مختلفة: getDoc(oldKey) موجود → إشعار + خياران؛ غائب → تدوير صامت (داخلي)
+  | { kind: 'reuse'; key: string; via: 'memory' | 'restored' };
+    // (a) مفتاح في الذاكرة + هوية متطابقة → reuse بلا أي حسم؛
+    // (b) سجل جلسة فقط + هوية متطابقة + getDoc غائب → reuse (يُتبنَّى في الذاكرة)
+  | { kind: 'fresh'; key: string; rotated: boolean };
+    // بلا سجل → مفتاح جديد؛ (c) مع getDoc(القديم) غائب → تدوير صامت (rotated=true، يُكتب فوق القديم)
+  | { kind: 'needs-decision'; key: string; context: 'restored-same' | 'changed'; recorded: RecordedInfo };
+    // (b) سجل جلسة فقط + هوية متطابقة + getDoc موجود → نافذة خيارين؛
+    // (c) هوية مختلفة + getDoc(القديم) موجود → إشعار + خياران
+// الغلاف النقي — الصفحات تبني الهوية فقط وتستدعيه:
+type SubmitResult =
+  | { outcome: 'sent' }                    // أُرسل ونجح (شامل no-op) — المفتاح مُسح
+  | { outcome: 'finished-without-send' }    // نفس العملية مسجلة — أُنهي بلا إرسال — المفتاح مُسح
+  | { outcome: 'aborted' }                  // المستخدم ألغى — كل شيء بقي كما هو
+  | { outcome: 'mismatch' };                // عدم تطابق من الخدمة — المفتاح مُسح فورًا، السلة/النموذج بقيت
+async function submitWithOpKey(
+  flow: TxFlow,
+  identity: OpIdentity,
+  send: (key: string) => Promise<void>,   // الصفحة تستدعي الخدمة؛ تنجح عند النجاح (شامل no-op) وترمي عند الخطأ
+  deps: {
+    decide: (info: { context: 'restored-same' | 'changed'; recorded: RecordedInfo; flow: TxFlow }) => Promise<'finish' | 'proceed-new' | 'abort'>;
+    uuid?: () => string; now?: () => number; storage?: KeyValueStorage;
+    getRecordDoc?: (flow: TxFlow, key: string) => Promise<RecordedInfo>;
+  },
+): Promise<SubmitResult>;   // أخطاء send غير عدم-التطابق تُعاد رميها (المفتاح يبقى لإعادة الضغط)
 ```
 
 - **مفتاح التخزين:** `tx-opkey:<flow>` — سجل واحد لكل عملية/مسار.
 - **السجل:** `{key, fingerprint(identity كاملة JSON), createdAt}` — TTL **20 دقيقة**.
-- **التوليد:** `crypto.randomUUID()` (يطابق `UUID_V4_RE` في `opKey.ts:10`).
+- **التوليد (احتياطي متدرج — `randomUUID` غير متاح في WebView القديم):**
+  `crypto.randomUUID?.()` → `crypto.getRandomValues` (بناء v4 يدويًا) →
+  `Math.random` (بناء v4 يدويًا). تُحقن الدالة (`uuid?`) للاختبار؛ اختبار يثبت
+  مطابقة كل مسار احتياطي لـ `UUID_V4_RE` (يُصدَّر من `opKey.ts` في REQ-UI-0 — إضافة
+  جمعية بلا تغيير سلوك).
 - **الحمل في الذاكرة:** `Map<TxFlow, {key, identity}>` داخل الوحدة + مرآة `sessionStorage`
   (تُكتب معًا، تُقرأ الذاكرة أولًا).
-- **دوال:** `prepare(flow, identity, deps) → Verdict` · `rotate(flow) → key` (تدوير صامت:
-  حذف القديم + توليد + تخزين) · `clear(flow)` (عند النجاح فقط) · `sweep(now?)` (حذف
-  منتهي TTL فقط) · `peek(flow)` (للتشخيص/الاختبار).
+- **إسقاط الذاكرة صراحة — `forget(flow)`** (يسقط الذاكرة فقط، سجل الجلسة يبقى لمسار
+  restored): (أ) إفراغ السلة يدويًا (`clearCart` وأخواتها) ومسح النماذج عند الإغلاق؛
+  (ب) داخليًا عبر `clear()`؛ (ج) داخليًا عبر `rotate()` (يستبدل القديم بالجديد)؛
+  (د) انحراف البصمة بلا سجل حي: `prepare` يرى ذاكرة≠هوية ولا سجل صالحًا → مسار `fresh`
+  (نسيان ضمني + توليد). تُحفظ الذاكرة عمدًا عند تعديل السلة بعد فشل غامض — كشف
+  الانحراف (الحالة c) يتطلب الهوية القديمة.
+- **غياب التخزين:** كل عمليات `sessionStorage` داخل try/catch + حارس
+  `typeof sessionStorage === 'undefined'` → وضع "ذاكرة فقط" (in-session يعمل، ومسار
+  restored غير متاح بعد reload — يُوثَّق لا يُعالج).
+- **دوال:** `prepare(flow, identity, deps) → Verdict` (تُنفذ الحالات الثلاث أعلاه) ·
+  `submitWithOpKey(...)` (الغلاف: حسم + مسح عند النجاح + `clear` فوري عند عدم التطابق +
+  إعادة رمي غيره) · `rotate(flow) → key` · `clear(flow)` (ذاكرة + جلسة، عند النجاح
+  وعند عدم التطابق) · `forget(flow)` (ذاكرة فقط) · `sweep(now?)` (منتهي TTL فقط) ·
+  `peek(flow)` (للتشخيص/الاختبار).
 - **الحقن (Injectable seams) للاختبار بلا متصفح:** `storage: KeyValueStorage`
   (الإنتاج: مغلف `sessionStorage`؛ الاختبار: `Map`-backed fake)، `now: () => number`
   (ساعة مزيفة)،   `getRecordDoc: (flow, key) => Promise<{exists, number?, amount?}>`
@@ -91,18 +135,28 @@ type Verdict =
 
 ## 4) الربط بكل شاشة (أين يُولَّد/يُبنى/يُمسح + الإشعار + متى لا تُفرَّغ السلة)
 
-النمط الموحد في كل معالج إرسال (بعد تحققات الصفحة الحالية، قبل استدعاء الخدمة):
+النمط الموحد في كل معالج إرسال (بعد تحققات الصفحة الحالية): الصفحة تبني كائن وسائط
+الخدمة كما اليوم → تشتق الهوية → تستدعي `submitWithOpKey(flow, identity, send, deps)`
+حيث `send = (key) => <استدعاء الخدمة بالمفتاح>` و`decide` تفتح نافذة §5 المخصصة:
 
-1. ابنِ كائن وسائط الخدمة كما اليوم تمامًا → اشتق الهوية → `prepare(flow, identity)`.
-2. `fresh` → استدعِ الخدمة بالمفتاح الجديد. `reuse` → استدعِ بنفس المفتاح.
-   `needs-decision` → افتح إشعار الحسم (§5)؛ تأكيد = `rotate()` + استدعاء (عملية جديدة)؛
-   إلغاء = إجهاض (كل شيء يبقى).
-3. نجاح الخدمة → `store.clear(flow)` + مسح السلة/النموذج الحالي **كما هو اليوم** (الجدول §0).
-4. `catch`: إذا `(e as any)?.code === OP_KEY_MISMATCH_CODE` (يُستورد من `services/api/opKey:6`) →
-   **لا مسح سلة/نموذج/مفتاح إطلاقًا** + اكتم الصفحة العام + افتح إشعار عدم التطابق (§5)؛
-   غيره → المسار الحالي كما هو.
-5. reload/restored: أول إرسال بعد reload بسجل موجود وذاكرة فارغة يمر بنفس `prepare`
-   (مقارنة بصمة السلة المعاد بناؤها بسجل الجلسة) — بلا كود خاص.
+1. `prepare` داخلي: (a) ذاكرة + هوية متطابقة → إرسال بنفس المفتاح بلا حسم؛ بلا سجل →
+   توليد وإرسال؛ (b)/(c) كما في §2 (getDoc أولًا ثم `needs-decision` أو تدوير صامت).
+2. `needs-decision` → `decide()`: `finish` = إنهاء بلا إرسال (`clear` + نتيجة
+   `finished-without-send` → الصفحة تُجري تنظيف النجاح المعتاد + toast نجاح صفحي
+   بنص الخدمة نفسه)؛ `proceed-new` = `rotate()` + إرسال (عملية جديدة)؛ `abort` =
+   نتيجة `aborted` (كل شيء يبقى).
+3. نجاح `send` (شامل no-op) → `clear(flow)` + نتيجة `sent` → الصفحة تمسح السلة/النموذج
+   **كما هو اليوم** (الجدول §0).
+4. `catch` من الخدمة بـ`(e as any)?.code === OP_KEY_MISMATCH_CODE`
+   (يُستورد من `services/api/opKey:6`): `submitWithOpKey` تُنفذ `clear(flow)` **فورًا**
+   (ذاكرة + جلسة — المفتاح كان مقيدًا بعملية أخرى، فيُولَّد جديد عند الإرسال التالي)
+   وتُرجع `mismatch`؛ الصفحة **لا تمس السلة/النموذج إطلاقًا** + تكتم toastها العام +
+   تفتح إشعار عدم التطابق (§5). أخطاء `send` الأخرى تُعاد رميها (المفتاح والسلة يبقيان
+   لإعادة الضغط — لا تغيير على المسار الحالي).
+5. reload/restored: **له كود خاص داخل `prepare`/`submitWithOpKey` لا في الصفحة** —
+   ذاكرة فارغة + سجل جلسة صالح: هوية متطابقة → `getRecordDoc` (موجود =
+   `needs-decision[restored-same]`، غائب = `reuse` مع تبنٍّ في الذاكرة)؛ هوية مختلفة →
+   كالحالة (c). الصفحة تمرر الهوية فقط ولا تفرّع.
 
 مواضع الإرسال الستة (§0): `POSPage.tsx:173`، `SupplierAccountPage.tsx:888`،
 `SupplierAccountPage.tsx:1127`، `ReturnsPage.tsx:210`، `CustomerAccountPage.tsx:59`،
@@ -111,12 +165,26 @@ type Verdict =
 
 ## 5) إشعار الحسم والخياران + نصوص عدم التطابق لكل مسار
 
-- **الأداة:** `useConfirmation().confirm({title, message})` العام (أزرار ثابتة تأكيد/إلغاء —
-  يُشفَّر المعنى في النص، بلا مكون جديد):
-  - العنوان: `عملية مسجلة مسبقًا — <اسم المسار>`؛ المتن: ما سُجل (الرقم من `getRecordDoc`
-    عند توفره: فاتورة/RET/SRET/PUR-…، أو المبلغ للدفعات) + **"تأكيد = متابعة كعملية
-    جديدة برقم مستقل، إلغاء = مراجعة العملية المسجلة"**.
-  - إشعار عدم التطابق (من `catch` الخدمة) بنفس الأزرار والمعنى؛ السلة/النموذج لا يُمسّان أبدًا هنا.
+- **الأداة (قرار المالك 1): مكوّن مخصص صغير** `components/OpKeySettleDialog.tsx`
+  (props: `title/message/primaryLabel/secondaryLabel` → `Promise<'primary'|'secondary'|'dismissed'>`
+  حيث Esc/X = `dismissed`؛ z-index فوق مودالات الشراء/المرتجع المخصصة — يُتحقق أثناء QA):
+  **الإجراء الآمن (إنهاء بلا كتابة / مراجعة) هو الافتراضي** — زر primary مميز + autofocus
+  + Enter، وEsc = الآمن. `decide()` الصفحات تفتحه وتترجم النتيجة: `restored-same`:
+  primary→`finish`، secondary→`proceed-new`، dismissed→`abort`؛ `changed`: primary→`abort`
+  (مراجعة وإبقاء)، secondary→`proceed-new`، dismissed→`abort`؛ إشعار `mismatch`:
+  primary/dismissed→إغلاق (مراجعة)، secondary→إعادة إرسال فورية بمفتاح جديد.
+- **نص كل زر لكل مسار وحالة** (`<noun>` = فاتورة بيع / فاتورة شراء / مرتجع مورد /
+  مرتجع / دفعة عميل / دفعة مورد):
+  - `restored-same` (مسجل بنفس الهوية): primary «إنهاء — <noun> مسجّلة» (بلا إرسال)؛
+    secondary «عملية جديدة».
+  - `changed` (هوية مختلفة والقديم موجود): primary «مراجعة (إبقاء السلة)»؛
+    secondary «عملية جديدة برقم مستقل».
+  - `mismatch` (من الخدمة): primary «مراجعة آخر <noun>» (إغلاق بلا مسح)؛
+    secondary «إعادة الإرسال كعملية جديدة» (تدوير + إرسال فوري).
+  - العنوان دائمًا: `عملية مسجلة مسبقًا — <اسم المسار>`؛ المتن يذكر المسجَّل (الرقم من
+    `getRecordDoc` عند توفره، أو المبلغ للدفعات).
+- **إشعار عدم التطابق** يفتح من نتيجة `mismatch` (لا من `catch` مباشرة)؛ السلة/النموذج
+  لا يُمسّان أبدًا هنا (المفتاح وحده مُسح).
 - **النصوص المقترحة** (جدول `FLOW_META`: المجموعة + الاسم + نص عدم التطابق):
   - sale: «هذا البيع مسجّل مسبقًا بنفس المحتوى — راجع آخر فاتورة»
   - purchase: «فاتورة الشراء هذه مسجّلة مسبقًا — راجع آخر فاتورة شراء»
@@ -134,11 +202,18 @@ type Verdict =
 
 ## 6) خطة الاختبارات والمخاطر وترتيب REQs
 
-- **وحدة المخزن** (`tests/opKeyStore.test.ts` — vitest بيئة `node` الحالية، بلا DOM):
-  توليد/إعادة-استخدام/تدوير/مسح؛ سجل واحد لكل مسار؛ TTL (ساعة مزيفة: قبل/بعد 20 دقيقة)؛
-  `needs-decision` مقابل `rotate` الصامت حسب `getRecordDoc`؛ سجل فاسد؛ verdicts
-  in-session مقابل restored (ذاكرة فارغة + سجل جلسة). + **اختبار تعاقد**: هوية مبنية
-  من تجهيزات `tx3*` تطابق بصمة الخدمة (`fingerprintsEqual` على الجانبين).
+- **وحدة المخزن + الغلاف** (`tests/opKeyStore.test.ts` — vitest بيئة `node` الحالية،
+  بلا DOM؛ fakes للـstorage والساعة و`getRecordDoc` و`uuid` و`send` و`decide`):
+  توليد/إعادة-استخدام (`via: memory/restored`)/تدوير صامت (`rotated`)/`clear`/`forget`/
+  مسح؛ سجل واحد لكل مسار؛ TTL (قبل/بعد 20 دقيقة)؛ سجل فاسد؛ غياب التخزين (ذاكرة فقط)؛
+  مولد UUID: `randomUUID` + `getRandomValues` + `Math.random` — الثلاثة تطابق
+  `UUID_V4_RE` (المصدَّر من `opKey.ts`)؛ مصفوفة `submitWithOpKey`: `fresh→sent` +
+  مسح، `reuse→sent`، `needs-decision→finish/proceed-new/abort` (بلا إرسال/بتدوير/
+  بلا تغيير)، `send` ترمي mismatch → `clear` فوري + `{mismatch}`، `send` ترمي غيره →
+  إعادة رمي والمفتاح باقٍ. + **اختبار تعاقد**: هوية مبنية من تجهيزات `tx3*` تطابق
+  بصمة الخدمة (`fingerprintsEqual` على الجانبين).
+- **المكوّن المخصص** (`OpKeySettleDialog`) لا يُختبر آليًا (بلا DOM) — QA يدوي: الأزرار
+  المسماة لكل حالة، الافتراضي الآمن (Enter/Esc)، الظهور فوق مودالات الشراء/المرتجع.
 - **تكامل ضمن الإعداد الحالي:** مغطى خدميًا (`tx3*`: 68 اختبارًا). ربط الصفحات **لا يمكن**
   اختباره آليًا اليوم (vitest `environment: 'node'`، بلا Testing Library/jsdom في
   الاعتماد المباشر، وsingletons تحتاج محاكيًا) — يُتحقق **يدويًا** بقائمة per-screen:
@@ -146,21 +221,22 @@ type Verdict =
   عدم تطابق = بلا مسح؛ reload + إعادة بناء = مسار restored؛ TTL.
 - **المخاطر:** (1) انحراف هوية الواجهة عن مقارنة الخدمة → يُخفَّف ببناء الهوية من كائن
   الوسائط نفسه وإعادة استخدام `opKey.ts` (صيغة واحدة)؛ (2) toast مزدوج عند عدم التطابق →
-  فرع `code` يكتم عام الصفحة (toast الخدمة الوحيد + الإشعار)؛ (3) سجل فاسد/امتلاء →
-  try/catch ومعاملة كغائب؛ (4) تبويبان معًا — حارس الخدمة مصدر الحقيقة (مفتاح مشترك
+  فرع `code` يكتم عام الصفحة (toast الخدمة الوحيد + الإشعار)؛ والمفتاح يُمسح فورًا
+  فيُبنى جديد عند الإرسال التالي (لا إعادة استخدام لمفتاح مقيد بعملية أخرى)؛
+  (3) سجل فاسد/امتلاء → try/catch ومعاملة كغائب؛ (4) تبويبان معًا — حارس الخدمة مصدر الحقيقة (مفتاح مشترك
   + بصمة = عملية واحدة)؛ النقر المزدوج بنفس التبويب محمي أصلًا بـ`withInFlightGuard`؛
-  (5) مودالا الشراء/المرتجع المخصصان يبقيان كما هما (الإشعار عبر `confirm` العام للتوحيد)؛
+  (5) المكوّن المخصص صغير ومعزول (لا يمس المودالات القائمة)؛ يُتحقق من z-index فوق
+  مودالي الشراء/المرتجع أثناء QA؛
   (6) انحراف `''` مقابل `null` لعميل النقدي → القاعدة: الهوية من القيمة المُرسلة فعلًا.
-- **ترتيب REQs (واحد + commit واحد لكل):** REQ-UI-0 المخزن + جدول النسخ + اختبارات الوحدة؛
-  REQ-UI-1 شاشة البيع؛ REQ-UI-2 فاتورة الشراء؛ REQ-UI-3 مرتجع المورد؛ REQ-UI-4 المرتجعات؛
-  REQ-UI-5 الدفعتان معًا؛ كل REQ: ربط + QA يدوي + سطرا backlog/changelog. TX3-UI يُغلق
-  بتقرير عدّادات + `test:rules` كاملة.
+- **ترتيب REQs (واحد + commit واحد لكل):** REQ-UI-0 المخزن (`opKeyStore.ts`:
+  الأنواع + `prepare` + `submitWithOpKey` + مولد UUID الاحتياطي + `FLOW_META`/النسخ)
+  + المكوّن (`OpKeySettleDialog.tsx`) + تصدير `UUID_V4_RE` من `opKey.ts` (جمعي) +
+  اختبارات الوحدة؛ REQ-UI-1 شاشة البيع؛ REQ-UI-2 فاتورة الشراء؛ REQ-UI-3 مرتجع المورد؛
+  REQ-UI-4 المرتجعات؛ REQ-UI-5 الدفعتان معًا؛ كل REQ: ربط + QA يدوي + سطرا
+  backlog/changelog. TX3-UI يُغلق بتقرير عدّادات + `test:rules` كاملة.
 
-## 7) قرارات مطلوبة من المالك قبل التنفيذ
+## 7) قرارات المالك (محسومة في v2 — للتوثيق)
 
-1. معنى زرّي الإشعار كما في §5 (تأكيد = عملية جديدة، إلغاء = مراجعة) — أم مودال مخصص
-   بأزرار مسماة؟ (التوصية: `confirm` العام، صفر مكونات جديدة.)
-2. إبقاء نص الخدمة "فاتورة" مقابل برمجته لكل مسار (يكسر 6 ملفات اختبار ويتطلب تحديثها)؟
-   (التوصية: إبقاء + نسخ الصفحات.)
-3. هل تُزال الـdouble-toast الحالية للدفعات (صفحة + خدمة) ضمن UI-5 أم تُترك؟ (التوصية:
-   تُترك — خارج نطاق TX3.)
+1. نافذة مخصصة بأزرار مسماة (لا `confirm` العام) + الإجراء الآمن افتراضيًا — §5.
+2. إبقاء نص الخدمة "فاتورة" + نسخ الصفحات (§5) — لا يُفتح بديل البرمجة إلا بقرار جديد.
+3. ترك التوست المزدوج الحالي للدفعات — خارج نطاق TX3.
