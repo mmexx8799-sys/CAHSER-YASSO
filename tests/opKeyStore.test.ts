@@ -546,6 +546,26 @@ describe('REQ-UI-1: per-submit getRecordDoc override', () => {
   });
 });
 
+// --- REQ-UI-1-fix: centralized forget in posCartStore.clearCart -----------------------------
+
+describe('REQ-UI-1-fix: clearCart drops key memory (record survival covered at storage level)', () => {
+  it("clearCart empties the cart and drops the sale key memory (node: memory-only, no sessionStorage)", async () => {
+    const { usePosCartStore } = await import('../stores/posCartStore');
+    const { opKeyStore: singleton } = await import('../utils/opKeyStore');
+    // Seed the singleton memory via a fresh prepare (no record → no lookup):
+    const id = saleIdentity();
+    const v = await singleton.prepare('sale', id);
+    expect(v.kind).toBe('fresh');
+    expect(singleton.peek('sale')?.key).not.toBeNull();
+    // Act: the centralized clear path:
+    usePosCartStore.getState().clearCart();
+    // Assert: memory dropped (peek falls back to storage — absent in node).
+    expect(singleton.peek('sale')).toBeNull();
+    expect(usePosCartStore.getState().cart).toEqual([]);
+    expect(usePosCartStore.getState().subtotal).toBe(0);
+  });
+});
+
 // --- corrupt record / unavailable storage --------------------------------------------------
 
 describe('REQ-UI-0: corrupt record and unavailable storage', () => {

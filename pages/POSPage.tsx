@@ -151,6 +151,10 @@ const CartModal: React.FC<{
     const { cart, subtotal, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, recalcCartPrices } = usePosCartStore();
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+    // REQ-UI-1-fix: re-entry guard checked FIRST line and set before any
+    // await (setIsProcessing stays for display only). Both the original press
+    // and the mismatch-notice resend go through runSale.
+    const processingRef = useRef<boolean>(false);
     // REQ-UI-1: settle dialog state for the TX3-UI key flow (null = no dialog).
     const [settle, setSettle] = useState<null | {
         title: string; message: string; primaryLabel: string; secondaryLabel: string;
@@ -168,11 +172,8 @@ const CartModal: React.FC<{
             message: "هل أنت متأكد من رغبتك في إفراغ السلة؟"
         });
         if (confirmed) {
+            // clearCart() centrally drops the sale key memory (posCartStore).
             clearCart();
-            // REQ-UI-1: manual cart empty drops the in-session key (the held
-            // key referred to a discarded cart); the session record stays for
-            // the restored path.
-            opKeyStore.forget('sale');
             toast.success('تم إفراغ السلة بنجاح!');
         }
     }
@@ -217,12 +218,16 @@ const CartModal: React.FC<{
         });
     };
 
-    const handleProcessSale = async (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => {
+    // REQ-UI-1-fix: unified sale runner. Called by the original press AND by
+    // the mismatch-notice resend button (and any other path) — every send is
+    // covered by the same guard + try/catch/finally.
+    const runSale = async (paymentMethod: PaymentMethod, customerId: string | undefined, subtotal: number, discount: number, total: number) => {
+        if (processingRef.current) return;
         if (!dailyArchive) {
             toast.error("لا يمكن إتمام البيع، لم يتم فتح اليومية.");
             return;
         }
-        if (isProcessing) return;
+        processingRef.current = true;
         setIsProcessing(true);
         try {
             // REQ-UI-1: identity built from the exact service-arg object
@@ -258,8 +263,9 @@ const CartModal: React.FC<{
                 }
                 if (result.outcome === 'mismatch') {
                     // Cart intentionally kept; the key was already cleared by
-                    // the store so the next press mints fresh.
-                    openSaleMismatchNotice(() => { void attempt(); });
+                    // the store so the next press mints fresh. Resend goes
+                    // through runSale (guard + try/catch), never bare.
+                    openSaleMismatchNotice(() => { void runSale(paymentMethod, customerId, subtotal, discount, total); });
                     return;
                 }
                 // aborted (user) or aborted (lookup-failed): nothing was sent.
@@ -276,6 +282,7 @@ const CartModal: React.FC<{
             }
             console.error(error);
         } finally {
+            processingRef.current = false;
             setIsProcessing(false);
         }
     }
@@ -414,7 +421,7 @@ const CartModal: React.FC<{
                 onClose={closePaymentModal}
                 subtotal={subtotal}
                 customers={customers}
-                onSubmit={handleProcessSale}
+                onSubmit={runSale}
                 onPaymentMethodChange={handlePaymentMethodChange}
                 isProcessing={isProcessing}
             />

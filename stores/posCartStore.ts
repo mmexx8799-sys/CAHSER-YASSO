@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { CartItem, Product, PriceType } from '../types';
 import { PaymentMethod } from '../types';
 import { toast } from 'react-hot-toast';
+import { opKeyStore } from '../utils/opKeyStore';
 
 interface PosCartState {
   cart: CartItem[];
@@ -131,11 +132,18 @@ export const usePosCartStore = create<PosCartState>((set) => ({
     };
   }),
 
-  clearCart: () => set(() => {
-    return {
-      cart: [],
-      subtotal: 0,
-      isCartModalOpen: false,
-    };
-  }),
+  // REQ-UI-1-fix: centralized key-memory drop. forget() is memory-only BY
+  // DESIGN (the session record stays for the restored path until
+  // success/mismatch/TTL) — utils/opKeyStore has no store imports, so no
+  // import cycle is possible here.
+  clearCart: () => {
+    opKeyStore.forget('sale');
+    set(() => {
+      return {
+        cart: [],
+        subtotal: 0,
+        isCartModalOpen: false,
+      };
+    });
+  },
 }));
