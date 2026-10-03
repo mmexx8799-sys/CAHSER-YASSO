@@ -17,21 +17,45 @@ import {
     isPriceAccepted,
     isOfflineGuardError,
 } from './core';
+import {
+    assertValidOpKey,
+    docFingerprint,
+    fingerprintsEqual,
+    OpKeyMismatchError,
+} from './opKey';
 
 // Invoices API
-export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>) => {
+export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, 'id' | 'createdAt' | 'invoiceNumber' | 'customerName'>, opts?: { opKey?: string }) => {
+    // TX3 key validation FIRST — pure sync check, before any Firestore contact
+    // (assertOnline's preflight ping included). Old callers send nothing.
+    assertValidOpKey(opts?.opKey);
     await assertOnline();
     try {
         // REQ-TX2-SALE (AUDIT-TX-2): invoiceRef hoisted outside the callback
         // so every attempt of one call addresses the SAME doc.
-        const invoiceRef = doc(collection(db, 'invoices'));
+        // REQ-TX3-SALE (AUDIT-TX-3): with a stable key the id is deterministic
+        // across re-presses; without one it stays random per call (unchanged).
+        const opKey = opts?.opKey;
+        const invoiceRef = opKey
+            ? doc(db, 'invoices', opKey)
+            : doc(collection(db, 'invoices'));
+        const reqFp = docFingerprint(invoiceData, 'customerId');
 
         await runTransactionWithRetry('processSale', async (transaction) => {
             // Idempotency guard (READ phase): a retried attempt whose first
             // commit succeeded server-side (response lost) finds its own doc
-            // and returns with NO writes — same value shape as line 129 below.
+            // and returns with NO writes — same value shape as the return below.
             const existingInv = await transaction.get(invoiceRef);
-            if (existingInv.exists()) return invoiceRef.id;
+            if (existingInv.exists()) {
+                // TX3 compare (still READ phase, before the counter read so a
+                // mismatch never consumes a number): stored doc vs request.
+                const stored = existingInv.data() as any;
+                const docFp = docFingerprint(stored, 'customerId');
+                if (!fingerprintsEqual(reqFp, docFp) || (stored.paymentMethod ?? null) !== (invoiceData.paymentMethod ?? null)) {
+                    throw new OpKeyMismatchError();
+                }
+                return invoiceRef.id;
+            }
 
             // --- PHASE 1: ALL READS FIRST (Firestore transaction requirement) ---
             const customerRef = (invoiceData.paymentMethod === 'آجل' && invoiceData.customerId)
@@ -139,6 +163,11 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
         toast.success('تمت عملية البيع بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
+        if (error instanceof OpKeyMismatchError) {
+            // Shown ONCE with its own Arabic text — never the generic toast.
+            toast.error(error.message);
+            throw error;
+        }
         console.error("Error processing sale:", error);
         if (error.message.includes('quantity') || error.message.includes('الكمية')) {
             toast.error(error.message);

@@ -18,6 +18,12 @@ import {
     isOfflineGuardError,
 } from './core';
 import { isPurchasePriceDeviated } from './products';
+import {
+    assertValidOpKey,
+    docFingerprint,
+    fingerprintsEqual,
+    OpKeyMismatchError,
+} from './opKey';
 
 // Purchase invoice — increases product quantities + supplier.balance, records PurchaseInvoice
 export const processPurchase = withInFlightGuard(async (purchaseData: {
@@ -25,20 +31,40 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
     subtotal: number;
     total: number;
     supplierId: string;
-    // ملاحظة مقصودة: لا options هنا — التأكيد شأن UI، والتوثيق شأن priceFlagged المحسوب أدناه.
-}) => {
+    // TX3 (AUDIT-TX-3): opts carries the stable operation key. Absent for
+    // old callers/old builds (random id path, unchanged). Toast/copy stays
+    // generic except OpKeyMismatchError, which surfaces its own Arabic text.
+}, opts?: { opKey?: string }) => {
+    // TX3 key validation FIRST — pure sync check, before any Firestore contact
+    // (assertOnline's preflight ping included). Old callers send nothing.
+    assertValidOpKey(opts?.opKey);
     await assertOnline();
     try {
         // REQ-TX2-PURCHASE (AUDIT-TX-2): purchaseRef hoisted outside the
         // callback so every attempt of one call addresses the SAME doc.
-        const purchaseRef = doc(collection(db, 'purchaseInvoices'));
+        // REQ-TX3-PURCHASE (AUDIT-TX-3): with a stable key the id is
+        // deterministic across re-presses; without one it stays random.
+        const opKey = opts?.opKey;
+        const purchaseRef = opKey
+            ? doc(db, 'purchaseInvoices', opKey)
+            : doc(collection(db, 'purchaseInvoices'));
+        const reqFp = docFingerprint(purchaseData, 'supplierId');
 
         await runTransactionWithRetry('processPurchase', async (transaction) => {
             // Idempotency guard (READ phase): a retried attempt whose first
             // commit succeeded server-side (response lost) finds its own doc
             // and returns with NO writes.
             const existingPur = await transaction.get(purchaseRef);
-            if (existingPur.exists()) return;
+            if (existingPur.exists()) {
+                // TX3 compare (still READ phase, before the counter read so a
+                // mismatch never consumes a number): stored doc vs request.
+                // (No paymentMethod on purchase docs — fingerprint covers it.)
+                const docFp = docFingerprint(existingPur.data(), 'supplierId');
+                if (!fingerprintsEqual(reqFp, docFp)) {
+                    throw new OpKeyMismatchError();
+                }
+                return;
+            }
 
             // --- PHASE 1: ALL READS FIRST ---
             const supplierRef = doc(db, 'suppliers', purchaseData.supplierId);
@@ -124,6 +150,11 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
         toast.success('تم تسجيل فاتورة الشراء بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
+        if (error instanceof OpKeyMismatchError) {
+            // Shown ONCE with its own Arabic text — never the generic toast.
+            toast.error(error.message);
+            throw error;
+        }
         console.error("Error processing purchase:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل فاتورة الشراء.');
         throw error;
@@ -131,12 +162,29 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
 });
 
 // Supplier return — decreases product quantities + supplier.balance, records SupplierReturn
-export const processSupplierReturn = withInFlightGuard(async (items: CartItem[], supplierId: string) => {
+export const processSupplierReturn = withInFlightGuard(async (items: CartItem[], supplierId: string, opts?: { opKey?: string }) => {
+    // TX3 key validation FIRST — pure sync check, before any Firestore contact
+    // (assertOnline's preflight ping included). Old callers send nothing.
+    assertValidOpKey(opts?.opKey);
     await assertOnline();
     try {
         // REQ-TX2-SUPRET (AUDIT-TX-2): returnRef hoisted outside the
         // callback so every attempt of one call addresses the SAME doc.
-        const returnRef = doc(collection(db, 'supplierReturns'));
+        // REQ-TX3-SUPRET (AUDIT-TX-3): with a stable key the id is
+        // deterministic across re-presses; without one it stays random.
+        const opKey = opts?.opKey;
+        const returnRef = opKey
+            ? doc(db, 'supplierReturns', opKey)
+            : doc(collection(db, 'supplierReturns'));
+        // THE stored-total formula, hoisted VERBATIM from the write path
+        // below (was `items.reduce(...)` inside the callback): raw float
+        // sum, NO rounding. One value feeds BOTH the request fingerprint
+        // and the write — identical expression on identical inputs yields
+        // identical doubles, so a legitimate re-press can NEVER
+        // false-mismatch (worse than a duplicate). round2 inside
+        // buildFingerprint absorbs float repr dust at compare time.
+        const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+        const reqFp = docFingerprint({ items, total: totalReturnAmount, supplierId }, 'supplierId');
 
         await runTransactionWithRetry('processSupplierReturn', async (transaction) => {
             // Idempotency guard (READ phase, before the stock check below):
@@ -144,9 +192,15 @@ export const processSupplierReturn = withInFlightGuard(async (items: CartItem[],
             // (response lost) finds its own doc and returns with NO writes.
             // The stock guard stays unchanged as the second line of defense.
             const existingRet = await transaction.get(returnRef);
-            if (existingRet.exists()) return;
-
-            const totalReturnAmount = items.reduce((sum, item) => sum + item.price * item.buyQuantity, 0);
+            if (existingRet.exists()) {
+                // TX3 compare (still READ phase, before the counter read so a
+                // mismatch never consumes a number): stored doc vs request.
+                const docFp = docFingerprint(existingRet.data(), 'supplierId');
+                if (!fingerprintsEqual(reqFp, docFp)) {
+                    throw new OpKeyMismatchError();
+                }
+                return;
+            }
 
             // --- PHASE 1: ALL READS FIRST ---
             const supplierRef = doc(db, 'suppliers', supplierId);
@@ -218,6 +272,11 @@ export const processSupplierReturn = withInFlightGuard(async (items: CartItem[],
         toast.success('تم تسجيل مرتجع المورد بنجاح!');
     } catch (error: any) {
         if (isOfflineGuardError(error)) throw error;
+        if (error instanceof OpKeyMismatchError) {
+            // Shown ONCE with its own Arabic text — never the generic toast.
+            toast.error(error.message);
+            throw error;
+        }
         console.error("Error processing supplier return:", error);
         toast.error(error.message || 'حدث خطأ أثناء تسجيل مرتجع المورد.');
         throw error;
