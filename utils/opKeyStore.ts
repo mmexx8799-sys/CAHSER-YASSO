@@ -181,11 +181,15 @@ export function buildUuid(tiers: UuidTiers = {}): string {
         }
     }
     if (tiers.getRandomValues) {
-        const b = new Uint8Array(16);
-        tiers.getRandomValues(b);
-        b[6] = (b[6] & 0x0f) | 0x40; // version 4
-        b[8] = (b[8] & 0x3f) | 0x80; // variant 10xx
-        return toUuidString(b);
+        try {
+            const b = new Uint8Array(16);
+            tiers.getRandomValues(b);
+            b[6] = (b[6] & 0x0f) | 0x40; // version 4
+            b[8] = (b[8] & 0x3f) | 0x80; // variant 10xx
+            return toUuidString(b);
+        } catch {
+            // fall through to Math.random
+        }
     }
     const rand = tiers.random ?? Math.random;
     const b = new Uint8Array(16);
@@ -270,7 +274,9 @@ function identitiesEqual(a: OpIdentity, b: OpIdentity): boolean {
 }
 
 export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
-    const memory = new Map<TxFlow, { key: string; identity: OpIdentity }>();
+    // Memory entries carry createdAt like storage records: an expired
+    // (>TTL) memory entry counts as ABSENT in prepare/peek (never reuse).
+    const memory = new Map<TxFlow, { key: string; identity: OpIdentity; createdAt: number }>();
     const now = deps.now ?? Date.now;
     const uuid = deps.uuid ?? defaultUuid;
     const timer = deps.timer ?? defaultTimer;
@@ -336,9 +342,10 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
     }
 
     function writeRecord(flow: TxFlow, key: string, identity: OpIdentity): void {
-        memory.set(flow, { key, identity });
+        const at = now();
+        memory.set(flow, { key, identity, createdAt: at });
         try {
-            safeSet(flow, JSON.stringify({ key, identity, createdAt: now() } satisfies OpRecord));
+            safeSet(flow, JSON.stringify({ key, identity, createdAt: at } satisfies OpRecord));
         } catch {
             // memory-only mode
         }
@@ -352,27 +359,42 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
                 done = true;
                 reject(new OpKeyLookupFailedError(flow));
             }, lookupTimeoutMs);
-            getRecordDoc(flow, key).then(
-                (info) => {
-                    if (done) return;
-                    done = true;
-                    timer.clearTimeout(t);
-                    resolve(info);
-                },
-                () => {
-                    if (done) return;
-                    done = true;
-                    timer.clearTimeout(t);
-                    reject(new OpKeyLookupFailedError(flow));
-                },
-            );
+            // Deferred via Promise.resolve().then so a SYNCHRONOUS throw
+            // inside getRecordDoc also lands here → OpKeyLookupFailedError
+            // with the timer cleaned (never a raw leak).
+            Promise.resolve()
+                .then(() => getRecordDoc(flow, key))
+                .then(
+                    (info) => {
+                        if (done) return;
+                        done = true;
+                        timer.clearTimeout(t);
+                        resolve(info);
+                    },
+                    () => {
+                        if (done) return;
+                        done = true;
+                        timer.clearTimeout(t);
+                        reject(new OpKeyLookupFailedError(flow));
+                    },
+                );
         });
     }
 
-    async function prepare(flow: TxFlow, identity: OpIdentity): Promise<Verdict> {
+    function memoryHit(flow: TxFlow, identity: OpIdentity, at?: number): { key: string } | null {
         const mem = memory.get(flow);
-        if (mem && identitiesEqual(mem.identity, identity)) {
-            return { kind: 'reuse', key: mem.key, via: 'memory' };
+        if (!mem) return null;
+        if ((at ?? now()) - mem.createdAt > OP_KEY_TTL_MS) {
+            memory.delete(flow);
+            return null;
+        }
+        return identitiesEqual(mem.identity, identity) ? { key: mem.key } : null;
+    }
+
+    async function prepare(flow: TxFlow, identity: OpIdentity): Promise<Verdict> {
+        const hit = memoryHit(flow, identity);
+        if (hit) {
+            return { kind: 'reuse', key: hit.key, via: 'memory' };
         }
         const rec = readRecord(flow);
         if (!rec) {
@@ -385,7 +407,7 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
             if (info.exists) {
                 return { kind: 'needs-decision', key: rec.key, context: 'restored-same', recorded: info };
             }
-            memory.set(flow, { key: rec.key, identity: rec.identity });
+            memory.set(flow, { key: rec.key, identity: rec.identity, createdAt: now() });
             return { kind: 'reuse', key: rec.key, via: 'restored' };
         }
         const info = await lookup(flow, rec.key);
@@ -424,7 +446,14 @@ export function createOpKeyStore(deps: OpKeyStoreDeps = {}) {
 
     function peek(flow: TxFlow): { key: string; identity: OpIdentity } | null {
         const mem = memory.get(flow);
-        if (mem) return { key: mem.key, identity: mem.identity };
+        if (mem) {
+            // Expired memory counts as absent (same rule as prepare).
+            if (now() - mem.createdAt > OP_KEY_TTL_MS) {
+                memory.delete(flow);
+            } else {
+                return { key: mem.key, identity: mem.identity };
+            }
+        }
         const rec = readRecord(flow);
         return rec ? { key: rec.key, identity: rec.identity } : null;
     }

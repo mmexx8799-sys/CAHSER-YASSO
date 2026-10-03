@@ -429,6 +429,79 @@ describe('REQ-UI-0: lookup failure → aborted/lookup-failed, no send, record ke
   });
 });
 
+// --- memory TTL: expired memory counts as absent -----------------------------------
+
+describe('REQ-UI-0-fix: memory TTL expiry', () => {
+  it('expired memory + matching identity → fresh (not reuse), isolated via memory-only storage', async () => {
+    const clock = fakeClock();
+    const store = createOpKeyStore({ storage: throwingStorage(), now: clock.now, uuid: stubUuid });
+    const v0 = await store.prepare(FLOW, saleIdentity());
+    if (v0.kind !== 'fresh') throw new Error('expected fresh');
+    clock.advance(OP_KEY_TTL_MS + 1);
+    const v = await store.prepare(FLOW, saleIdentity());
+    expect(v.kind).toBe('fresh');
+    if (v.kind !== 'fresh') return;
+    expect(v.rotated).toBe(false);
+    expect(v.key).not.toBe(v0.key);
+  });
+
+  it('expired memory + matching storage record → fresh (both expire together)', async () => {
+    const storage = fakeStorage();
+    const clock = fakeClock();
+    const store = createOpKeyStore({ storage, now: clock.now, uuid: stubUuid });
+    const v0 = await store.prepare(FLOW, saleIdentity());
+    if (v0.kind !== 'fresh') throw new Error('expected fresh');
+    clock.advance(OP_KEY_TTL_MS + 1);
+    const v = await store.prepare(FLOW, saleIdentity());
+    expect(v.kind).toBe('fresh');
+    if (v.kind !== 'fresh') return;
+    expect(v.key).not.toBe(v0.key);
+    expect(store.peek(FLOW)?.key).toBe(v.key);
+  });
+});
+
+// --- lookup synchronous throw → lookup-failed ------------------------------------------
+
+describe('REQ-UI-0-fix: synchronous getRecordDoc throw', () => {
+  it('sync throw in paths (b)/(c) → aborted/lookup-failed, timer cleaned, record kept', async () => {
+    const storage = fakeStorage();
+    const timer = manualTimer();
+    const store = createOpKeyStore({ storage, uuid: stubUuid, timer });
+    const v0 = await store.prepare(FLOW, saleIdentity());
+    if (v0.kind !== 'fresh') throw new Error('expected fresh');
+    // Fresh store with a synchronously-throwing getRecordDoc:
+    const store2 = createOpKeyStore({
+      storage,
+      uuid: stubUuid,
+      timer,
+      getRecordDoc: () => { throw new Error('sync boom'); },
+    });
+    let sent = false;
+    const r = await store2.submitWithOpKey(
+      FLOW, saleIdentity(),
+      async () => { sent = true; },
+      { decide: async () => 'finish' },
+    );
+    expect(r).toEqual({ outcome: 'aborted', reason: 'lookup-failed' });
+    expect(sent).toBe(false);
+    expect(timer.pending()).toBe(0);
+    expect(store2.peek(FLOW)?.key).toBe(v0.key);
+  });
+});
+
+// --- uuid getRandomValues failure falls back to Math.random ------------------------------
+
+describe('REQ-UI-0-fix: getRandomValues failure falls back', () => {
+  it('throwing getRandomValues → Math.random tier still builds valid v4 ids', () => {
+    let s = 42424242;
+    const fakeRandom = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+    const throwingGRV = () => { throw new Error('no secure rng'); };
+    for (let i = 0; i < 25; i++) {
+      expect(UUID_V4_RE.test(buildUuid({ getRandomValues: throwingGRV, random: fakeRandom }))).toBe(true);
+    }
+  });
+});
+
 // --- corrupt record / unavailable storage --------------------------------------------------
 
 describe('REQ-UI-0: corrupt record and unavailable storage', () => {
