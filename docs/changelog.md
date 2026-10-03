@@ -1,5 +1,8 @@
 # Changelog — Nour-Elrahman
 
+## Unreleased — AUDIT-TX-3 (2026-10-03)
+- **REQ-TX3-SALE — مفتاح ثابت للبيع (sales.ts + opKey.ts):** `opts.opKey` اختياري (تحقق UUID-v4 أول سطر قبل أي اتصال) + `doc(db,'invoices',opKey)` الحتمي + مقارنة البصمة (دمج/فرز/تقريب منزلتين/تطبيع null + paymentMethod) قبل قراءة العدّاد + `OpKeyMismatchError` برسالتها العربية مرة واحدة — التحقق: RED أولًا (7/12 على القديم) ثم GREEN (12/12) · `tsc` نظيف · `test:rules` **422/422** (410 قديم بلا رجوع + 12 جديد `tx3Sale`: وحدة 4 + 8 محاكي) · صفر لمس لغير `sales.ts` + الجديدين — **Done 2026-10-03**
+
 ## Unreleased — AUDIT-SEC-1 + AUDIT-TX-1 (2026-09-29)
 - **REQ-TX2-SALE — حارس idempotency للبيع (sales.ts, أول AUDIT-TX-2):** رفع `invoiceRef` خارج `runTransactionWithRetry` + قراءة `transaction.get` كأول سطر وخروج بلا كتابة لو المستند موجود — المسار العادي بايت-مطابق سلوكيًا — التحقق: RED أولًا على الكود القديم (2/2: `expected 2 to be 1`) ثم GREEN بعد الإصلاح · `tsc` نظيف · `test:rules` **402/402** (400 قديم بلا رجوع + 2 جديد `tx2Sale`: آجل + نقدي-منتجين) · صفر لمس لغير `sales.ts` — **Done 2026-09-30**
 - **REQ-TX2-PURCHASE — حارس idempotency للشراء (purchases.ts, processPurchase فقط):** نفس الشكل (رفع `purchaseRef` + قراءة وجود أولًا + خروج عارٍ) بلا أرقام أسطر في التعليقات — التحقق: RED أولًا (4 انتهاكات soft ظاهرة: مستندان/200/104/عداد+2) ثم GREEN · `tsc` نظيف · `test:rules` **403/403** (402 قديم بلا رجوع + 1 جديد `tx2Purchase`: إثبات المحاولتين + كل القيم أولًا) · `processSupplierReturn` لم يُمس · صفر لمس لغير `purchases.ts` — **Done 2026-09-30**
