@@ -19,7 +19,7 @@ import {
 } from './core';
 import {
     assertValidOpKey,
-    buildFingerprint,
+    docFingerprint,
     fingerprintsEqual,
     OpKeyMismatchError,
 } from './opKey';
@@ -39,13 +39,7 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
         const invoiceRef = opKey
             ? doc(db, 'invoices', opKey)
             : doc(collection(db, 'invoices'));
-        const reqFp = buildFingerprint({
-            pairs: invoiceData.items.map((it) => [it.id, it.buyQuantity] as const),
-            total: invoiceData.total,
-            subtotal: (invoiceData as any).subtotal,
-            discount: (invoiceData as any).discount,
-            party: (invoiceData as any).customerId ?? null,
-        });
+        const reqFp = docFingerprint(invoiceData, 'customerId');
 
         await runTransactionWithRetry('processSale', async (transaction) => {
             // Idempotency guard (READ phase): a retried attempt whose first
@@ -55,15 +49,9 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
             if (existingInv.exists()) {
                 // TX3 compare (still READ phase, before the counter read so a
                 // mismatch never consumes a number): stored doc vs request.
-                const d = existingInv.data() as any;
-                const docFp = buildFingerprint({
-                    pairs: (d.items ?? []).map((it: any) => [it.id, it.buyQuantity] as const),
-                    total: d.total,
-                    subtotal: d.subtotal,
-                    discount: d.discount,
-                    party: d.customerId ?? null,
-                });
-                if (!fingerprintsEqual(reqFp, docFp) || (d.paymentMethod ?? null) !== (invoiceData.paymentMethod ?? null)) {
+                const stored = existingInv.data() as any;
+                const docFp = docFingerprint(stored, 'customerId');
+                if (!fingerprintsEqual(reqFp, docFp) || (stored.paymentMethod ?? null) !== (invoiceData.paymentMethod ?? null)) {
                     throw new OpKeyMismatchError();
                 }
                 return invoiceRef.id;

@@ -75,3 +75,24 @@ export function fingerprintsEqual(a: OpFingerprint, b: OpFingerprint): boolean {
     if (a.pairs.length !== b.pairs.length) return false;
     return a.pairs.every(([id, q], i) => b.pairs[i][0] === id && b.pairs[i][1] === q);
 }
+
+// Build a fingerprint from a STORED ledger doc OR a request-shaped object.
+// Both shapes carry {items, total, subtotal?, discount?, customerId?,
+// supplierId?}; `partyField` selects which party key identifies the doc.
+// Extra stored keys (invoiceNumber, createdAt, names, flags) are ignored
+// by construction — only identity fields enter the fingerprint.
+export function docFingerprint(
+    docLike: any,
+    partyField: 'customerId' | 'supplierId',
+): OpFingerprint {
+    const items = ((docLike?.items ?? []) as any[]).map(
+        (it: any) => [it?.id, it?.buyQuantity] as const,
+    );
+    return buildFingerprint({
+        pairs: items,
+        total: docLike?.total,
+        subtotal: docLike?.subtotal,
+        discount: docLike?.discount,
+        party: docLike?.[partyField] ?? null,
+    });
+}
