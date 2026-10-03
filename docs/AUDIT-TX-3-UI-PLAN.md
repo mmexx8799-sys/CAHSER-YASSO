@@ -109,6 +109,9 @@ async function submitWithOpKey(
   إعادة رمي غيره) · `rotate(flow) → key` · `clear(flow)` (ذاكرة + جلسة، عند النجاح
   وعند عدم التطابق) · `forget(flow)` (ذاكرة فقط) · `sweep(now?)` (منتهي TTL فقط) ·
   `peek(flow)` (للتشخيص/الاختبار).
+- **قاعدة الإخفاق (ملزمة):** فشل `getRecordDoc` (رفض أو مهلة ~5 ثوانٍ) في مساري
+  (b)/(c) → `{aborted, reason:'lookup-failed'}` بلا إرسال وبلا مسح للسجل — يُعاد
+  الحسم تلقائيًا عند الضغط التالي.
 - **الحقن (Injectable seams) للاختبار بلا متصفح:** `storage: KeyValueStorage`
   (الإنتاج: مغلف `sessionStorage`؛ الاختبار: `Map`-backed fake)، `now: () => number`
   (ساعة مزيفة)،   `getRecordDoc: (flow, key) => Promise<{exists, number?, amount?}>`
@@ -210,8 +213,9 @@ async function submitWithOpKey(
   `UUID_V4_RE` (المصدَّر من `opKey.ts`)؛ مصفوفة `submitWithOpKey`: `fresh→sent` +
   مسح، `reuse→sent`، `needs-decision→finish/proceed-new/abort` (بلا إرسال/بتدوير/
   بلا تغيير)، `send` ترمي mismatch → `clear` فوري + `{mismatch}`، `send` ترمي غيره →
-  إعادة رمي والمفتاح باقٍ. + **اختبار تعاقد**: هوية مبنية من تجهيزات `tx3*` تطابق
-  بصمة الخدمة (`fingerprintsEqual` على الجانبين).
+  إعادة رمي والمفتاح باقٍ؛ إخفاق البحث (رفض/تعليق بساعة مزيفة) → `{aborted,
+  lookup-failed}` بلا إرسال وبلا مسح للسجل. + **اختبار تعاقد**: هوية مبنية
+  من تجهيزات `tx3*` تطابق بصمة الخدمة (`fingerprintsEqual` على الجانبين).
 - **المكوّن المخصص** (`OpKeySettleDialog`) لا يُختبر آليًا (بلا DOM) — QA يدوي: الأزرار
   المسماة لكل حالة، الافتراضي الآمن (Enter/Esc)، الظهور فوق مودالات الشراء/المرتجع.
 - **تكامل ضمن الإعداد الحالي:** مغطى خدميًا (`tx3*`: 68 اختبارًا). ربط الصفحات **لا يمكن**
