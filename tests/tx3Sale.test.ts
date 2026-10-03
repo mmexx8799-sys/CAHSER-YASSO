@@ -72,6 +72,8 @@ const K_DEADLINE = '33333333-3333-4333-8333-333333333333';
 const K_MISMATCH = '44444444-4444-4444-8444-444444444444';
 const K_PAR = '55555555-5555-4555-8555-555555555555';
 const K_SESS = '66666666-6666-4666-8666-666666666666';
+const K_METHOD = '77777777-7777-4777-8777-777777777777';
+const K_STALE = '88888888-8888-4888-8888-888888888888';
 
 const MISMATCH_MSG = 'سُجّلت العملية مسبقًا بمحتوى مختلف، راجع آخر فاتورة';
 const SALE_OK_TOAST = 'تمت عملية البيع بنجاح!';
@@ -387,5 +389,80 @@ describe('REQ-TX3-SALE: stable key lost-commit is idempotent', () => {
     }
     expect.soft(String(thrown?.message ?? '')).toMatch('مفتاح العملية غير صالح');
     expect.soft(runTxMock).not.toHaveBeenCalled();
+  });
+
+  it('payment-method-change-same-key: seeded نقدا, call آجل, same items/total/customer → OpKeyMismatchError', async () => {
+    await testEnv.clearFirestore();
+    await seed('products', 'tx3-prod', mkProductDoc(5000));
+    await seed('dailyArchives', 'tx3-day', mkArchiveDoc());
+    await seed('customers', 'tx3-cust', { name: 'عميل', balance: 0, openingBalance: 0, createdAt: Date.now() });
+    await seed('invoices', K_METHOD, {
+      items: [{ id: 'tx3-prod', name: 'صنف', price: 100, buyQuantity: 1 }],
+      subtotal: 100, discount: 0, total: 100, customerId: 'tx3-cust',
+      paymentMethod: 'نقدا', dailyArchiveId: 'tx3-day',
+      invoiceNumber: 'INV-000001', createdAt: Date.now(),
+    });
+    await signInAs(CASHIER_EMAIL, 'cashier');
+    const before = await readCounter();
+
+    let thrown: any = null;
+    try {
+      await processSale({
+        items: [mkItem('tx3-prod', 1)],
+        subtotal: 100, discount: 0, total: 100,
+        paymentMethod: 'آجل' as any,
+        customerId: 'tx3-cust',
+        dailyArchiveId: 'tx3-day',
+      } as any, { opKey: K_METHOD } as any);
+    } catch (e) {
+      thrown = e;
+    }
+    expect.soft(thrown?.code).toBe(OP_KEY_MISMATCH_CODE);
+    expect.soft(thrown?.message).toBe(MISMATCH_MSG);
+    expect.soft(runTxMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls[0][0]).toBe(MISMATCH_MSG);
+    // Stored doc untouched (still نقدا), counter untouched.
+    expect.soft(((await getDoc(doc(getDB(), 'invoices', K_METHOD))).data() as any).paymentMethod).toBe('نقدا');
+    expect.soft(await readCounter()).toBe(before);
+    expect.soft(await countInvoices()).toBe(1);
+  });
+
+  it('stale-key-different-cart: seeded (X,1)/100, call (Y,1)/100 same key → OpKeyMismatchError', async () => {
+    await testEnv.clearFirestore();
+    await seed('products', 'tx3-prod-x', mkProductDoc(5000));
+    await seed('products', 'tx3-prod-y', mkProductDoc(5000));
+    await seed('dailyArchives', 'tx3-day', mkArchiveDoc());
+    await seed('customers', 'tx3-cust', { name: 'عميل', balance: 0, openingBalance: 0, createdAt: Date.now() });
+    await seed('invoices', K_STALE, {
+      items: [{ id: 'tx3-prod-x', name: 'صنف', price: 100, buyQuantity: 1 }],
+      subtotal: 100, discount: 0, total: 100, customerId: 'tx3-cust',
+      paymentMethod: 'نقدا', dailyArchiveId: 'tx3-day',
+      invoiceNumber: 'INV-000001', createdAt: Date.now(),
+    });
+    await signInAs(CASHIER_EMAIL, 'cashier');
+    const before = await readCounter();
+
+    let thrown: any = null;
+    try {
+      await processSale({
+        items: [{ id: 'tx3-prod-y', name: 'صنف', price: 100, buyQuantity: 1 }],
+        subtotal: 100, discount: 0, total: 100,
+        paymentMethod: 'نقدا' as any,
+        customerId: 'tx3-cust',
+        dailyArchiveId: 'tx3-day',
+      } as any, { opKey: K_STALE } as any);
+    } catch (e) {
+      thrown = e;
+    }
+    expect.soft(thrown?.code).toBe(OP_KEY_MISMATCH_CODE);
+    expect.soft(thrown?.message).toBe(MISMATCH_MSG);
+    expect.soft(runTxMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls.length).toBe(1);
+    expect.soft(toastErrorMock.mock.calls[0][0]).toBe(MISMATCH_MSG);
+    // Seeded doc keeps product X; counter untouched.
+    expect.soft((((await getDoc(doc(getDB(), 'invoices', K_STALE))).data() as any).items as any[]).map((i: any) => i.id)).toEqual(['tx3-prod-x']);
+    expect.soft(await readCounter()).toBe(before);
+    expect.soft(await countInvoices()).toBe(1);
   });
 });
