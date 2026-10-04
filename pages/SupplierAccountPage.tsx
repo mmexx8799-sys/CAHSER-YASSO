@@ -1208,6 +1208,29 @@ const PurchaseModal: React.FC<{
     );
 };
 
+// REQ-UI-3: centralized supplier-return-key forget (memory-only by design;
+// the session record stays for the restored path). Single call site, used by
+// the modal close effect below; exported for unit testing.
+export function forgetSupplierReturnKey(): void {
+    opKeyStore.forget('supplierReturn');
+}
+
+// Close-transition reset for SupplierReturnModal: runs ONLY on true→false
+// (never on mount, never on unrelated changes), and forgets the key only
+// when no submit is in flight. Returns whether the reset ran.
+export function resetSupplierReturnModalOnClose(args: {
+    wasOpen: boolean;
+    isOpen: boolean;
+    isSubmitting: boolean;
+    reset: () => void;
+    forgetKey?: () => void;
+}): boolean {
+    if (!args.wasOpen || args.isOpen) return false;
+    args.reset();
+    if (!args.isSubmitting) (args.forgetKey ?? forgetSupplierReturnKey)();
+    return true;
+}
+
 // --- New supplier return modal: direct mirror of PurchaseModal, reversed effects.
 // Calls existing processSupplierReturn(items, supplierId) — decreases stock + supplier balance. ---
 const SupplierReturnModal: React.FC<{
@@ -1223,6 +1246,13 @@ const SupplierReturnModal: React.FC<{
     const [items, setItems] = useState<Array<{ product: Product; buyQuantity: number; price: number }>>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [confirmationOpen, setConfirmationOpen] = useState(false);
+    // REQ-UI-3: re-entry guard (checked first line, set before any await).
+    const processingRef = useRef<boolean>(false);
+    // Settle dialog state for the TX3-UI key flow (null = no dialog).
+    const [settle, setSettle] = useState<null | {
+        title: string; message: string; primaryLabel: string; secondaryLabel: string;
+        resolve: (c: SettleDialogChoice) => void;
+    }>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -1236,15 +1266,25 @@ const SupplierReturnModal: React.FC<{
         };
     }, [isOpen]);
 
-    // Reset on close
+    // Reset on close — REQ-UI-3: forget runs ONLY on the true→false close
+    // transition and never while a submit is in flight (memory-only drop;
+    // the session record stays for the restored path).
+    const wasOpenRef = useRef(false);
     useEffect(() => {
-        if (!isOpen) {
-            setItems([]);
-            setSearchQuery('');
-            setSelectedCategory('');
-            setConfirmationOpen(false);
-        }
-    }, [isOpen]);
+        const wasOpen = wasOpenRef.current;
+        wasOpenRef.current = isOpen;
+        resetSupplierReturnModalOnClose({
+            wasOpen,
+            isOpen,
+            isSubmitting,
+            reset: () => {
+                setItems([]);
+                setSearchQuery('');
+                setSelectedCategory('');
+                setConfirmationOpen(false);
+            },
+        });
+    }, [isOpen, isSubmitting]);
 
     const filteredProducts = products.filter(p => {
         const matchesCategory = !selectedCategory || p.categoryId === selectedCategory;
@@ -1277,27 +1317,110 @@ const SupplierReturnModal: React.FC<{
 
     const total = items.reduce((sum, i) => sum + i.price * i.buyQuantity, 0);
 
-    const handleConfirmReturn = async () => {
+    // REQ-UI-3 (TX3-UI supplier-return binding): settle-dialog driver.
+    const decideSupplierReturn = (info: DecideInfo): Promise<DecideChoice> => {
+        return new Promise<DecideChoice>((resolve) => {
+            const labels = info.context === 'restored-same'
+                ? settleLabels('supplierReturn', 'restored-same')
+                : settleLabels('supplierReturn', 'changed');
+            const recordedBit = info.recorded.number ? ` (برقم ${info.recorded.number})` : '';
+            const message = info.context === 'restored-same'
+                ? `سُجل مرتجع مورد بنفس المحتوى مسبقًا${recordedBit}.`
+                : `سُجل مرتجع مورد بمحتوى مختلف مسبقًا${recordedBit}.`;
+            setSettle({
+                title: 'عملية مسجلة مسبقًا — مرتجع مورد',
+                message,
+                primaryLabel: labels.primary,
+                secondaryLabel: labels.secondary,
+                resolve: (c: SettleDialogChoice) => {
+                    setSettle(null);
+                    if (c === 'secondary') resolve('proceed-new');
+                    else if (c === 'primary') resolve(info.context === 'restored-same' ? 'finish' : 'abort');
+                    else resolve('abort');
+                },
+            });
+        });
+    };
+
+    const openSupplierReturnMismatchNotice = (resend: () => void) => {
+        const labels = settleLabels('supplierReturn', 'mismatch');
+        setSettle({
+            title: FLOW_META.supplierReturn.mismatchTitle,
+            message: FLOW_META.supplierReturn.mismatchBody,
+            primaryLabel: labels.primary,
+            secondaryLabel: labels.secondary,
+            resolve: (c: SettleDialogChoice) => {
+                setSettle(null);
+                if (c === 'secondary') resend();
+            },
+        });
+    };
+
+    // REQ-UI-3: unified supplier-return runner. Called by the original confirm
+    // AND by the mismatch-notice resend — every send is covered by the same
+    // guard + try/catch/finally.
+    const runSupplierReturn = async () => {
+        if (processingRef.current) return;
         if (items.length === 0) return;
+        processingRef.current = true;
         setIsSubmitting(true);
         try {
-            await processSupplierReturn(
-                items.map(i => ({
-                    ...i.product,
-                    buyQuantity: i.buyQuantity,
-                    priceType: 'retail' as const,
-                    price: i.price, // return value per unit as actually entered (defaults to recorded price, manually editable)
-                })),
-                supplier.id
-            );
-            onComplete();
+            // ONE arg object: the SAME items array feeds the service AND the
+            // total below, so the UI total is bit-identical to the service's
+            // totalReturnAmount (same raw-float reduce, same order, NO rounding
+            // — a rounding difference would false-mismatch, worse than a dup).
+            const returnItems = items.map(i => ({
+                ...i.product,
+                buyQuantity: i.buyQuantity,
+                priceType: 'retail' as const,
+                price: i.price, // return value per unit as actually entered
+            }));
+            const returnData = {
+                items: returnItems,
+                total: returnItems.reduce((sum, it) => sum + it.price * it.buyQuantity, 0),
+                supplierId: supplier.id,
+            };
+            const identity = {
+                fp: docFingerprint(returnData, 'supplierId'),
+                extra: {},
+            };
+            const attempt = async (): Promise<void> => {
+                const result = await opKeyStore.submitWithOpKey(
+                    'supplierReturn',
+                    identity,
+                    (key) => processSupplierReturn(returnItems, supplier.id, { opKey: key }),
+                    { decide: decideSupplierReturn, getRecordDoc: firebaseRecordDoc },
+                );
+                if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+                    onComplete();
+                    if (result.outcome === 'finished-without-send') {
+                        toast.success('تم تسجيل مرتجع المورد بنجاح!');
+                    }
+                    return;
+                }
+                if (result.outcome === 'mismatch') {
+                    // Items intentionally kept; the key was already cleared by
+                    // the store so the next press mints fresh.
+                    openSupplierReturnMismatchNotice(() => { void runSupplierReturn(); });
+                    return;
+                }
+                // aborted (user) or aborted (lookup-failed): nothing was sent.
+                if (result.outcome === 'aborted' && result.reason === 'lookup-failed') {
+                    toast.error('تعذر التحقق من العملية المسجلة — تحقق من الاتصال وحاول مجددًا.');
+                }
+            };
+            await attempt();
         } catch (error) {
             if (isOfflineGuardError(error)) {
                 toast.error((error as Error).message);
             } else {
-                console.error(error);
+                // Generic page toast like POS/purchase (the service toasts
+                // generically too — accepted double-toast parity).
+                toast.error('حدث خطأ أثناء تسجيل مرتجع المورد.');
             }
+            console.error(error);
         } finally {
+            processingRef.current = false;
             setIsSubmitting(false);
         }
     };
@@ -1418,7 +1541,7 @@ const SupplierReturnModal: React.FC<{
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmationOpen(false)} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">إلغاء</button>
                             <button
-                                onClick={handleConfirmReturn}
+                                onClick={runSupplierReturn}
                                 disabled={isSubmitting}
                                 className="py-2 px-4 bg-red-600 text-white rounded font-semibold disabled:opacity-50"
                             >
@@ -1427,6 +1550,15 @@ const SupplierReturnModal: React.FC<{
                         </div>
                     </div>
                 </div>
+            )}
+            {settle && (
+                <OpKeySettleDialog
+                    title={settle.title}
+                    message={settle.message}
+                    primaryLabel={settle.primaryLabel}
+                    secondaryLabel={settle.secondaryLabel}
+                    onResolve={settle.resolve}
+                />
             )}
         </>
     );
