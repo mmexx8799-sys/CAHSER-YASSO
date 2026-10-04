@@ -58,20 +58,95 @@ export default function SupplierAccountPage() {
     const [selectedTransaction, setSelectedTransaction] = useState<PurchaseInvoice | SupplierReturn | null>(null);
 
     // Payment form — mirror of customer
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
+    // REQ-UI-5: re-entry guard (checked first line, set after validation before any await).
+    const processingRef = useRef<boolean>(false);
+    // Settle dialog state for the TX3-UI payment key flow (null = no dialog).
+    const [settle, setSettle] = useState<null | {
+        title: string; message: string; primaryLabel: string; secondaryLabel: string;
+        resolve: (c: SettleDialogChoice) => void;
+    }>(null);
+
+    // REQ-UI-5 (TX3-UI supplier-payment binding): settle-dialog driver for submitWithOpKey.
+    const decideSupplierPayment = (info: DecideInfo): Promise<DecideChoice> => {
+        return new Promise<DecideChoice>((resolve) => {
+            const labels = info.context === 'restored-same'
+                ? settleLabels('supplierPayment', 'restored-same')
+                : settleLabels('supplierPayment', 'changed');
+            const recordedAmount = typeof info.recorded.amount === 'number' ? ` (المبلغ ${info.recorded.amount})` : '';
+            const message = info.context === 'restored-same'
+                ? `سُجلت دفعة بنفس المبلغ مسبقًا${recordedAmount}.`
+                : `سُجلت دفعة بمبلغ مختلف مسبقًا${recordedAmount}.`;
+            setSettle({
+                title: 'عملية مسجلة مسبقًا — دفعة مورد',
+                message,
+                primaryLabel: labels.primary,
+                secondaryLabel: labels.secondary,
+                resolve: (c: SettleDialogChoice) => {
+                    setSettle(null);
+                    if (c === 'secondary') resolve('proceed-new');
+                    else if (c === 'primary') resolve(info.context === 'restored-same' ? 'finish' : 'abort');
+                    else resolve('abort');
+                },
+            });
+        });
+    };
+
+    const openSupplierPaymentMismatchNotice = (resend: () => void) => {
+        const labels = settleLabels('supplierPayment', 'mismatch');
+        setSettle({
+            title: FLOW_META.supplierPayment.mismatchTitle,
+            message: FLOW_META.supplierPayment.mismatchBody,
+            primaryLabel: labels.primary,
+            secondaryLabel: labels.secondary,
+            resolve: (c: SettleDialogChoice) => {
+                setSettle(null);
+                if (c === 'secondary') resend();
+            },
+        });
+    };
+
+    // REQ-UI-5: unified supplier-payment runner. Called by the form submit AND
+    // by the mismatch-notice resend — every send goes through the same
+    // guard + try/catch/finally.
+    const runSupplierPayment = async () => {
+        if (processingRef.current) return;
         if (!supplier) return;
         const numAmount = Number(amount);
         if (numAmount <= 0) {
             toast.error("المبلغ يجب أن يكون أكبر من صفر");
             return;
         }
+        processingRef.current = true;
         setIsSubmitting(true);
         try {
-            await addSupplierPayment({ supplierId: supplier.id, amount: numAmount, notes });
-            toast.success("تمت إضافة الدفعة بنجاح");
-            setAmount('');
-            setNotes('');
+            // Identity built from the exact values the service receives
+            // (same formula as the service's own reqFp; notes stays out).
+            const identity = {
+                fp: docFingerprint({ items: [], total: numAmount, supplierId: supplier.id }, 'supplierId'),
+                extra: {},
+            };
+            const result = await opKeyStore.submitWithOpKey(
+                'supplierPayment',
+                identity,
+                (key) => addSupplierPayment({ supplierId: supplier.id, amount: numAmount, notes, opKey: key }),
+                { decide: decideSupplierPayment, getRecordDoc: firebaseRecordDoc },
+            );
+            if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+                toast.success("تمت إضافة الدفعة بنجاح");
+                setAmount('');
+                setNotes('');
+                return;
+            }
+            if (result.outcome === 'mismatch') {
+                // Form intentionally kept (amount + notes untouched); the key
+                // was already cleared by the store so resend mints fresh.
+                openSupplierPaymentMismatchNotice(() => { void runSupplierPayment(); });
+                return;
+            }
+            // aborted (user) or aborted (lookup-failed): nothing was sent.
+            if (result.outcome === 'aborted' && result.reason === 'lookup-failed') {
+                toast.error('تعذر التحقق من العملية المسجلة — تحقق من الاتصال وحاول مجددًا.');
+            }
         } catch (e) {
             if (isOfflineGuardError(e)) {
                 toast.error((e as Error).message);
@@ -79,9 +154,15 @@ export default function SupplierAccountPage() {
                 toast.error("فشلت إضافة الدفعة");
             }
         } finally {
+            processingRef.current = false;
             setIsSubmitting(false);
         }
-    }, [supplier, amount, notes]);
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        void runSupplierPayment();
+    };
 
     // --- Live supplier document subscription ---
     useEffect(() => {
@@ -810,6 +891,15 @@ export default function SupplierAccountPage() {
                 onComplete={() => setIsReturnModalOpen(false)}
             />
             <InvoiceDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
+            {settle && (
+                <OpKeySettleDialog
+                    title={settle.title}
+                    message={settle.message}
+                    primaryLabel={settle.primaryLabel}
+                    secondaryLabel={settle.secondaryLabel}
+                    onResolve={settle.resolve}
+                />
+            )}
         </div>
     );
 }
