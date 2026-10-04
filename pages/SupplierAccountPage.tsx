@@ -1482,15 +1482,35 @@ const SupplierReturnModal: React.FC<{
                             {items.map(i => (
                                 <div key={i.product.id} className="flex items-center gap-2">
                                     <span className="flex-1 min-w-0 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{i.product.name}</span>
-                                    <label htmlFor={`srqty-${i.product.id}`} className="sr-only">الكمية</label>
-                                    <input
-                                        id={`srqty-${i.product.id}`}
-                                        type="number"
-                                        value={i.buyQuantity}
-                                        onChange={(e) => updateItem(i.product.id, parseInt(e.target.value) || 1, i.price)}
-                                        className="w-16 p-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-sm"
-                                        min="1"
-                                    />
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => updateItem(i.product.id, i.buyQuantity - 1, i.price)}
+                                            disabled={i.buyQuantity <= 1}
+                                            aria-label={`تقليل كمية ${i.product.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            −
+                                        </button>
+                                        <label htmlFor={`srqty-${i.product.id}`} className="sr-only">الكمية</label>
+                                        <input
+                                            id={`srqty-${i.product.id}`}
+                                            type="number"
+                                            value={i.buyQuantity}
+                                            onChange={(e) => updateItem(i.product.id, parseInt(e.target.value) || 1, i.price)}
+                                            className="w-16 p-1.5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded text-center text-sm"
+                                            min="1"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => updateItem(i.product.id, i.buyQuantity + 1, i.price)}
+                                            disabled={i.buyQuantity >= i.product.quantity}
+                                            aria-label={`زيادة كمية ${i.product.name}`}
+                                            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-bold text-base disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
                                     <label htmlFor={`srprice-${i.product.id}`} className="sr-only">سعر الوحدة</label>
                                     <input
                                         id={`srprice-${i.product.id}`}
