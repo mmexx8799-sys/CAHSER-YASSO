@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowRight, Phone, ShoppingCart, Undo2, Download, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -9,6 +9,12 @@ import { subscribeToCollection, subscribeToDocument } from '../services/dataCach
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 import { usePermissions } from '../hooks/usePermissions';
+import { opKeyStore, settleLabels, FLOW_META } from '../utils/opKeyStore';
+import type { DecideInfo, DecideChoice } from '../utils/opKeyStore';
+import { firebaseRecordDoc } from '../utils/opKeyRecordDoc';
+import { docFingerprint } from '../services/api/opKey';
+import { OpKeySettleDialog } from '../components/OpKeySettleDialog';
+import type { SettleDialogChoice } from '../components/OpKeySettleDialog';
 import ExcelJS from 'exceljs';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -95,6 +101,12 @@ export default function SupplierAccountPage() {
             if (unsubDoc) unsubDoc();
         };
     }, [id]);
+
+    // REQ-UI-2: drop expired TX3-UI key records on page load (TTL sweep only;
+    // never touches a valid key; shared across flows).
+    useEffect(() => {
+        opKeyStore.sweep();
+    }, []);
 
     // --- Payments subscription ---
     useEffect(() => {
@@ -803,6 +815,29 @@ export default function SupplierAccountPage() {
 }
 
 // --- New purchase entry modal: simplified mirror of POS (supplier + catalog items w/ qty & purchase price) ---
+// REQ-UI-2: centralized purchase-key forget (memory-only by design; the
+// session record stays for the restored path). Single call site, used by the
+// modal close effect below; exported for unit testing.
+export function forgetPurchaseKey(): void {
+    opKeyStore.forget('purchase');
+}
+
+// Close-transition reset for PurchaseModal: runs ONLY on true→false (never
+// on mount, never on unrelated changes), and forgets the key only when no
+// submit is in flight. Returns whether the reset ran.
+export function resetPurchaseModalOnClose(args: {
+    wasOpen: boolean;
+    isOpen: boolean;
+    isSubmitting: boolean;
+    reset: () => void;
+    forgetKey?: () => void;
+}): boolean {
+    if (!args.wasOpen || args.isOpen) return false;
+    args.reset();
+    if (!args.isSubmitting) (args.forgetKey ?? forgetPurchaseKey)();
+    return true;
+}
+
 const PurchaseModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -816,6 +851,13 @@ const PurchaseModal: React.FC<{
     const [items, setItems] = useState<Array<{ product: Product; buyQuantity: number; price: number }>>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [confirmationOpen, setConfirmationOpen] = useState(false);
+    // REQ-UI-2: re-entry guard (checked first line, set before any await).
+    const processingRef = useRef<boolean>(false);
+    // Settle dialog state for the TX3-UI key flow (null = no dialog).
+    const [settle, setSettle] = useState<null | {
+        title: string; message: string; primaryLabel: string; secondaryLabel: string;
+        resolve: (c: SettleDialogChoice) => void;
+    }>(null);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -829,15 +871,25 @@ const PurchaseModal: React.FC<{
         };
     }, [isOpen]);
 
-    // Reset on close
+    // Reset on close — REQ-UI-2: forget runs ONLY on the true→false close
+    // transition and never while a submit is in flight (memory-only drop;
+    // the session record stays for the restored path).
+    const wasOpenRef = useRef(false);
     useEffect(() => {
-        if (!isOpen) {
-            setItems([]);
-            setSearchQuery('');
-            setSelectedCategory('');
-            setConfirmationOpen(false);
-        }
-    }, [isOpen]);
+        const wasOpen = wasOpenRef.current;
+        wasOpenRef.current = isOpen;
+        resetPurchaseModalOnClose({
+            wasOpen,
+            isOpen,
+            isSubmitting,
+            reset: () => {
+                setItems([]);
+                setSearchQuery('');
+                setSelectedCategory('');
+                setConfirmationOpen(false);
+            },
+        });
+    }, [isOpen, isSubmitting]);
 
     const filteredProducts = products.filter(p => {
         const matchesCategory = !selectedCategory || p.categoryId === selectedCategory;
@@ -881,11 +933,56 @@ const PurchaseModal: React.FC<{
         })
         .filter((x): x is NonNullable<typeof x> => x !== null);
 
-    const handleConfirmPurchase = async () => {
+    // REQ-UI-2 (TX3-UI purchase binding): settle-dialog driver for submitWithOpKey.
+    const decidePurchase = (info: DecideInfo): Promise<DecideChoice> => {
+        return new Promise<DecideChoice>((resolve) => {
+            const labels = info.context === 'restored-same'
+                ? settleLabels('purchase', 'restored-same')
+                : settleLabels('purchase', 'changed');
+            const recordedBit = info.recorded.number ? ` (برقم ${info.recorded.number})` : '';
+            const message = info.context === 'restored-same'
+                ? `سُجلت فاتورة شراء بنفس المحتوى مسبقًا${recordedBit}.`
+                : `سُجلت فاتورة شراء بمحتوى مختلف مسبقًا${recordedBit}.`;
+            setSettle({
+                title: 'عملية مسجلة مسبقًا — شراء',
+                message,
+                primaryLabel: labels.primary,
+                secondaryLabel: labels.secondary,
+                resolve: (c: SettleDialogChoice) => {
+                    setSettle(null);
+                    if (c === 'secondary') resolve('proceed-new');
+                    else if (c === 'primary') resolve(info.context === 'restored-same' ? 'finish' : 'abort');
+                    else resolve('abort');
+                },
+            });
+        });
+    };
+
+    const openPurchaseMismatchNotice = (resend: () => void) => {
+        const labels = settleLabels('purchase', 'mismatch');
+        setSettle({
+            title: FLOW_META.purchase.mismatchTitle,
+            message: FLOW_META.purchase.mismatchBody,
+            primaryLabel: labels.primary,
+            secondaryLabel: labels.secondary,
+            resolve: (c: SettleDialogChoice) => {
+                setSettle(null);
+                if (c === 'secondary') resend();
+            },
+        });
+    };
+
+    // REQ-UI-2: unified purchase runner. Called by the original confirm AND by
+    // the mismatch-notice resend button — every send is covered by the same
+    // guard + try/catch/finally.
+    const runPurchase = async () => {
+        if (processingRef.current) return;
         if (items.length === 0) return;
+        processingRef.current = true;
         setIsSubmitting(true);
         try {
-            await processPurchase({
+            // Identity built from the exact service-arg object.
+            const purchaseData = {
                 items: items.map(i => ({
                     ...i.product,
                     buyQuantity: i.buyQuantity,
@@ -895,15 +992,47 @@ const PurchaseModal: React.FC<{
                 subtotal,
                 total: subtotal,
                 supplierId: supplier.id,
-            });
-            onComplete();
+            };
+            const identity = {
+                fp: docFingerprint(purchaseData, 'supplierId'),
+                extra: {},
+            };
+            const attempt = async (): Promise<void> => {
+                const result = await opKeyStore.submitWithOpKey(
+                    'purchase',
+                    identity,
+                    (key) => processPurchase(purchaseData, { opKey: key }),
+                    { decide: decidePurchase, getRecordDoc: firebaseRecordDoc },
+                );
+                if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+                    onComplete();
+                    if (result.outcome === 'finished-without-send') {
+                        toast.success('تم تسجيل فاتورة الشراء بنجاح!');
+                    }
+                    return;
+                }
+                if (result.outcome === 'mismatch') {
+                    // Items intentionally kept; the key was already cleared by
+                    // the store so the next press mints fresh.
+                    openPurchaseMismatchNotice(() => { void runPurchase(); });
+                    return;
+                }
+                // aborted (user) or aborted (lookup-failed): nothing was sent.
+                if (result.outcome === 'aborted' && result.reason === 'lookup-failed') {
+                    toast.error('تعذر التحقق من العملية المسجلة — تحقق من الاتصال وحاول مجددًا.');
+                }
+            };
+            await attempt();
         } catch (error) {
             if (isOfflineGuardError(error)) {
                 toast.error((error as Error).message);
             } else {
-                console.error(error);
+                // Same double-toast parity as POS (service toasts generically too).
+                toast.error('حدث خطأ أثناء تسجيل فاتورة الشراء.');
             }
+            console.error(error);
         } finally {
+            processingRef.current = false;
             setIsSubmitting(false);
         }
     };
@@ -1037,7 +1166,7 @@ const PurchaseModal: React.FC<{
                         <div className="flex justify-end gap-2">
                             <button onClick={() => setConfirmationOpen(false)} className="py-2 px-4 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded">إلغاء</button>
                             <button
-                                onClick={handleConfirmPurchase}
+                                onClick={runPurchase}
                                 disabled={isSubmitting}
                                 className="py-2 px-4 bg-primary-600 text-white rounded font-semibold disabled:opacity-50"
                             >
@@ -1046,6 +1175,15 @@ const PurchaseModal: React.FC<{
                         </div>
                     </div>
                 </div>
+            )}
+            {settle && (
+                <OpKeySettleDialog
+                    title={settle.title}
+                    message={settle.message}
+                    primaryLabel={settle.primaryLabel}
+                    secondaryLabel={settle.secondaryLabel}
+                    onResolve={settle.resolve}
+                />
             )}
         </>
     );
