@@ -18,6 +18,12 @@ import { getDB } from '../services/firebase';
 import { useConfirmation } from '../components/ConfirmationProvider';
 import { useReturnCartStore } from '../stores/returnCartStore';
 import { ProductSearch } from '../components/ProductSearch';
+import { opKeyStore, settleLabels, FLOW_META } from '../utils/opKeyStore';
+import type { DecideInfo, DecideChoice } from '../utils/opKeyStore';
+import { firebaseRecordDoc } from '../utils/opKeyRecordDoc';
+import { docFingerprint } from '../services/api/opKey';
+import { OpKeySettleDialog } from '../components/OpKeySettleDialog';
+import type { SettleDialogChoice } from '../components/OpKeySettleDialog';
 
 
 const ArchiveGuard: React.FC<{ type: 'sale' | 'return' }> = ({ type }) => {
@@ -132,6 +138,29 @@ const ProductGrid = memo(({
     );
 });
 
+// REQ-UI-4: centralized return-key forget (memory-only by design; the
+// session record stays for the restored path). Single call site, used by the
+// modal close effect below; exported for unit testing.
+export function forgetReturnKey(): void {
+    opKeyStore.forget('return');
+}
+
+// Close-transition reset for ReturnCartModal: runs ONLY on true→false
+// (never on mount, never on unrelated changes), and forgets the key only
+// when no submit is in flight. Returns whether the reset ran.
+export function resetReturnModalOnClose(args: {
+    wasOpen: boolean;
+    isOpen: boolean;
+    isSubmitting: boolean;
+    reset: () => void;
+    forgetKey?: () => void;
+}): boolean {
+    if (!args.wasOpen || args.isOpen) return false;
+    args.reset();
+    if (!args.isSubmitting) (args.forgetKey ?? forgetReturnKey)();
+    return true;
+}
+
 const ReturnCartModal: React.FC<{
     dailyArchive: DailyArchive | null;
     categories: Category[];
@@ -142,11 +171,37 @@ const ReturnCartModal: React.FC<{
     const { confirm } = useConfirmation();
     const { returnCart, total, isCartModalOpen, setCartModalOpen, clearCart, updateItem, removeItem, setItemPriceType, pricingMethod, setPricingMethod } = useReturnCartStore();
     const [isProcessing, setIsProcessing] = useState(false);
+    // REQ-UI-4: re-entry guard (checked first line, set after validations before any await).
+    const processingRef = useRef<boolean>(false);
+    // Settle dialog state for the TX3-UI key flow (null = no dialog).
+    const [settle, setSettle] = useState<null | {
+        title: string; message: string; primaryLabel: string; secondaryLabel: string;
+        resolve: (c: SettleDialogChoice) => void;
+    }>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
     const [customerSearch, setCustomerSearch] = useState('');
     const [customerResults, setCustomerResults] = useState<Customer[]>([]);
     const [isSearchingCustomers, setIsSearchingCustomers] = useState(false);
     const debouncedCustomerSearch = useDebounce(customerSearch, 300);
+
+    // Reset on close — REQ-UI-4: forget runs ONLY on the true→false close
+    // transition and never while a submit is in flight (memory-only drop;
+    // the session record stays for the restored path).
+    const wasOpenRef = useRef(false);
+    useEffect(() => {
+        const wasOpen = wasOpenRef.current;
+        wasOpenRef.current = isCartModalOpen;
+        resetReturnModalOnClose({
+            wasOpen,
+            isOpen: isCartModalOpen,
+            isSubmitting: isProcessing,
+            reset: () => {
+                setSelectedCustomer(null);
+                setCustomerSearch('');
+                setCustomerResults([]);
+            },
+        });
+    }, [isCartModalOpen, isProcessing]);
 
     useEffect(() => {
         if (!isCartModalOpen) {
@@ -186,6 +241,111 @@ const ReturnCartModal: React.FC<{
         }
     }
 
+    // REQ-UI-4 (TX3-UI return binding): settle-dialog driver for submitWithOpKey.
+    const decideReturn = (info: DecideInfo): Promise<DecideChoice> => {
+        return new Promise<DecideChoice>((resolve) => {
+            const labels = info.context === 'restored-same'
+                ? settleLabels('return', 'restored-same')
+                : settleLabels('return', 'changed');
+            const recordedBit = info.recorded.number ? ` (برقم ${info.recorded.number})` : '';
+            const message = info.context === 'restored-same'
+                ? `سُجل مرتجع بنفس المحتوى مسبقًا${recordedBit}.`
+                : `سُجل مرتجع بمحتوى مختلف مسبقًا${recordedBit}.`;
+            setSettle({
+                title: 'عملية مسجلة مسبقًا — مرتجع',
+                message,
+                primaryLabel: labels.primary,
+                secondaryLabel: labels.secondary,
+                resolve: (c: SettleDialogChoice) => {
+                    setSettle(null);
+                    if (c === 'secondary') resolve('proceed-new');
+                    else if (c === 'primary') resolve(info.context === 'restored-same' ? 'finish' : 'abort');
+                    else resolve('abort');
+                },
+            });
+        });
+    };
+
+    const openReturnMismatchNotice = (resend: () => void) => {
+        const labels = settleLabels('return', 'mismatch');
+        setSettle({
+            title: FLOW_META.return.mismatchTitle,
+            message: FLOW_META.return.mismatchBody,
+            primaryLabel: labels.primary,
+            secondaryLabel: labels.secondary,
+            resolve: (c: SettleDialogChoice) => {
+                setSettle(null);
+                if (c === 'secondary') resend();
+            },
+        });
+    };
+
+    // REQ-UI-4: unified return runner. Called by the confirm button AND by
+    // the mismatch-notice resend (no second confirm there — the user already
+    // chose resend): every send goes through the same guard + try/catch/finally.
+    const runReturn = async () => {
+        if (processingRef.current) return;
+        if (!dailyArchive) {
+            toast.error("لا يمكن إتمام الإرجاع، لم يتم فتح اليومية.");
+            return;
+        }
+        if (returnCart.length === 0) {
+            toast.error("سلة المرتجعات فارغة.");
+            return;
+        }
+        processingRef.current = true;
+        setIsProcessing(true);
+        try {
+            const customerArg = selectedCustomer ? { id: selectedCustomer.id, name: selectedCustomer.name } : undefined;
+            // Identity built from the exact values the service receives: the
+            // SAME raw reduce as services/api/returns.ts (NO rounding, NOT the
+            // store's `total`), same cart, same customerId; links live in
+            // `extra` so a link/archive change rotates the key silently
+            // instead of a false mismatch.
+            const total = returnCart.reduce((s, i) => s + i.price * i.buyQuantity, 0);
+            const identity = {
+                fp: docFingerprint({ items: returnCart, total, customerId: selectedCustomer?.id }, 'customerId'),
+                extra: { originalInvoiceId: originalInvoiceId ?? null, dailyArchiveId: dailyArchive.id },
+            };
+            const result = await opKeyStore.submitWithOpKey(
+                'return',
+                identity,
+                (key) => processReturn(returnCart, dailyArchive.id, customerArg, originalInvoiceId || undefined, undefined, { opKey: key }),
+                { decide: decideReturn, getRecordDoc: firebaseRecordDoc },
+            );
+            if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+                clearCart();
+                setSelectedCustomer(null);
+                setCustomerSearch('');
+                setCartModalOpen(false);
+                if (result.outcome === 'finished-without-send') {
+                    toast.success('تمت عملية الإرجاع بنجاح!');
+                }
+                return;
+            }
+            if (result.outcome === 'mismatch') {
+                // Cart + customer intentionally kept; the key was already
+                // cleared by the store so the next press mints fresh.
+                openReturnMismatchNotice(() => { void runReturn(); });
+                return;
+            }
+            // aborted (user) or aborted (lookup-failed): nothing was sent.
+            if (result.outcome === 'aborted' && result.reason === 'lookup-failed') {
+                toast.error('تعذر التحقق من العملية المسجلة — تحقق من الاتصال وحاول مجددًا.');
+            }
+        } catch (error: any) {
+            if (isOfflineGuardError(error)) {
+                toast.error(error.message);
+            } else {
+                toast.error("حدث خطأ أثناء عملية الإرجاع.");
+            }
+            console.error(error);
+        } finally {
+            processingRef.current = false;
+            setIsProcessing(false);
+        }
+    };
+
     const handleProcessReturn = async () => {
         if (!dailyArchive) {
             toast.error("لا يمكن إتمام الإرجاع، لم يتم فتح اليومية.");
@@ -205,23 +365,7 @@ const ReturnCartModal: React.FC<{
             if (!confirmed) return;
         }
 
-        setIsProcessing(true);
-        try {
-            await processReturn(returnCart, dailyArchive.id, selectedCustomer ? { id: selectedCustomer.id, name: selectedCustomer.name } : undefined, originalInvoiceId || undefined);
-            clearCart();
-            setSelectedCustomer(null);
-            setCustomerSearch('');
-            setCartModalOpen(false);
-        } catch (error: any) {
-            if (isOfflineGuardError(error)) {
-                toast.error(error.message);
-            } else {
-                toast.error("حدث خطأ أثناء عملية الإرجاع.");
-            }
-            console.error(error);
-        } finally {
-            setIsProcessing(false);
-        }
+        void runReturn();
     };
 
     if (!isCartModalOpen) return null;
@@ -424,6 +568,15 @@ const ReturnCartModal: React.FC<{
                     </button>
                 </div>
             </div>
+            {settle && (
+                <OpKeySettleDialog
+                    title={settle.title}
+                    message={settle.message}
+                    primaryLabel={settle.primaryLabel}
+                    secondaryLabel={settle.secondaryLabel}
+                    onResolve={settle.resolve}
+                />
+            )}
         </div>
     );
 }
@@ -437,6 +590,12 @@ export default function ReturnsPage() {
     const [isArchiveLoading, setIsArchiveLoading] = useState(true);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
+
+    // REQ-UI-4: drop expired TX3-UI key records on page load (TTL sweep only;
+    // never touches a valid key; shared across flows).
+    useEffect(() => {
+        opKeyStore.sweep();
+    }, []);
 
     // REQ-P0-1: ربط المرتجع بفاتورة — اختيار العميل والفاتورة
     const [invoiceCustomer, setInvoiceCustomer] = useState<Customer | null>(null);

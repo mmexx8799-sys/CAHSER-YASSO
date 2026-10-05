@@ -3,6 +3,7 @@ import { toast } from 'react-hot-toast';
 import type { CartItem, Product, PriceType } from '../types';
 import { PaymentMethod } from '../types';
 import { resolvePrice } from './posCartStore';
+import { opKeyStore } from '../utils/opKeyStore';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // REQ-M13-FIX: client-side defense layer ONLY (quantity/price sanity caps).
@@ -150,12 +151,17 @@ export const useReturnCartStore = create<ReturnCartState>((set) => ({
     };
   }),
 
-  clearCart: () => set(() => {
-    return {
-      returnCart: [],
-      total: 0,
-      isCartModalOpen: false,
-      pricingMethod: PaymentMethod.Cash, // reset so a fresh cart never inherits stale Credit pricing
-    };
-  }),
+  // REQ-UI-4: centralized key-memory drop (mirror posCartStore.clearCart;
+  // memory-only by design — the session record stays for the restored path).
+  clearCart: () => {
+    opKeyStore.forget('return');
+    set(() => {
+      return {
+        returnCart: [],
+        total: 0,
+        isCartModalOpen: false,
+        pricingMethod: PaymentMethod.Cash, // reset so a fresh cart never inherits stale Credit pricing
+      };
+    });
+  },
 }));
