@@ -161,11 +161,21 @@ export function resetReturnModalOnClose(args: {
     return true;
 }
 
+// REQ-RETURNS-REFRESH: grid refresh gate. The product grid reloads ONLY on
+// a successful return ('sent' or 'finished-without-send') — never on
+// mismatch, abort (incl. lookup-failed), offline-guard failure, or any
+// other catch. Exported for unit testing; the SOLE onComplete call site is
+// the success branch of runReturn below (grep-able).
+export function shouldRefreshReturnGrid(outcome: string): boolean {
+    return outcome === 'sent' || outcome === 'finished-without-send';
+}
+
 const ReturnCartModal: React.FC<{
     dailyArchive: DailyArchive | null;
     categories: Category[];
     originalInvoiceId: string | null;
-}> = ({ dailyArchive, categories, originalInvoiceId }) => {
+    onComplete: () => void;
+}> = ({ dailyArchive, categories, originalInvoiceId, onComplete }) => {
     const { can } = usePermissions();
     const canReturn = can('return');
     const { confirm } = useConfirmation();
@@ -313,11 +323,14 @@ const ReturnCartModal: React.FC<{
                 (key) => processReturn(returnCart, dailyArchive.id, customerArg, originalInvoiceId || undefined, undefined, { opKey: key }),
                 { decide: decideReturn, getRecordDoc: firebaseRecordDoc },
             );
-            if (result.outcome === 'sent' || result.outcome === 'finished-without-send') {
+            if (shouldRefreshReturnGrid(result.outcome)) {
                 clearCart();
                 setSelectedCustomer(null);
                 setCustomerSearch('');
                 setCartModalOpen(false);
+                // REQ-RETURNS-REFRESH: reload the product grid so the stock
+                // shown is post-return (POSPage onSaleComplete mirror).
+                onComplete();
                 if (result.outcome === 'finished-without-send') {
                     toast.success('تمت عملية الإرجاع بنجاح!');
                 }
@@ -1033,7 +1046,7 @@ export default function ReturnsPage() {
                 </button>
             )}
 
-            <ReturnCartModal dailyArchive={dailyArchive} categories={categories} originalInvoiceId={selectedInvoice ? selectedInvoice.id : null} />
+            <ReturnCartModal dailyArchive={dailyArchive} categories={categories} originalInvoiceId={selectedInvoice ? selectedInvoice.id : null} onComplete={() => loadProducts(true)} />
 
             <BarcodeCameraModal
                 isOpen={isCameraOpen}
