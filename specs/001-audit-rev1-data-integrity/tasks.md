@@ -4,8 +4,8 @@ Order: REV1-3 → REV1-1 → REV1-2. Within a REQ: tests FIRST (RED proof on
 unfixed code), then fix, then verification, docs, commit. Do not start a
 REQ's fix before its RED output is saved.
 
-## REV1-3 — quantities (AC-3.1..3.5)
-- [ ] T3.1 Write `tests/<name>.test.ts` (`test.each` over
+## REV1-3 — quantities (AC-3.1..3.5) — DONE (code c859d0d + docs)
+- [x] T3.1 Write `tests/<name>.test.ts` (`test.each` over
   [0, -1, NaN, Infinity, '2', undefined, 0.0] × processSale/processReturn
   THROUGH the real `opKeyStore.submitWithOpKey` (stubbed `getRecordDoc`
   exists:false) + one valid-fraction case + one
@@ -16,13 +16,13 @@ REQ's fix before its RED output is saved.
   precedes try by design).
   Verify: `npx vitest run <file>` (expect RED on unfixed code; save raw
   to evidence/REV1-3/red.txt).
-- [ ] T3.2 Implement validation blocks (sales.ts:31-32 gap,
+- [x] T3.2 Implement validation blocks (sales.ts:31-32 gap,
   returns.ts:46-47 gap) + parity price check. Verify: targeted vitest run
   (expect GREEN) + full diff Arabic check.
-- [ ] T3.3 Run: `npm run typecheck`, full `npm run test:rules`
+- [x] T3.3 Run: `npm run typecheck`, full `npm run test:rules`
   (retry-once only for migrateRoles cold flake, save both outputs),
   `npm run build`. Save raw + exit codes to evidence/REV1-3/.
-- [ ] T3.4 Update docs ×4, commit `fix(sales,returns): ... (REQ-REV1-3)`.
+- [x] T3.4 Update docs ×4, commit `fix(sales,returns): ... (REQ-REV1-3)`.
 
 ## REV1-1 — cache key + fan-out (AC-1.1..1.7)
 - [ ] T1.1 Write `tests/<name>.test.ts` (REAL query/where/orderBy;
