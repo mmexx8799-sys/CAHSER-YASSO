@@ -1,0 +1,13 @@
+# Baseline — pre-rev1 (tag pre-rev1 = ca729db, tree clean, no code changes)
+
+| Command | Exit code | Raw file | Result |
+|---|---|---|---|
+| npx tsc --noEmit | 0 | tsc.txt (empty) | clean |
+| npm run test:rules (run 1) | 1 | (tool transcript, migrateRoles T4.3 timeout flake) | 56 files: 1 failed / 55 passed; 526 / 527 |
+| npm run test:rules (retry, full) | 0 | test-rules.txt | 56 files passed; 527 passed |
+| npm run build | 0 | (tool transcript) | 1771 modules, precache 41 entries, ~24-27s |
+| npx eslint . | 1 | eslint.txt | 351 problems: 112 errors ALL in .scratch/ (8 files), 239 warnings, 0 errors elsewhere |
+
+Notes:
+- The single run-1 failure (tests/migrateRoles.test.ts T4.3, 30s timeout) is the known cold-run flake; the immediate full retry passed 527/527. No code changed between runs.
+- eslint errors are pre-existing local scratch scripts (.scratch/, git-ignored), unrelated to app code.

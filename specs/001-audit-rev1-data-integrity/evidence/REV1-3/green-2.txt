@@ -1,0 +1,43 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev13Quantities.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev13Quantities.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mrejected sale writes nothing (stock/archive/docs/counters unchanged)
+[22m[39m[2026-10-07T10:00:04.423Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad price before any write[2m > [22m[2mvalid zero price passes validation
+[22m[39mError processing sale: Error: سعر الصنف صنف REV1-3 غير مقبول (المرسل: 0، المسموح: أحد [100, 100, 100, 100, 100] أو ≥ 50.00 — 50% من أقل سعر)
+    at [90mE:\Nour-Elrahman\[39mservices\api\sales.ts:113:27
+    at Array.forEach (<anonymous>)
+    at [90mE:\Nour-Elrahman\[39mservices\api\sales.ts:106:31
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad price before any write[2m > [22m[2mvalid zero price passes validation
+[22m[39mError processing return: Error: سعر الصنف صنف REV1-3 في المرتجع غير مقبول (المرسل: 0، المسموح: أحد [100, 100, 100, 100, 100] أو ≥ 50.00)
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:202:27
+    at Array.forEach (<anonymous>)
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:195:19
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+ [32m✓[39m tests/rev13Quantities.test.ts [2m([22m[2m33 tests[22m[2m)[22m[33m 5699[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mrejected sale writes nothing (stock/archive/docs/counters unchanged) [33m685[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 12:59:35
+[2m   Duration [22m 14.72s[2m (transform 2.41s, setup 5.15s, collect 2.51s, tests 5.70s, environment 0ms, prepare 943ms)[22m
+
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

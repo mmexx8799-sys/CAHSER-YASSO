@@ -1,0 +1,885 @@
+
+E:\Nour-Elrahman\.scratch\verbatim-arch12.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  22:35  error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch13.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  29:3   error  'console' is not defined                 no-undef
+  30:3   error  'console' is not defined                 no-undef
+  33:35  error  'console' is not defined                 no-undef
+  34:3   error  'console' is not defined                 no-undef
+  36:1   error  'console' is not defined                 no-undef
+  41:1   error  'console' is not defined                 no-undef
+  42:26  error  'console' is not defined                 no-undef
+  44:1   error  'console' is not defined                 no-undef
+  45:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch14.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  29:3   error  'console' is not defined                 no-undef
+  30:3   error  'console' is not defined                 no-undef
+  33:35  error  'console' is not defined                 no-undef
+  34:3   error  'console' is not defined                 no-undef
+  36:1   error  'console' is not defined                 no-undef
+  37:1   error  'console' is not defined                 no-undef
+  42:1   error  'console' is not defined                 no-undef
+  43:26  error  'console' is not defined                 no-undef
+  45:1   error  'console' is not defined                 no-undef
+  46:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch15.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  21:1   error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+  24:3   error  'console' is not defined                 no-undef
+  27:35  error  'console' is not defined                 no-undef
+  28:3   error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  35:1   error  'console' is not defined                 no-undef
+  36:26  error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:24  error  'console' is not defined                 no-undef
+  40:1   error  'console' is not defined                 no-undef
+  43:1   error  'console' is not defined                 no-undef
+  44:29  error  'console' is not defined                 no-undef
+  47:1   error  'console' is not defined                 no-undef
+  48:28  error  'console' is not defined                 no-undef
+  50:1   error  'console' is not defined                 no-undef
+  51:29  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch16.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  15:1   error  'console' is not defined                 no-undef
+  16:1   error  'console' is not defined                 no-undef
+  17:1   error  'console' is not defined                 no-undef
+  20:33  error  'console' is not defined                 no-undef
+  21:8   error  'console' is not defined                 no-undef
+  22:1   error  'console' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  28:26  error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  31:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch17.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  15:1   error  'console' is not defined                 no-undef
+  16:1   error  'console' is not defined                 no-undef
+  17:1   error  'console' is not defined                 no-undef
+  20:33  error  'console' is not defined                 no-undef
+  21:8   error  'console' is not defined                 no-undef
+  22:1   error  'console' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  28:26  error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  31:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch18.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  24:1   error  'console' is not defined                 no-undef
+  26:3   error  'console' is not defined                 no-undef
+  27:3   error  'console' is not defined                 no-undef
+  30:35  error  'console' is not defined                 no-undef
+  31:3   error  'console' is not defined                 no-undef
+  33:1   error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:26  error  'console' is not defined                 no-undef
+  41:1   error  'console' is not defined                 no-undef
+  42:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch19.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  21:1   error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+  24:3   error  'console' is not defined                 no-undef
+  27:35  error  'console' is not defined                 no-undef
+  28:3   error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  35:1   error  'console' is not defined                 no-undef
+  36:26  error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\App.tsx
+   74:46   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:60   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:91   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:132  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   74:153  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   75:28   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:55   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:117  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  146:138  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  211:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:63   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  212:125  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  217:74   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\components\BarcodeLabelSheet.tsx
+  24:13  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  24:35  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  24:67  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  80:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\components\BarcodeLabelSheet.tsx:80:5
+  78 |
+  79 |   useEffect(() => {
+> 80 |     setVisibleCount(Math.min(CHUNK_INITIAL, printable.length));
+     |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  81 |   }, [printable.length]);
+  82 |
+  83 |   useEffect(() => {  react-hooks/set-state-in-effect
+
+E:\Nour-Elrahman\components\BulkBarcodePrintModal.tsx
+  8:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)  no-restricted-imports
+
+E:\Nour-Elrahman\components\InvoiceDetailModal.tsx
+  13:35   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  13:68   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  14:36   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:86   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:84   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  20:47   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  21:44   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:51   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:63   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:106  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:62   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:32   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\components\OfflineStats.tsx
+  19:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\components\OfflineStats.tsx:19:5
+  17 |
+  18 |   useEffect(() => {
+> 19 |     load();
+     |     ^^^^ Avoid calling setState() directly within an effect
+  20 |   }, []);
+  21 |
+  22 |   const handleExport = async () => {  react-hooks/set-state-in-effect
+
+E:\Nour-Elrahman\components\PermissionEditorModal.tsx
+  21:38  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  26:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\components\PermissionEditorModal.tsx:26:7
+  24 |   useEffect(() => {
+  25 |     if (isOpen && user) {
+> 26 |       setStates(listsToStates(user.capGrants, user.capDenies, user.role));
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  27 |       setAuditLoading(true);
+  28 |       getPermissionAudit(user.uid, 5).then(rows => setAudit(rows)).catch(() => setAudit([])).finally(() => setAuditLoading(false));
+  29 |     }  react-hooks/set-state-in-effect
+  80:30  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  80:42  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  81:39  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  83:44  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  83:56  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\contexts\AuthContext.tsx
+    5:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)  no-restricted-imports
+   68:41  warning  Unexpected any. Specify a different type                                                                                                        @typescript-eslint/no-explicit-any
+   68:99  warning  Unexpected any. Specify a different type                                                                                                        @typescript-eslint/no-explicit-any
+   87:45  warning  Unexpected any. Specify a different type                                                                                                        @typescript-eslint/no-explicit-any
+  103:20  warning  Unexpected any. Specify a different type                                                                                                        @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\e2e\global-setup.ts
+  35:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\e2e\happy-path.spec.ts
+   93:52  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  100:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  112:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  124:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\e2e\tx3-payments.spec.ts
+  27:17  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:37  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  80:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  90:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\hooks\useBarcodeScanner.ts
+  135:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  135:67  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  148:56  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  152:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:53  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  173:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  175:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  219:80  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  228:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  247:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\hooks\usePermissions.ts
+   9:34  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  10:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  12:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  17:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  18:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\pages\ArchivePage.tsx
+   8:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-restricted-imports
+   9:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-restricted-imports
+  62:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ArchivePage.tsx:62:5
+  60 |
+  61 |   useEffect(() => {
+> 62 |     setIsLoading(true);
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  63 |     const constraints: QueryConstraint[] = [orderBy('startTime', 'desc')];
+  64 |     const unsubscribe = subscribeToCollection<Omit<DailyArchive, 'startTime' | 'endTime'> & { startTime: Timestamp, endTime?: Timestamp }>('dailyArchives', (archivesData) => {
+  65 |       const mappedData = archivesData.map(a => ({  react-hooks/set-state-in-effect
+
+E:\Nour-Elrahman\pages\CustomerAccountPage.tsx
+  9:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)  no-restricted-imports
+
+E:\Nour-Elrahman\pages\CustomersPage.tsx
+    9:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-restricted-imports
+   24:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\CustomersPage.tsx:24:7
+  22 |   useEffect(() => {
+  23 |     if (customer) {
+> 24 |       setFormData({ name: customer.name, phone: customer.phone || '', address: customer.address || '', balance: customer.balance });
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |     } else {
+  26 |       setFormData({ name: '', phone: '', address: '', balance: 0 });
+  27 |     }  react-hooks/set-state-in-effect
+  198:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\CustomersPage.tsx:198:5
+  196 |
+  197 |   useEffect(() => {
+> 198 |     loadCustomers(true);
+      |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  199 |   }, [debouncedSearchQuery]);
+  200 |
+  201 |   const handleSaveCustomer = useCallback(async (customerData: Omit<Customer, 'id' | 'createdAt'> | Customer) => {                                                                  react-hooks/set-state-in-effect
+  199:6  warning  React Hook useEffect has a missing dependency: 'loadCustomers'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+
+E:\Nour-Elrahman\pages\DashboardPage.tsx
+   16:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-restricted-imports
+   17:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-restricted-imports
+  128:34  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  135:34  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  144:17  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-explicit-any
+  153:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\DashboardPage.tsx:153:5
+  151 |   // Reset lazy state when range changes
+  152 |   useEffect(() => {
+> 153 |     setTopProducts(null);
+      |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  154 |     setTopProductsError(null);
+  155 |     setTopProductsRequested(false);
+  156 |   }, [range]);  react-hooks/set-state-in-effect
+
+E:\Nour-Elrahman\pages\LoginPage.tsx
+  42:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:25  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\pages\POSPage.tsx
+   25:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-restricted-imports
+   26:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-restricted-imports
+  460:13  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\POSPage.tsx:460:13
+  458 |     useEffect(() => {
+  459 |         if (isOpen) {
+> 460 |             setDiscount(0);
+      |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  461 |             setSelectedCustomer('');
+  462 |             setPaymentMethod(PaymentMethod.Cash);
+  463 |         }                                                                                                                                      react-hooks/set-state-in-effect
+  587:17  warning  Error: Cannot access variable before it is declared
+
+`loadMoreProducts` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+E:\Nour-Elrahman\pages\POSPage.tsx:587:17
+  585 |         observer.current = new IntersectionObserver(entries => {
+  586 |             if (entries[0].isIntersecting && hasMore) {
+> 587 |                 loadMoreProducts();
+      |                 ^^^^^^^^^^^^^^^^ `loadMoreProducts` accessed before it is declared
+  588 |             }
+  589 |         });
+  590 |         if (node) observer.current.observe(node);
+
+E:\Nour-Elrahman\pages\POSPage.tsx:621:5
+  619 |     };
+  620 |
+> 621 |     const loadMoreProducts = () => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 622 |         if (!isLoadingMore && hasMore) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 623 |             loadProducts(false);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 624 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 625 |     };
+      | ^^^^^^^ `loadMoreProducts` is declared here
+  626 |
+  627 |     useEffect(() => {
+  628 |         const resetAndLoad = () => {  react-hooks/immutability
+  591:8   warning  React Hook useCallback has a missing dependency: 'loadMoreProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/exhaustive-deps
+  634:8   warning  React Hook useEffect has a missing dependency: 'loadProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  646:9   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\POSPage.tsx:646:9
+  644 |         const unsubscribeCategories = subscribeToCollection<Category>('categories', setCategories, categoriesConstraints);
+  645 |
+> 646 |         setIsArchiveLoading(true);
+      |         ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  647 |         getOpenDailyArchive()
+  648 |             .then(archive => {
+  649 |                 setDailyArchive(archive);                                       react-hooks/set-state-in-effect
+  654:26  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\pages\ProductsPage.tsx
+   13:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-restricted-imports
+   14:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-restricted-imports
+  132:9  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ProductsPage.tsx:132:9
+  130 |     if (isOpen) {
+  131 |       if (product) {
+> 132 |         setFormData({
+      |         ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  133 |           code: product.code,
+  134 |           name: product.name,
+  135 |           barcode: product.barcode ?? '',  react-hooks/set-state-in-effect
+  150:6  warning  React Hook useEffect has a missing dependency: 'initialFormState'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+  404:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ProductsPage.tsx:404:7
+  402 |   useEffect(() => {
+  403 |     if (!focusId) {
+> 404 |       setFocusedProduct(null);
+      |       ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  405 |       setFocusedError(null);
+  406 |       setFocusedLoading(false);
+  407 |       return;               react-hooks/set-state-in-effect
+  487:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ProductsPage.tsx:487:5
+  485 |
+  486 |   useEffect(() => {
+> 487 |     loadProducts(true);
+      |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  488 |   }, [debouncedSearchQuery, selectedCategory]);
+  489 |
+  490 |   useEffect(() => {                                                        react-hooks/set-state-in-effect
+  488:6  warning  React Hook useEffect has a missing dependency: 'loadProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+
+E:\Nour-Elrahman\pages\ReportsPage.tsx
+    7:1    warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-restricted-imports
+    8:1    warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             no-restricted-imports
+   19:65   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   73:8    warning  React Hook useEffect has a missing dependency: 'selectedArchiveId'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/exhaustive-deps
+   79:48   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  145:122  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  145:153  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  211:18   warning  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+E:\Nour-Elrahman\pages\ReportsPage.tsx:211:18
+  209 |                 ))}
+  210 |
+> 211 |                 <TransactionList title="المرتجعات" items={returns} isReturn />
+      |                  ^^^^^^^^^^^^^^^ This component is created during render
+  212 |             </div>
+  213 |
+  214 |             <InvoiceDetailModal transaction={selectedTransaction} onClose={() => setSelectedTransaction(null)} />
+
+E:\Nour-Elrahman\pages\ReportsPage.tsx:134:107
+  132 |     }
+  133 |
+> 134 |     const TransactionList: React.FC<{ title: string; items: (Invoice | Return)[]; isReturn?: boolean }> = ({ title, items, isReturn = false }) => {
+      |                                                                                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 135 |         if (items.length === 0) return null;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 136 |         return (
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 156 |         );
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 157 |     }
+      | ^^^^^^ The component is created during render here
+  158 |
+  159 |     return (
+  160 |         <div className="p-4 lg:p-6">  react-hooks/static-components
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx
+   15:1    warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-restricted-imports
+   16:1    warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  no-restricted-imports
+  218:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:218:13
+  216 |     useEffect(() => {
+  217 |         if (!isCartModalOpen) {
+> 218 |             setSelectedCustomer(null);
+      |             ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  219 |             setCustomerSearch('');
+  220 |             setCustomerResults([]);
+  221 |         }                                                                                                                                                                                                                       react-hooks/set-state-in-effect
+  226:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:226:13
+  224 |     useEffect(() => {
+  225 |         if (selectedCustomer || !debouncedCustomerSearch.trim()) {
+> 226 |             setCustomerResults([]);
+      |             ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  227 |             return;
+  228 |         }
+  229 |         setIsSearchingCustomers(true);                                                                                                                                                                                                    react-hooks/set-state-in-effect
+  349:25   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  648:17   warning  Error: Cannot access variable before it is declared
+
+`loadMoreProducts` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:648:17
+  646 |         observer.current = new IntersectionObserver(entries => {
+  647 |             if (entries[0].isIntersecting && hasMore) {
+> 648 |                 loadMoreProducts();
+      |                 ^^^^^^^^^^^^^^^^ `loadMoreProducts` accessed before it is declared
+  649 |             }
+  650 |         });
+  651 |         if (node) observer.current.observe(node);
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:683:5
+  681 |     };
+  682 |
+> 683 |     const loadMoreProducts = useCallback(() => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 684 |         if (!isLoadingMore && hasMore) {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 685 |             loadProducts(false);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 686 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 687 |     }, [isLoadingMore, hasMore]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `loadMoreProducts` is declared here
+  688 |
+  689 |     useEffect(() => {
+  690 |         if (!isArchiveLoading && dailyArchive) {  react-hooks/immutability
+  652:8    warning  React Hook useCallback has a missing dependency: 'loadMoreProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  687:8    warning  React Hook useCallback has a missing dependency: 'loadProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+  691:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:691:13
+  689 |     useEffect(() => {
+  690 |         if (!isArchiveLoading && dailyArchive) {
+> 691 |             loadProducts(true);
+      |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  692 |         }
+  693 |     }, [debouncedSearchQuery, selectedCategory, dailyArchive, isArchiveLoading]);
+  694 |                                                                                                                                                                                                         react-hooks/set-state-in-effect
+  693:8    warning  React Hook useEffect has a missing dependency: 'loadProducts'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+  699:9    warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:699:9
+  697 |         const unsubscribeCategories = subscribeToCollection<Category>('categories', setCategories, constraints);
+  698 |
+> 699 |         setIsArchiveLoading(true);
+      |         ^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  700 |         getOpenDailyArchive()
+  701 |             .then(setDailyArchive)
+  702 |             .catch((err: any) => {                                                                                                                                                  react-hooks/set-state-in-effect
+  702:26   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  716:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:716:13
+  714 |     useEffect(() => {
+  715 |         if (invoiceCustomer || !debouncedInvoiceCustomerSearch.trim()) {
+> 716 |             setInvoiceCustomerResults([]);
+      |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  717 |             return;
+  718 |         }
+  719 |         setIsSearchingInvoiceCustomers(true);                                                                                                                                                                         react-hooks/set-state-in-effect
+  729:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:729:13
+  727 |     useEffect(() => {
+  728 |         if (!invoiceCustomer) {
+> 729 |             setInvoicesForCustomer([]);
+      |             ^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  730 |             setSelectedInvoice(null);
+  731 |             return;
+  732 |         }                                                                                                                                                                                                                                react-hooks/set-state-in-effect
+  738:42   warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  739:142  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-explicit-any
+  749:13   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\ReturnsPage.tsx:749:13
+  747 |     useEffect(() => {
+  748 |         if (!selectedInvoice) {
+> 749 |             setRemainingMap(new Map());
+      |             ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  750 |             return;
+  751 |         }
+  752 |         const db = getDB();                                                                                                                                                                                                                                                 react-hooks/set-state-in-effect
+  780:8    warning  React Hook useEffect has missing dependencies: 'clearCart' and 'returnCart'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+
+E:\Nour-Elrahman\pages\SettingsPage.tsx
+   81:9   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\SettingsPage.tsx:81:9
+  79 |     // Sync with initial prop if it changes from context
+  80 |     useEffect(() => {
+> 81 |         setCurrentAppName(initialAppName);
+     |         ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  82 |     }, [initialAppName]);
+  83 |
+  84 |     const handleSave = async () => {  react-hooks/set-state-in-effect
+  155:25  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+  291:34  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\pages\SupplierAccountPage.tsx
+  10:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)  no-restricted-imports
+
+E:\Nour-Elrahman\pages\SuppliersPage.tsx
+    9:1  warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-restricted-imports
+   24:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\SuppliersPage.tsx:24:7
+  22 |   useEffect(() => {
+  23 |     if (supplier) {
+> 24 |       setFormData({ name: supplier.name, phone: supplier.phone || '', address: supplier.address || '', balance: supplier.balance });
+     |       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |     } else {
+  26 |       setFormData({ name: '', phone: '', address: '', balance: 0 });
+  27 |     }  react-hooks/set-state-in-effect
+  199:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\SuppliersPage.tsx:199:5
+  197 |
+  198 |   useEffect(() => {
+> 199 |     loadSuppliers(true);
+      |     ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  200 |   }, [debouncedSearchQuery]);
+  201 |
+  202 |   const handleSaveSupplier = useCallback(async (supplierData: Omit<Supplier, 'id' | 'createdAt'> | Supplier) => {                                                                  react-hooks/set-state-in-effect
+  200:6  warning  React Hook useEffect has a missing dependency: 'loadSuppliers'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+
+E:\Nour-Elrahman\pages\UsersPage.tsx
+    9:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-restricted-imports
+   10:1   warning  'firebase/firestore' import is restricted from being used. Use services/api.ts instead of importing firebase/firestore directly (AUDIT-ARCH-1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        no-restricted-imports
+  107:40  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  108:40  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  116:13  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+E:\Nour-Elrahman\pages\UsersPage.tsx:116:13
+  114 |             // Firestore teardown race guard: subscription failed mid-lifecycle — show empty state instead of crashing.
+  115 |             console.warn('Users subscription failed, showing empty list:', e);
+> 116 |             setIsLoading(false);
+      |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  117 |         }
+  118 |         return () => {
+  119 |             if (unsub) {  react-hooks/set-state-in-effect
+
+E:\Nour-Elrahman\services\api\backup.ts
+   62:40  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   87:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   96:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  153:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  181:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  199:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  210:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  232:81  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\core.ts
+   31:32   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   46:40   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   79:17   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   83:26   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  105:37   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  106:101  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  117:47   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  126:70   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  151:90   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  152:20   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  155:58   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  156:25   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  162:27   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  163:27   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  164:27   warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  185:9    warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+
+E:\Nour-Elrahman\services\api\customers.ts
+   39:81  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   54:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  119:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  164:54  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  178:21  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\opKey.ts
+  86:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  89:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  90:14  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\products.ts
+   67:17  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   74:22  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   80:21  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   92:18  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  101:39  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  128:17  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  134:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  155:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+
+E:\Nour-Elrahman\services\api\purchases.ts
+  123:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  151:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\returns.ts
+  103:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  137:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  236:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  245:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  253:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  258:41  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  266:43  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\sales.ts
+   52:54  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  164:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\suppliers.ts
+   41:81  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+   56:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  119:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  163:54  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  177:21  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\api\users.ts
+   89:21  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  141:39  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  145:19  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  164:17  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  174:61  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  181:91  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  189:9   warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+
+E:\Nour-Elrahman\services\auth.ts
+  54:21  warning  Unexpected any. Specify a different type                        @typescript-eslint/no-explicit-any
+  57:13  warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+  60:13  warning  There is no `cause` attached to the symptom error being thrown  preserve-caught-error
+
+E:\Nour-Elrahman\services\dataCache.ts
+  17:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:76   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  23:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\services\inflight.ts
+  40:55  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:73  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\tests\permissionsRules.test.ts
+  251:5  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+E:\Nour-Elrahman\utils\capOverrides.ts
+  43:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  46:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\utils\dashboardAggregation.ts
+  106:38  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  136:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  138:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  139:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  140:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  141:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  155:27  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  157:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  158:30  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  165:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  166:31  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+E:\Nour-Elrahman\utils\nav.ts
+  51:71  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  75:46  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 351 problems (112 errors, 239 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

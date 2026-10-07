@@ -29,6 +29,17 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
     // TX3 key validation FIRST — pure sync check, before any Firestore contact
     // (assertOnline's preflight ping included). Old callers send nothing.
     assertValidOpKey(opts?.opKey);
+    // REQ-REV1-3: reject malformed quantities/prices before any network
+    // contact or read (same position as assertValidOpKey — outside any try,
+    // so the Arabic message reaches the caller verbatim).
+    invoiceData.items.forEach((item) => {
+        if (typeof item.buyQuantity !== 'number' || !Number.isFinite(item.buyQuantity) || item.buyQuantity <= 0) {
+            throw new Error(`كمية البيع غير صالحة للصنف ${item.name || item.id}`);
+        }
+        if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price < 0) {
+            throw new Error(`سعر البيع غير صالح للصنف ${item.name || item.id}`);
+        }
+    });
     await assertOnline();
     try {
         // REQ-TX2-SALE (AUDIT-TX-2): invoiceRef hoisted outside the callback
