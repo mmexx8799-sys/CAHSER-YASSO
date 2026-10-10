@@ -24,8 +24,8 @@ REQ's fix before its RED output is saved.
   `npm run build`. Save raw + exit codes to evidence/REV1-3/.
 - [x] T3.4 Update docs ×4, commit `fix(sales,returns): ... (REQ-REV1-3)`.
 
-## REV1-1 — cache key + fan-out (AC-1.1..1.7)
-- [ ] T1.1 Write `tests/<name>.test.ts` (REAL query/where/orderBy;
+## REV1-1 — cache key + fan-out (AC-1.1..1.7) — DONE (code 0307dc2 + docs)
+- [x] T1.1 Write `tests/<name>.test.ts` (REAL query/where/orderBy;
   onSnapshot mocked at boundary OR emulator-backed): A-vs-B collision,
   equal sharing, B-shared RECEIVES LIVE UPDATES (RED-able on current
   code: today B gets the first snapshot only), A-out-while-B-stays
@@ -33,13 +33,13 @@ REQ's fix before its RED output is saved.
   churn, empty constraints. Verify: run vs UNFIXED code (expect RED:
   B receives A's data / B gets no live updates); save raw to
   evidence/REV1-1/red.txt.
-- [ ] T1.2 Implement queryEqual sharing + fan-out Set in
+- [x] T1.2 Implement queryEqual sharing + fan-out Set in
   services/dataCache.ts (delete `_toFieldFilter` branch; preserve
   ref-count + microtask unsubscribe + immediate callback; NO constraint
   reordering anywhere). Verify: targeted run GREEN.
-- [ ] T1.3 Run typecheck + full test:rules (+build). Save raw + exits
+- [x] T1.3 Run typecheck + full test:rules (+build). Save raw + exits
   to evidence/REV1-1/.
-- [ ] T1.4 Update docs ×4 INCLUDING the F6 backlog entry (never-cleared
+- [x] T1.4 Update docs ×4 INCLUDING the F6 backlog entry (never-cleared
   cache — entry text only, zero code), commit `fix(cache): ... (REQ-REV1-1)`.
 
 ## REV1-2 — dust (AC-2.1..2.5)
