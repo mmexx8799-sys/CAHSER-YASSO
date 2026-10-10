@@ -41,6 +41,10 @@ export interface OpFingerprint {
     party: string | null;
 }
 
+// REV1-2: cents rounding shared with utils/money (single source — the
+// exact naive semantics below are locked by contract, no epsilon).
+export const round2 = (n: unknown) => Math.round((Number(n) || 0) * 100) / 100;
+
 // Build from an explicit parts bag so request and stored-doc sides share
 // one code path. Totals round to 2 decimals (float-dust guard).
 export function buildFingerprint(parts: {
@@ -57,7 +61,6 @@ export function buildFingerprint(parts: {
     const sorted: Array<[string, number]> = [...merged.entries()].sort(([a], [b]) =>
         a < b ? -1 : a > b ? 1 : 0,
     );
-    const round2 = (n: unknown) => Math.round((Number(n) || 0) * 100) / 100;
     const opt = (n: unknown) => (n === undefined ? undefined : round2(n));
     return {
         pairs: sorted,

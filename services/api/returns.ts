@@ -12,6 +12,7 @@ import {
 import type { CartItem, Return, Invoice } from '../../types';
 import { toast } from 'react-hot-toast';
 import { withInFlightGuard } from '../inflight';
+import { round2 } from '../../utils/money';
 import { reportError } from '../monitoring';
 import {
     db,
@@ -240,7 +241,7 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
 
             if (customer && customerRef && customerDoc) {
                 const currentBalance = customerDoc.data().balance || 0;
-                transaction.update(customerRef, { balance: currentBalance - totalReturnAmount });
+                transaction.update(customerRef, { balance: round2(currentBalance - totalReturnAmount) });
             }
 
             const currentReturns = archiveDoc.data().totalReturns || 0;

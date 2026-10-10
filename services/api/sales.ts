@@ -9,6 +9,7 @@ import {
 import type { Invoice, DailyArchive } from '../../types';
 import { toast } from 'react-hot-toast';
 import { withInFlightGuard } from '../inflight';
+import { round2 } from '../../utils/money';
 import {
     db,
     assertOnline,
@@ -137,7 +138,7 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
                 const customerData = customerDoc.data();
                 customerName = customerData.name;
                 const currentBalance = customerData.balance;
-                transaction.update(customerRef, { balance: currentBalance + invoiceData.total });
+                transaction.update(customerRef, { balance: round2((currentBalance || 0) + invoiceData.total) });
             }
 
             const newInvoice = {

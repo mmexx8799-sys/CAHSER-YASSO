@@ -20,6 +20,7 @@ import type { QueryConstraint, QueryDocumentSnapshot } from "firebase/firestore"
 import type { Supplier, SupplierPayment } from '../../types';
 import { toast } from 'react-hot-toast';
 import { withInFlightGuard } from '../inflight';
+import { round2 } from '../../utils/money';
 import {
     db,
     assertOnline,
@@ -168,7 +169,7 @@ export const addSupplierPayment = withInFlightGuard(async (payment: Omit<Supplie
                 return;
             }
             const currentBalance = freshSupplierDoc.data().balance;
-            const newBalance = currentBalance - payment.amount;
+            const newBalance = round2((currentBalance || 0) - payment.amount);
             transaction.update(supplierRef, { balance: newBalance });
             transaction.set(paymentRef, { ...paymentData, date: serverTimestamp() });
         });

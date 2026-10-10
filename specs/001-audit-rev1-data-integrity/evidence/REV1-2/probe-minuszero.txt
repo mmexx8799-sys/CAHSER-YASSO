@@ -1,0 +1,41 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/zzDustProbe.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/zzDustProbe.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/zzDustProbe.test.ts[2m > [22m[2mzz probe[2m > [22m[2mreads stored values verbatim
+[22m[39m[2026-10-10T13:08:31.827Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+[90mstdout[2m | tests/zzDustProbe.test.ts[2m > [22m[2mzz probe[2m > [22m[2mreads stored values verbatim
+[22m[39mPROBE ac24-final: String=0 Object.is(-0)=false Object.is(0)=true typeof=number
+
+[90mstdout[2m | tests/zzDustProbe.test.ts[2m > [22m[2mzz probe[2m > [22m[2mreads stored values verbatim
+[22m[39mPROBE exact-0.3-minus-0.3: String=0 Object.is(-0)=false Object.is(0)=true typeof=number
+
+[90mstdout[2m | tests/zzDustProbe.test.ts[2m > [22m[2mzz probe[2m > [22m[2mreads stored values verbatim
+[22m[39mPROBE 0.3-minus-return0.3: String=0 Object.is(-0)=false Object.is(0)=true typeof=number
+
+[90mstdout[2m | tests/zzDustProbe.test.ts[2m > [22m[2mzz probe[2m > [22m[2mreads stored values verbatim
+[22m[39mPROBE 0.3-minus-dusty0.3-payment: String=0 Object.is(-0)=true Object.is(0)=false typeof=number
+
+ [32m✓[39m tests/zzDustProbe.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 5435[2mms[22m[39m
+   [33m[2m✓[22m[39m zz probe[2m > [22mreads stored values verbatim [33m2633[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m   Start at [22m 16:08:25
+[2m   Duration [22m 7.49s[2m (transform 305ms, setup 481ms, collect 489ms, tests 5.43s, environment 0ms, prepare 151ms)[22m
+
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
