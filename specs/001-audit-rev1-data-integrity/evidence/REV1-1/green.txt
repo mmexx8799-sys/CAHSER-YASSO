@@ -1,0 +1,39 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev1Cache.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev1Cache.test.ts[2m > [22m[2mREV1-1 — dataCache key collision + fan-out[2m > [22m[2mAC-1.6b: a throwing subscriber callback does not starve the rest
+[22m[39mError notifying subscriber of test-throwcb:  Error: boom
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:326:78
+    at wrapped [90m(E:\Nour-Elrahman\[39mservices\dataCache.ts:86:9[90m)[39m
+    at Object.callback [90m(E:\Nour-Elrahman\[39mservices\dataCache.ts:125:21[90m)[39m
+    at triggerSnapshot [90m(E:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:84:14[90m)[39m
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:329:7
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+[90mstderr[2m | tests/rev1Cache.test.ts[2m > [22m[2mREV1-1 — dataCache key collision + fan-out[2m > [22m[2monSnapshot error callback: listener stable
+[22m[39mError listening to test-err:  Error: test error
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:380:18
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+
+ [32m✓[39m tests/rev1Cache.test.ts [2m([22m[2m27 tests[22m[2m)[22m[90m 48[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m27 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 12:32:18
+[2m   Duration [22m 1.56s[2m (transform 196ms, setup 476ms, collect 129ms, tests 48ms, environment 0ms, prepare 138ms)[22m
+

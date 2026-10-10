@@ -3,9 +3,10 @@ import {
   collection, 
   onSnapshot, 
   query,
+  queryEqual,
   doc
 } from "firebase/firestore";
-import type { QueryConstraint, DocumentData } from 'firebase/firestore';
+import type { Query, QueryConstraint, DocumentData } from 'firebase/firestore';
 import { getDB } from './firebase';
 
 interface CacheEntry<T> {
@@ -17,13 +18,26 @@ const db = getDB();
 const cache = new Map<string, CacheEntry<any>>();
 const activeSubscriptions = new Map<string, number>();
 
-// A simple key generator for queries.
-const generateCacheKey = (path: string, constraints: QueryConstraint[]): string => {
+// Per-path lists of built-query entries. Sharing is decided ONLY by the
+// public queryEqual comparator on the built queries — never by inspecting
+// constraint internals, and never by reordering constraints.
+interface CollectionEntry {
+    callbacks: Set<(data: (DocumentData & { id: string })[]) => void>;
+    data: (DocumentData & { id: string })[];
+    builtQuery: Query;
+    listening: boolean;
+    unsubscribe: () => void;
+}
+
+const collectionEntries = new Map<string, CollectionEntry[]>();
+
+// Equivalence is true only if the public comparator says so.
+// Indeterminable equivalence (throw) never shares.
+const queriesMatch = (a: Query, b: Query): boolean => {
     try {
-        const constraintString = constraints.map(c => JSON.stringify((c as any)._toFieldFilter ? (c as any)._toFieldFilter() : c.type)).join(';');
-        return `${path}::${constraintString}`;
+        return queryEqual(a, b);
     } catch {
-        return `${path}::${constraints.length}`;
+        return false;
     }
 };
 
@@ -58,46 +72,73 @@ export const subscribeToCollection = <T extends DocumentData>(
     callback: (data: (T & { id: string })[]) => void,
     constraints: QueryConstraint[] = []
 ): Unsubscribe => {
-    const cacheKey = generateCacheKey(path, constraints);
-    
-    const currentSubCount = activeSubscriptions.get(cacheKey) || 0;
-    activeSubscriptions.set(cacheKey, currentSubCount + 1);
+    // Build first: a throwing construction fails closed for this caller
+    // alone — no entry is stored and no ref-count leaks.
+    const built = query(collection(db, path), ...constraints);
 
-    const cachedEntry = cache.get(cacheKey);
-    if (cachedEntry) {
-        // Return cached data immediately to improve perceived performance
-        callback(cachedEntry.data);
+    let list = collectionEntries.get(path);
+    if (!list) {
+        list = [];
+        collectionEntries.set(path, list);
     }
 
-    if (currentSubCount === 0) {
-        // This is the first subscriber for this query, so create a new listener.
-        const q = query(collection(db, path), ...constraints);
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as (T & { id: string })));
-            
-            const newEntry: CacheEntry<(T & { id: string })[]> = { data, unsubscribe };
-            cache.set(cacheKey, newEntry);
-            
-            callback(data);
+    const wrapped = (d: (DocumentData & { id: string })[]): void => {
+        callback(d as (T & { id: string })[]);
+    };
+
+    // Share only with a semantically equal built query (public comparator).
+    // Indeterminable equivalence never shares: it falls through to a
+    // private entry below.
+    let entry: CollectionEntry | undefined;
+    for (const candidate of list) {
+        if (queriesMatch(candidate.builtQuery, built)) {
+            entry = candidate;
+            break;
+        }
+    }
+
+    let isNew = false;
+    if (!entry) {
+        entry = {
+            builtQuery: built,
+            callbacks: new Set(),
+            data: [],
+            listening: false,
+            unsubscribe: () => {},
+        };
+        list.push(entry);
+        isNew = true;
+    }
+    const target = entry;
+
+    target.callbacks.add(wrapped);
+    if (!isNew) {
+        // Immediate cached data for joiners (possibly not yet loaded).
+        wrapped(target.data);
+    }
+    if (!target.listening) {
+        const unsubscribe = onSnapshot(built, (snapshot) => {
+            const data = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as (T & { id: string })));
+            target.data = data;
+            for (const cb of target.callbacks) {
+                try {
+                    cb(data);
+                } catch (err) {
+                    console.error(`Error notifying subscriber of ${path}: `, err);
+                }
+            }
         }, (error) => {
             console.error(`Error listening to ${path}: `, error);
         });
-        
-        const entry = cache.get(cacheKey) || { data: [], unsubscribe };
-        entry.unsubscribe = unsubscribe;
-        cache.set(cacheKey, entry);
+        target.unsubscribe = unsubscribe;
+        target.listening = true;
     }
 
     return () => {
-        const count = activeSubscriptions.get(cacheKey);
-        if (count && count > 1) {
-            activeSubscriptions.set(cacheKey, count - 1);
-        } else {
-            const entry = cache.get(cacheKey);
-            if (entry && entry.unsubscribe) {
-                safeUnsubscribe(entry.unsubscribe);
-            }
-            activeSubscriptions.delete(cacheKey);
+        target.callbacks.delete(wrapped);
+        if (target.callbacks.size === 0 && target.listening) {
+            target.listening = false;
+            safeUnsubscribe(target.unsubscribe);
         }
     };
 };
