@@ -1,0 +1,26 @@
+# TF.1 — tests added / modified in AUDIT-REV1 (counts measured, not estimated)
+
+## New files
+- tests/rev13Quantities.test.ts — 33 tests (REQ-REV1-3: buyQuantity/price
+  shape validation × processSale/processReturn; RED-first on unfixed code)
+- tests/rev1Cache.test.ts — 27 tests (REQ-REV1-1: key collision A-vs-B,
+  queryEqual sharing, fan-out to all subscribers, unsubscribe semantics,
+  teardown, fail-closed, churn, empty constraints; RED-first incl. one
+  mutation proof (AC-1.6b try/catch isolation — evidence/REV1-1/mutation-6b.txt))
+- tests/rev12MoneyHelper.test.ts — 19 tests (REQ-REV1-2 T2.1: round2 table +
+  isSettled table + deterministic 1000-round settlement property; RED-first
+  as file-level import failure until utils/money.ts existed)
+- tests/rev12BalanceDust.test.ts — 17 tests (REQ-REV1-2 T2.2: six writers
+  persist dust on raw code, AC-2.4 single + split settlement, missing
+  balance, kept creditor, kept negative, no-raw-comparison static test
+  over the 12 UI sites; RED-first on unfixed code)
+
+## Modified (documented owner exception — old expectations enshrined dust)
+- tests/tx3Payments.test.ts — 8 assertions changed: `200 - AMT` ⇒ 166.67,
+  `200 - AMT - AMT` ⇒ 133.34 (cents literals) + line-227 comment corrected
+  (17 tests total in file, all green)
+
+## Totals
+- New: 33 + 27 + 19 + 17 = 96 tests in 4 files
+- Modified: 8 assertions in 1 file
+- Full suite at HEAD: 60 files / 623 tests, all green first try

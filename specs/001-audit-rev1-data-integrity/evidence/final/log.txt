@@ -1,0 +1,6 @@
+920020d docs: REV1-2 changelog + SCAN backlog + tasks done
+336faac fix(money): round balance writes to cents + isSettled UI tolerance (REQ-REV1-2)
+0742a3d docs: REV1-1 changelog + F6 backlog + tasks done
+0307dc2 fix(cache): share listeners only for queryEqual-equal queries + fan-out to all subscribers (REQ-REV1-1)
+9573e92 docs: REV1-3 changelog + tasks done
+c859d0d REV1-3: validate buyQuantity/price in processSale/processReturn (pre-network, Arabic errors) + tests

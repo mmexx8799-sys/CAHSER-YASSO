@@ -62,6 +62,6 @@ REQ's fix before its RED output is saved.
 - [x] T2.5 Update docs ×4, commit `fix(money): ... (REQ-REV1-2)`.
 
 ## Finish (after all 3 commits)
-- [ ] TF.1 Final verification at HEAD into evidence/final/ (status, log,
+- [x] TF.1 Final verification at HEAD into evidence/final/ (status, log,
   diff-stat, typecheck, full test:rules, build, eslint incl. .scratch
   comparison) + REPORT.md per prompt §6 + zip evidence/.
