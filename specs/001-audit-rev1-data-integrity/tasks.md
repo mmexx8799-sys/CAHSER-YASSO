@@ -42,24 +42,24 @@ REQ's fix before its RED output is saved.
 - [x] T1.4 Update docs ×4 INCLUDING the F6 backlog entry (never-cleared
   cache — entry text only, zero code), commit `fix(cache): ... (REQ-REV1-1)`.
 
-## REV1-2 — dust (AC-2.1..2.5)
-- [ ] T2.1 Write pure unit `tests/<name>.test.ts` for round2/isSettled
+## REV1-2 — dust (AC-2.1..2.5) — DONE (code 336faac + docs)
+- [x] T2.1 Write pure unit `tests/<name>.test.ts` for round2/isSettled
   (table incl. 19.99/33.33/10.1/7.7, 0.1+0.2, 0.01-creditor-kept-creditor,
   1000-iteration random property → exactly 0). Verify: RED where
   applicable (helper is new — RED = property fails against raw math);
   save raw to evidence/REV1-2/red.txt.
-- [ ] T2.2 Write emulator service tests (each of the 6 writers stores
+- [x] T2.2 Write emulator service tests (each of the 6 writers stores
   rounded balances; INCLUDES missing-balance sale → finite rounded
   number, never NaN) + no-raw-comparison assertion. Verify RED on
   unfixed (dust present), save raw.
-- [ ] T2.3 Implement: export round2; utils/money.ts; 6 write sites (sales
+- [x] T2.3 Implement: export round2; utils/money.ts; 6 write sites (sales
   with `(currentBalance || 0)`); 10 UI comparison sites (incl. :568/:583
   value colors; footers settled⇒red branch). Verify: targeted runs GREEN +
   grep sweep shows zero raw sites + negativeBalancePolicy unchanged-green
   + footer-color test (dust ≈ 0 renders exactly like exact 0).
-- [ ] T2.4 Run typecheck + full test:rules (+build). Save raw + exits
+- [x] T2.4 Run typecheck + full test:rules (+build). Save raw + exits
   to evidence/REV1-2/.
-- [ ] T2.5 Update docs ×4, commit `fix(money): ... (REQ-REV1-2)`.
+- [x] T2.5 Update docs ×4, commit `fix(money): ... (REQ-REV1-2)`.
 
 ## Finish (after all 3 commits)
 - [ ] TF.1 Final verification at HEAD into evidence/final/ (status, log,
