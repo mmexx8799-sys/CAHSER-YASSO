@@ -1,0 +1,80 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [31m❯[39m tests/rev14CacheClear.test.ts [2m([22m[2m17 tests[22m[2m | [22m[31m6 failed[39m[2m)[22m[90m 34[2mms[22m[39m
+[31m   [31m×[31m REV1-4 T4.2 — released entries are not unsubscribed again by a later clear[2m > [22mcollection: subscribe → release → flush → clear ⇒ SDK unsubscribes total exactly 1[90m 15[2mms[22m[31m[39m
+[31m     → expected 2 to be 1 // Object.is equality[39m
+[31m   [31m×[31m REV1-4 T4.2 — released entries are not unsubscribed again by a later clear[2m > [22mdocument: subscribe → release → flush → clear ⇒ SDK unsubscribes total exactly 1[90m 2[2mms[22m[31m[39m
+[31m     → expected 2 to be 1 // Object.is equality[39m
+[31m   [31m×[31m REV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mnull stays unsubscribed[90m 1[2mms[22m[31m[39m
+[31m     → shouldSubscribeAppSettings is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mundefined stays unsubscribed[90m 1[2mms[22m[31m[39m
+[31m     → shouldSubscribeAppSettings is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mempty string stays unsubscribed[90m 1[2mms[22m[31m[39m
+[31m     → shouldSubscribeAppSettings is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22muid subscribes[90m 1[2mms[22m[31m[39m
+[31m     → shouldSubscribeAppSettings is not a function[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 6 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — released entries are not unsubscribed again by a later clear[2m > [22mcollection: subscribe → release → flush → clear ⇒ SDK unsubscribes total exactly 1
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m151:19[22m[39m
+    [90m149| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m150| [39m    [35mconst[39m total [33m=[39m mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m)[33m.[39mlength[33m;[39m
+    [90m151| [39m    [34mexpect[39m(total)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                  [31m^[39m
+    [90m152| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m153| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — released entries are not unsubscribed again by a later clear[2m > [22mdocument: subscribe → release → flush → clear ⇒ SDK unsubscribes total exactly 1
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m163:19[22m[39m
+    [90m161| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m162| [39m    [35mconst[39m total [33m=[39m mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m)[33m.[39mlength[33m;[39m
+    [90m163| [39m    [34mexpect[39m(total)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                  [31m^[39m
+    [90m164| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m165| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mnull stays unsubscribed
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mundefined stays unsubscribed
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22mempty string stays unsubscribed
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — shouldSubscribeAppSettings truth table[2m > [22muid subscribes
+[31m[1mTypeError[22m: shouldSubscribeAppSettings is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m175:12[22m[39m
+    [90m173| [39m    [[32m'uid subscribes'[39m[33m,[39m [32m'u1'[39m[33m,[39m [35mtrue[39m][33m,[39m
+    [90m174| [39m  ] [35mas[39m [33mArray[39m[33m<[39m[string[33m,[39m string [33m|[39m [35mnull[39m [33m|[39m undefined[33m,[39m boolean][33m>[39m)([32m'%s'[39m[33m,[39m (_la…
+    [90m175| [39m    [34mexpect[39m([34mshouldSubscribeAppSettings[39m(uid))[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m           [31m^[39m
+    [90m176| [39m  })[33m;[39m
+    [90m177| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 17:08:33
+[2m   Duration [22m 5.82s[2m (transform 707ms, setup 4.37s, collect 361ms, tests 34ms, environment 0ms, prepare 671ms)[22m
+

@@ -130,6 +130,12 @@ export const addSupplierPayment = withInFlightGuard(async (payment: Omit<Supplie
     // TX3 (AUDIT-TX-3): opKey travels inside the payment object but is NEVER
     // stored — paymentData (without it) is the only thing written.
     const { opKey, ...paymentData } = payment;
+    // REQ-REV1-4a: reject non-finite amount before any network contact
+    // (pre-network position — outside any try; the older post-gate amount
+    // guard below stays untouched).
+    if (!Number.isFinite(payment.amount)) {
+        throw new Error('قيمة الدفعة غير صالحة');
+    }
     await assertOnline();
     if (!payment.amount || payment.amount <= 0) {
         throw new Error("قيمة الدفعة يجب أن تكون أكبر من صفر");

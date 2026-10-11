@@ -1,5 +1,6 @@
 import React, { useState, createContext, useContext, ReactNode, useEffect, useMemo, useRef, useCallback } from 'react';
 import { onAuthStateChangedListener, signOut } from '../services/auth';
+import { clearSubscriptionCache, didAuthIdentityChange } from '../services/dataCache';
 import type { User as AppUser } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -26,6 +27,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(true);
     const [isUnresolved, setIsUnresolved] = useState(false);
     const lastUserRef = useRef<AppUser | null>(null);
+    const lastUidRef = useRef<string | null>(null);
     const hasRealUserRef = useRef(false);
 
     const [retryTick, setRetryTick] = useState(0);
@@ -38,6 +40,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         let hasServerSnapshot = false;
 
         const authUnsub = onAuthStateChangedListener((user: FirebaseUser | null) => {
+            // REQ-REV1-4b: on logout / account switch / other-tab or expired
+            // session, drop cached Firestore data first (covers paths that
+            // never call signOut); the explicit signOut() first-call stays
+            // for the strict teardown-before-auth-loss ordering.
+            const nextUid = user ? user.uid : null;
+            if (didAuthIdentityChange(lastUidRef.current, nextUid)) {
+                clearSubscriptionCache();
+            }
+            lastUidRef.current = nextUid;
             gen += 1;
             const myGen = gen;
             if (innerUnsub) { try { innerUnsub(); } catch { /* ignore */ } innerUnsub = null; }

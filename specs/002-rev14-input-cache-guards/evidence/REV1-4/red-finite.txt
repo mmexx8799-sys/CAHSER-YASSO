@@ -1,0 +1,144 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14FiniteGuards.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [31m❯[39m tests/rev14FiniteGuards.test.ts [2m([22m[2m30 tests[22m[2m | [22m[31m18 failed[39m[2m)[22m[90m 64[2mms[22m[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal NaN ⇒ Arabic + gate untouched[90m 20[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal Infinity ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal -Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal NaN ⇒ Arabic + gate untouched[90m 4[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'المبلغ النهائي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal Infinity ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'المبلغ النهائي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal -Infinity ⇒ Arabic + gate untouched[90m 3[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'المبلغ النهائي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal NaN ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي لفاتورة الشراء غير صا…' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي لفاتورة الشراء غير صا…' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal -Infinity ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'الإجمالي الفرعي لفاتورة الشراء غير صا…' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal NaN ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'إجمالي فاتورة الشراء غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'إجمالي فاتورة الشراء غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal -Infinity ⇒ Arabic + gate untouched[90m 6[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'إجمالي فاتورة الشراء غير صالح' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer NaN ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer -Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier NaN ⇒ Arabic + gate untouched[90m 2[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+[31m   [31m×[31m REV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier -Infinity ⇒ Arabic + gate untouched[90m 1[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 18 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22msubtotal -Infinity ⇒ Arabic + gate untouched
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'الإجمالي الفرعي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+
+Expected: [32m"الإجمالي الفرعي للبيع غير صالح"[39m
+Received: [31m"STOP-AFTER-GUARD"[39m
+
+[36m [2m❯[22m tests/rev14FiniteGuards.test.ts:[2m80:5[22m[39m
+    [90m 78| [39m      dailyArchiveId[33m:[39m [32m'rev14-day'[39m[33m,[39m
+    [90m 79| [39m    })[33m;[39m
+    [90m 80| [39m    [35mawait[39m [34mexpect[39m(call)[33m.[39mrejects[33m.[39m[34mtoThrow[39m(expected)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m 81| [39m    [34mexpect[39m(assertOnlineMock)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m 82| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — sale subtotal/total finiteness (pre-network)[2m > [22mtotal -Infinity ⇒ Arabic + gate untouched
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'المبلغ النهائي للبيع غير صالح' but got 'STOP-AFTER-GUARD'[39m
+
+Expected: [32m"المبلغ النهائي للبيع غير صالح"[39m
+Received: [31m"STOP-AFTER-GUARD"[39m
+
+[36m [2m❯[22m tests/rev14FiniteGuards.test.ts:[2m80:5[22m[39m
+    [90m 78| [39m      dailyArchiveId[33m:[39m [32m'rev14-day'[39m[33m,[39m
+    [90m 79| [39m    })[33m;[39m
+    [90m 80| [39m    [35mawait[39m [34mexpect[39m(call)[33m.[39mrejects[33m.[39m[34mtoThrow[39m(expected)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m 81| [39m    [34mexpect[39m(assertOnlineMock)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m 82| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22msubtotal -Infinity ⇒ Arabic + gate untouched
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'الإجمالي الفرعي لفاتورة الشراء غير صا…' but got 'STOP-AFTER-GUARD'[39m
+
+Expected: [32m"الإجمالي الفرعي لفاتورة الشراء غير صالح"[39m
+Received: [31m"STOP-AFTER-GUARD"[39m
+
+[36m [2m❯[22m tests/rev14FiniteGuards.test.ts:[2m108:5[22m[39m
+    [90m106| [39m      supplierId[33m:[39m [32m'rev14-sup'[39m[33m,[39m
+    [90m107| [39m    })[33m;[39m
+    [90m108| [39m    [35mawait[39m [34mexpect[39m(call)[33m.[39mrejects[33m.[39m[34mtoThrow[39m(expected)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m109| [39m    [34mexpect[39m(assertOnlineMock)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m110| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — purchase subtotal/total finiteness (pre-network)[2m > [22mtotal -Infinity ⇒ Arabic + gate untouched
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'إجمالي فاتورة الشراء غير صالح' but got 'STOP-AFTER-GUARD'[39m
+
+Expected: [32m"إجمالي فاتورة الشراء غير صالح"[39m
+Received: [31m"STOP-AFTER-GUARD"[39m
+
+[36m [2m❯[22m tests/rev14FiniteGuards.test.ts:[2m108:5[22m[39m
+    [90m106| [39m      supplierId[33m:[39m [32m'rev14-sup'[39m[33m,[39m
+    [90m107| [39m    })[33m;[39m
+    [90m108| [39m    [35mawait[39m [34mexpect[39m(call)[33m.[39mrejects[33m.[39m[34mtoThrow[39m(expected)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m109| [39m    [34mexpect[39m(assertOnlineMock)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m110| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22mcustomer -Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier NaN ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier Infinity ⇒ Arabic + gate untouched
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14FiniteGuards.test.ts[2m > [22mREV1-4 T4.1 — payment amount finiteness (pre-network)[2m > [22msupplier -Infinity ⇒ Arabic + gate untouched
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'قيمة الدفعة غير صالحة' but got 'STOP-AFTER-GUARD'[39m
+
+Expected: [32m"قيمة الدفعة غير صالحة"[39m
+Received: [31m"STOP-AFTER-GUARD"[39m
+
+[36m [2m❯[22m tests/rev14FiniteGuards.test.ts:[2m130:5[22m[39m
+    [90m128| [39m        [33m?[39m [34maddCustomerPayment[39m({ customerId[33m:[39m [32m'rev14-cust'[39m[33m,[39m amount[33m:[39m value…
+    [90m129| [39m        [33m:[39m [34maddSupplierPayment[39m({ supplierId[33m:[39m [32m'rev14-sup'[39m[33m,[39m amount[33m:[39m value …
+    [90m130| [39m    [35mawait[39m [34mexpect[39m(call)[33m.[39mrejects[33m.[39m[34mtoThrow[39m([32m'قيمة الدفعة غير صالحة'[39m)[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m131| [39m    [34mexpect[39m(assertOnlineMock)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m132| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/18]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m18 failed[39m[22m[2m | [22m[1m[32m12 passed[39m[22m[90m (30)[39m
+[2m   Start at [22m 15:32:49
+[2m   Duration [22m 16.36s[2m (transform 1.12s, setup 13.28s, collect 728ms, tests 64ms, environment 0ms, prepare 1.37s)[22m
+

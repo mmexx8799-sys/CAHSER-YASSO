@@ -1,0 +1,36 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [31m❯[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[90m 37[2mms[22m[39m
+[31m   [31m×[31m REV1-4 K1 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mAuthContext watcher: predicate → clear → ref update, all before gen += 1[90m 15[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 K1 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mAuthContext watcher: predicate → clear → ref update, all before gen += 1
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m208:7[22m[39m
+    [90m206| [39m        [36m/gen\s*\+=\s*1/[39m[33m,[39m
+    [90m207| [39m      ])[33m,[39m
+    [90m208| [39m    )[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m      [31m^[39m
+    [90m209| [39m  })[33m;[39m
+    [90m210| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m19 passed[39m[22m[90m (20)[39m
+[2m   Start at [22m 18:04:33
+[2m   Duration [22m 1.63s[2m (transform 199ms, setup 484ms, collect 187ms, tests 37ms, environment 0ms, prepare 560ms)[22m
+

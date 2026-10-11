@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc } from 'firebase/firestore';
 import { getAuthInstance, getDB } from "./firebase";
+import { clearSubscriptionCache } from './dataCache';
 
 const auth = getAuthInstance();
 const db = getDB();
@@ -20,6 +21,9 @@ export const signIn = (email: string, password: string) => {
 };
 
 export const signOut = () => {
+    // REQ-REV1-4b: tear the subscription cache down FIRST, then drop auth —
+    // orphaned listeners must never fire against post-logout rules.
+    clearSubscriptionCache();
     return firebaseSignOut(auth);
 };
 

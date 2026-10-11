@@ -41,6 +41,15 @@ export const processSale = withInFlightGuard(async (invoiceData: Omit<Invoice, '
             throw new Error(`سعر البيع غير صالح للصنف ${item.name || item.id}`);
         }
     });
+    // REQ-REV1-4a: reject non-finite subtotal/total before any network
+    // contact or read (same pre-network position as REV1-3 — outside any
+    // try, so the Arabic message reaches the caller verbatim).
+    if (typeof invoiceData.subtotal !== 'number' || !Number.isFinite(invoiceData.subtotal)) {
+        throw new Error('الإجمالي الفرعي للبيع غير صالح');
+    }
+    if (typeof invoiceData.total !== 'number' || !Number.isFinite(invoiceData.total)) {
+        throw new Error('المبلغ النهائي للبيع غير صالح');
+    }
     await assertOnline();
     try {
         // REQ-TX2-SALE (AUDIT-TX-2): invoiceRef hoisted outside the callback

@@ -39,6 +39,15 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
     // TX3 key validation FIRST — pure sync check, before any Firestore contact
     // (assertOnline's preflight ping included). Old callers send nothing.
     assertValidOpKey(opts?.opKey);
+    // REQ-REV1-4a: reject non-finite subtotal/total before any network
+    // contact or read (pre-network position — outside any try, so the
+    // Arabic message reaches the caller verbatim).
+    if (typeof purchaseData.subtotal !== 'number' || !Number.isFinite(purchaseData.subtotal)) {
+        throw new Error('الإجمالي الفرعي لفاتورة الشراء غير صالح');
+    }
+    if (typeof purchaseData.total !== 'number' || !Number.isFinite(purchaseData.total)) {
+        throw new Error('إجمالي فاتورة الشراء غير صالح');
+    }
     await assertOnline();
     try {
         // REQ-TX2-PURCHASE (AUDIT-TX-2): purchaseRef hoisted outside the

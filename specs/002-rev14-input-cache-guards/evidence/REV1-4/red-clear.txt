@@ -1,0 +1,135 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [31m❯[39m tests/rev14CacheClear.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m11 failed[39m[2m)[22m[90m 40[2mms[22m[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22minvokes every stored unsubscribe exactly once (collection + document)[90m 16[2mms[22m[31m[39m
+[31m     → clearSubscriptionCache is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22mresubscribing the same query after a clear creates a FRESH listener[90m 1[2mms[22m[31m[39m
+[31m     → clearSubscriptionCache is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22mAC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)[90m 1[2mms[22m[31m[39m
+[31m     → clearSubscriptionCache is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22msignOut() tears the cache down strictly BEFORE the auth call[90m 12[2mms[22m[31m[39m
+[31m     → expected [ 'auth' ] to deeply equal [ 'unsub', 'unsub', 'auth' ][39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22mdouble-clear is a safe no-op[90m 1[2mms[22m[31m[39m
+[31m     → clearSubscriptionCache is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22mclear-empty is a safe no-op[90m 1[2mms[22m[31m[39m
+[31m     → clearSubscriptionCache is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22mnull → null stays silent[90m 1[2mms[22m[31m[39m
+[31m     → didAuthIdentityChange is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22mnull → uid clears[90m 1[2mms[22m[31m[39m
+[31m     → didAuthIdentityChange is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muid → null clears[90m 1[2mms[22m[31m[39m
+[31m     → didAuthIdentityChange is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muid → same stays silent[90m 2[2mms[22m[31m[39m
+[31m     → didAuthIdentityChange is not a function[39m
+[31m   [31m×[31m REV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muidA → uidB clears[90m 1[2mms[22m[31m[39m
+[31m     → didAuthIdentityChange is not a function[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 11 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22minvokes every stored unsubscribe exactly once (collection + document)
+[31m[1mTypeError[22m: clearSubscriptionCache is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m88:5[22m[39m
+    [90m 86| [39m    [35mconst[39m unsubB [33m=[39m [34msubscribeToDocument[39m([32m'test-clear'[39m[33m,[39m [32m'doc1'[39m[33m,[39m () [33m=>[39m {})[33m;[39m
+    [90m 87| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m 88| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m 89| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([[32m'unsub'[39m[33m,[39m [32m'unsub'[39m])[33m;[39m
+    [90m 90| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22mresubscribing the same query after a clear creates a FRESH listener
+[31m[1mTypeError[22m: clearSubscriptionCache is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m98:5[22m[39m
+    [90m 96| [39m    [35mconst[39m unsubA [33m=[39m [34msubscribeToCollection[39m([32m'test-resub'[39m[33m,[39m () [33m=>[39m {}[33m,[39m [[34mwher[39m…
+    [90m 97| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m 98| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m 99| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m100| [39m    [35mconst[39m unsubB [33m=[39m [34msubscribeToCollection[39m([32m'test-resub'[39m[33m,[39m () [33m=>[39m {}[33m,[39m [[34mwher[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22mAC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)
+[31m[1mTypeError[22m: clearSubscriptionCache is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m109:5[22m[39m
+    [90m107| [39m    [35mconst[39m unsubA [33m=[39m [34msubscribeToCollection[39m([32m'test-stale'[39m[33m,[39m () [33m=>[39m {}[33m,[39m [[34mwher[39m…
+    [90m108| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m109| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m110| [39m    [35mconst[39m unsubsAfterClear [33m=[39m mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m…
+    [90m111| [39m    [34mexpect[39m(unsubsAfterClear)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22msignOut() tears the cache down strictly BEFORE the auth call
+[31m[1mAssertionError[22m: expected [ 'auth' ] to deeply equal [ 'unsub', 'unsub', 'auth' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[32m-   "unsub",[39m
+[32m-   "unsub",[39m
+[2m    "auth",[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m123:27[22m[39m
+    [90m121| [39m    [35mawait[39m [34msignOut[39m()[33m;[39m
+    [90m122| [39m    [34mexpect[39m(firebaseSignOutMock)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)[33m;[39m
+    [90m123| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([[32m'unsub'[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'auth'[39m])[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m124| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m125| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22mdouble-clear is a safe no-op
+[31m[1mTypeError[22m: clearSubscriptionCache is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m129:5[22m[39m
+    [90m127| [39m  [34mit[39m([32m'double-clear is a safe no-op'[39m[33m,[39m () [33m=>[39m {
+    [90m128| [39m    [35mconst[39m unsubA [33m=[39m [34msubscribeToCollection[39m([32m'test-noop'[39m[33m,[39m () [33m=>[39m {}[33m,[39m [[34mwhere[39m…
+    [90m129| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m130| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m131| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22mclear-empty is a safe no-op
+[31m[1mTypeError[22m: clearSubscriptionCache is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m136:5[22m[39m
+    [90m134| [39m
+    [90m135| [39m  [34mit[39m([32m'clear-empty is a safe no-op'[39m[33m,[39m () [33m=>[39m {
+    [90m136| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m   | [39m    [31m^[39m
+    [90m137| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m138| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22mnull → null stays silent
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22mnull → uid clears
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muid → null clears
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muid → same stays silent
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — didAuthIdentityChange truth table[2m > [22muidA → uidB clears
+[31m[1mTypeError[22m: didAuthIdentityChange is not a function[39m
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m154:12[22m[39m
+    [90m152| [39m    expected[33m,[39m
+    [90m153| [39m  ) [33m=>[39m {
+    [90m154| [39m    [34mexpect[39m([34mdidAuthIdentityChange[39m(prev[33m,[39m next))[33m.[39m[34mtoBe[39m(expected)[33m;[39m
+    [90m   | [39m           [31m^[39m
+    [90m155| [39m  })[33m;[39m
+    [90m156| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m11 failed[39m[22m[90m (11)[39m
+[2m   Start at [22m 15:49:31
+[2m   Duration [22m 2.23s[2m (transform 173ms, setup 637ms, collect 139ms, tests 40ms, environment 0ms, prepare 189ms)[22m
+

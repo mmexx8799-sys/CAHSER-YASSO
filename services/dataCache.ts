@@ -41,6 +41,59 @@ const queriesMatch = (a: Query, b: Query): boolean => {
     }
 };
 
+/**
+ * REQ-REV1-4b: tear the whole subscription cache down synchronously.
+ * Every stored unsubscribe fires EXACTLY ONCE, each guarded so one
+ * throwing listener cannot block the rest; every entry is then marked
+ * dead (`listening = false` + `callbacks.clear()`) so a still-mounted
+ * component's stale closure can never re-fire an SDK unsubscribe; then
+ * all three maps are emptied. Synchronous (not microtask) teardown is
+ * load-bearing for the logout ordering guarantee.
+ */
+export const clearSubscriptionCache = (): void => {
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // Only live entries: an already-released entry fired its SDK
+            // unsubscribe through the normal release path — firing again
+            // would double-teardown.
+            if (entry.listening) {
+                try {
+                    entry.unsubscribe();
+                } catch {
+                    // Logout path: one bad listener must not block the rest.
+                }
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // Same rule for documents: only keys still ref-counted are live
+        // (a released document drops its key from activeSubscriptions
+        // while its entry object lingers for F6 immediate-data behavior).
+        if (activeSubscriptions.has(key)) {
+            try {
+                entry.unsubscribe();
+            } catch {
+                // Same guard for document entries.
+            }
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+export const didAuthIdentityChange = (
+    prevUid: string | null,
+    nextUid: string | null,
+): boolean => prevUid !== nextUid;
+
 type Unsubscribe = () => void;
 
 /**
