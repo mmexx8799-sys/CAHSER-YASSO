@@ -9,6 +9,7 @@ import { useConfirmation } from '../components/ConfirmationProvider';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import { useDebounce } from '../hooks/useDebounce';
 import { usePermissions } from '../hooks/usePermissions';
+import { isSettled } from '../utils/money';
 import { isAdminRole } from '../utils/permissions';
 
 const CustomerFormModal: React.FC<{
@@ -83,8 +84,8 @@ const CustomerCard: React.FC<{
 }> = ({ customer, onEdit, onDelete, onAddPayment }) => {
   const { can, role } = usePermissions();
   const balance = customer.balance || 0;
-  const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
-  const balanceText = balance > 0 ? 'عليه مديونية (مدين)' : balance < 0 ? 'له رصيد (دائن)' : 'رصيد صفري';
+  const balanceColor = isSettled(balance) ? 'text-gray-800 dark:text-gray-100' : balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';
+  const balanceText = isSettled(balance) ? 'رصيد صفري' : balance > 0 ? 'عليه مديونية (مدين)' : balance < 0 ? 'له رصيد (دائن)' : 'رصيد صفري';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col justify-between transition-all duration-200 hover:shadow-lg">
@@ -220,7 +221,7 @@ export default function CustomersPage() {
   }, [loadCustomers]);
 
   const handleDeleteCustomer = useCallback(async (customer: Customer) => {
-    if (customer.balance !== 0) {
+    if (!isSettled(customer.balance)) {
       toast.error('لا يمكن حذف العميل إلا إذا كان رصيده صفراً.');
       return;
     }

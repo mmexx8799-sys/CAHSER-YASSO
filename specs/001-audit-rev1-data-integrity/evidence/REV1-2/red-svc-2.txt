@@ -1,0 +1,366 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev12BalanceDust.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev12BalanceDust.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev12BalanceDust.test.ts[2m > [22m[2mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22m[2msale-dust: credit total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3
+[22m[39m[2026-10-10T11:46:37.322Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+ [31m❯[39m tests/rev12BalanceDust.test.ts [2m([22m[2m15 tests[22m[2m | [22m[31m13 failed[39m[2m)[22m[33m 9813[2mms[22m[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msale-dust: credit total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3[33m 2392[2mms[22m[31m[39m
+[31m     → expected 0.30000000000000004 to be 0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mreturn-dust: on-account return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3[33m 632[2mms[22m[31m[39m
+[31m     → expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-cust-dust (dusty-input): amount 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3[90m 202[2mms[22m[31m[39m
+[31m     → expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-sup-dust (dusty-input): amount 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3[90m 173[2mms[22m[31m[39m
+[31m     → expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-cust-cents: balance 0.3 paid 0.1 stores exactly 0.2[90m 157[2mms[22m[31m[39m
+[31m     → expected 0.19999999999999998 to be 0.2 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-sup-cents: balance 0.3 paid 0.1 stores exactly 0.2[90m 157[2mms[22m[31m[39m
+[31m     → expected 0.19999999999999998 to be 0.2 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpurchase-dust: total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3[33m 636[2mms[22m[31m[39m
+[31m     → expected 0.30000000000000004 to be 0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msupplier-return-dust: return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3[90m 287[2mms[22m[31m[39m
+[31m     → expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msingle-payment: 19.99+33.33+10.1+7.7 credit then one 71.12 payment ⇒ stored === 0[33m 533[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msplit-payments: same sale then literal 53.32 and 17.8 ⇒ stored === 0[33m 454[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mmissing-balance: credit sale on a customer doc WITHOUT balance stores finite 100, never NaN[33m 314[2mms[22m[31m[39m
+[31m     → expected false to be true // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mnegative-fractional-persists: balance 0.05 minus dusty 0.3 return stores exactly -0.25 (still negative)[33m 359[2mms[22m[31m[39m
+[31m     → expected -0.25000000000000006 to be -0.25 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — no raw balance comparisons in the four pages[2m > [22mevery raw balance-vs-0 comparison shares its line with isSettled( (incl. footers 483/494)[90m 53[2mms[22m[31m[39m
+[31m     → expected [ { …(3) }, { …(3) }, { …(3) }, …(9) ] to deeply equal [][39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 13 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msale-dust: credit total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3
+[31m[1mAssertionError[22m: expected 0.30000000000000004 to be 0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0.3[39m
+[31m+ 0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m148:57[22m[39m
+    [90m146| [39m    })[33m;[39m
+    [90m147| [39m    [90m// Literal cents: 30/100. Raw stores 0.30000000000000004.[39m
+    [90m148| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-cust'[39m))[33m.[39m[34mtoBe[39m([34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                        [31m^[39m
+    [90m149| [39m  })[33m;[39m
+    [90m150| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mreturn-dust: on-account return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3
+[31m[1mAssertionError[22m: expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -0.3[39m
+[31m+ -0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m164:58[22m[39m
+    [90m162| [39m      { id[33m:[39m [32m'dust-rcust'[39m[33m,[39m name[33m:[39m [32m'عميل غبار'[39m }[33m,[39m
+    [90m163| [39m    )[33m;[39m
+    [90m164| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-rcust'[39m))[33m.[39m[34mtoBe[39m([33m-[39m[34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m165| [39m  })[33m;[39m
+    [90m166| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-cust-dust (dusty-input): amount 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3
+[31m[1mAssertionError[22m: expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -0.3[39m
+[31m+ -0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m173:58[22m[39m
+    [90m171| [39m
+    [90m172| [39m    [35mawait[39m [34maddCustomerPayment[39m({ customerId[33m:[39m [32m'dust-pcust'[39m[33m,[39m amount[33m:[39m [34m0.1[39m [33m+[39m…
+    [90m173| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-pcust'[39m))[33m.[39m[34mtoBe[39m([33m-[39m[34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m174| [39m  })[33m;[39m
+    [90m175| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-sup-dust (dusty-input): amount 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3
+[31m[1mAssertionError[22m: expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -0.3[39m
+[31m+ -0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m182:57[22m[39m
+    [90m180| [39m
+    [90m181| [39m    [35mawait[39m [34maddSupplierPayment[39m({ supplierId[33m:[39m [32m'dust-psup'[39m[33m,[39m amount[33m:[39m [34m0.1[39m [33m+[39m …
+    [90m182| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'suppliers'[39m[33m,[39m [32m'dust-psup'[39m))[33m.[39m[34mtoBe[39m([33m-[39m[34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                        [31m^[39m
+    [90m183| [39m  })[33m;[39m
+    [90m184| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-cust-cents: balance 0.3 paid 0.1 stores exactly 0.2
+[31m[1mAssertionError[22m: expected 0.19999999999999998 to be 0.2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0.2[39m
+[31m+ 0.19999999999999998[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m192:58[22m[39m
+    [90m190| [39m    [35mawait[39m [34maddCustomerPayment[39m({ customerId[33m:[39m [32m'dust-ccust'[39m[33m,[39m amount[33m:[39m [34m0.1[39m }…
+    [90m191| [39m    [90m// Literal cents: 30-10 = 20 ⇒ 0.2. Raw: 0.3-0.1 = 0.1999999999999[39m…
+    [90m192| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-ccust'[39m))[33m.[39m[34mtoBe[39m([34m0.2[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m193| [39m  })[33m;[39m
+    [90m194| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpayment-sup-cents: balance 0.3 paid 0.1 stores exactly 0.2
+[31m[1mAssertionError[22m: expected 0.19999999999999998 to be 0.2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0.2[39m
+[31m+ 0.19999999999999998[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m201:57[22m[39m
+    [90m199| [39m
+    [90m200| [39m    [35mawait[39m [34maddSupplierPayment[39m({ supplierId[33m:[39m [32m'dust-csup'[39m[33m,[39m amount[33m:[39m [34m0.1[39m })[33m;[39m
+    [90m201| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'suppliers'[39m[33m,[39m [32m'dust-csup'[39m))[33m.[39m[34mtoBe[39m([34m0.2[39m)[33m;[39m
+    [90m   | [39m                                                        [31m^[39m
+    [90m202| [39m  })[33m;[39m
+    [90m203| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpurchase-dust: total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3
+[31m[1mAssertionError[22m: expected 0.30000000000000004 to be 0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0.3[39m
+[31m+ 0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m217:58[22m[39m
+    [90m215| [39m      supplierId[33m:[39m [32m'dust-psup2'[39m[33m,[39m
+    [90m216| [39m    })[33m;[39m
+    [90m217| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'suppliers'[39m[33m,[39m [32m'dust-psup2'[39m))[33m.[39m[34mtoBe[39m([34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m218| [39m  })[33m;[39m
+    [90m219| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msupplier-return-dust: return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3
+[31m[1mAssertionError[22m: expected -0.30000000000000004 to be -0.3 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -0.3[39m
+[31m+ -0.30000000000000004[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m231:58[22m[39m
+    [90m229| [39m      [32m'dust-srsup'[39m[33m,[39m
+    [90m230| [39m    )[33m;[39m
+    [90m231| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'suppliers'[39m[33m,[39m [32m'dust-srsup'[39m))[33m.[39m[34mtoBe[39m([33m-[39m[34m0.3[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m232| [39m  })[33m;[39m
+    [90m233| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msingle-payment: 19.99+33.33+10.1+7.7 credit then one 71.12 payment ⇒ stored === 0
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m280:23[22m[39m
+    [90m278| [39m    [35mawait[39m [34maddCustomerPayment[39m({ customerId[33m:[39m [32m'ac24s-cust'[39m[33m,[39m amount[33m:[39m [33mTOTAL[39m…
+    [90m279| [39m    [35mconst[39m bal [33m=[39m [35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'ac24s-cust'[39m)[33m;[39m
+    [90m280| [39m    [34mexpect[39m(bal [33m===[39m [34m0[39m)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m281| [39m  })[33m;[39m
+    [90m282| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msplit-payments: same sale then literal 53.32 and 17.8 ⇒ stored === 0
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m292:23[22m[39m
+    [90m290| [39m    [35mawait[39m [34maddCustomerPayment[39m({ customerId[33m:[39m [32m'ac24p-cust'[39m[33m,[39m amount[33m:[39m [34m17.8[39m …
+    [90m291| [39m    [35mconst[39m bal [33m=[39m [35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'ac24p-cust'[39m)[33m;[39m
+    [90m292| [39m    [34mexpect[39m(bal [33m===[39m [34m0[39m)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                      [31m^[39m
+    [90m293| [39m  })[33m;[39m
+    [90m294| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mmissing-balance: credit sale on a customer doc WITHOUT balance stores finite 100, never NaN
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m314:34[22m[39m
+    [90m312| [39m    })[33m;[39m
+    [90m313| [39m    [35mconst[39m bal [33m=[39m [35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-mcust'[39m)[33m;[39m
+    [90m314| [39m    [34mexpect[39m([33mNumber[39m[33m.[39m[34misFinite[39m(bal))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   | [39m                                 [31m^[39m
+    [90m315| [39m    [34mexpect[39m(bal)[33m.[39m[34mtoBe[39m([34m100[39m)[33m;[39m
+    [90m316| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mnegative-fractional-persists: balance 0.05 minus dusty 0.3 return stores exactly -0.25 (still negative)
+[31m[1mAssertionError[22m: expected -0.25000000000000006 to be -0.25 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -0.25[39m
+[31m+ -0.25000000000000006[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m342:58[22m[39m
+    [90m340| [39m    )[33m;[39m
+    [90m341| [39m    [90m// Raw: 0.05 - 0.30000000000000004 ≈ -0.25000000000000006 ≠ -0.25.[39m
+    [90m342| [39m    [34mexpect[39m([35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-ncust'[39m))[33m.[39m[34mtoBe[39m([33m-[39m[34m0.25[39m)[33m;[39m
+    [90m   | [39m                                                         [31m^[39m
+    [90m343| [39m  })[33m;[39m
+    [90m344| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — no raw balance comparisons in the four pages[2m > [22mevery raw balance-vs-0 comparison shares its line with isSettled( (incl. footers 483/494)
+[31m[1mAssertionError[22m: expected [ { …(3) }, { …(3) }, { …(3) }, …(9) ] to deeply equal [][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [][39m
+[31m+ Array [[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomersPage.tsx",[39m
+[31m+     "line": 86,[39m
+[31m+     "text": "const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomersPage.tsx",[39m
+[31m+     "line": 87,[39m
+[31m+     "text": "const balanceText = balance > 0 ? 'عليه مديونية (مدين)' : balance < 0 ? 'له رصيد (دائن)' : 'رصيد صفري';",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomersPage.tsx",[39m
+[31m+     "line": 223,[39m
+[31m+     "text": "if (customer.balance !== 0) {",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SuppliersPage.tsx",[39m
+[31m+     "line": 86,[39m
+[31m+     "text": "const balanceColor = balance > 0 ? 'text-red-700 dark:text-red-300' : balance < 0 ? 'text-green-700 dark:text-green-300' : 'text-gray-800 dark:text-gray-100';",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SuppliersPage.tsx",[39m
+[31m+     "line": 87,[39m
+[31m+     "text": "const balanceText = balance > 0 ? 'له مديونية علينا (دائن)' : balance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري';",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SuppliersPage.tsx",[39m
+[31m+     "line": 224,[39m
+[31m+     "text": "if (supplier.balance !== 0) {",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomerAccountPage.tsx",[39m
+[31m+     "line": 483,[39m
+[31m+     "text": "color: { argb: liveBalance >= 0 ? 'FFB91C1C' : 'FF15803D' }, // same red/green convention as live balance",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomerAccountPage.tsx",[39m
+[31m+     "line": 567,[39m
+[31m+     "text": "<p className=\"text-xs text-gray-600 dark:text-gray-300\">{liveBalance > 0 ? 'عليه مديونية (مدين)' : liveBalance < 0 ? 'له رصيد (دائن)' : 'رصيد صفري'}</p>",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/CustomerAccountPage.tsx",[39m
+[31m+     "line": 568,[39m
+[31m+     "text": "<p className={`text-lg font-bold ${(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SupplierAccountPage.tsx",[39m
+[31m+     "line": 494,[39m
+[31m+     "text": "color: { argb: liveBalance >= 0 ? 'FFB91C1C' : 'FF15803D' }, // same red/green convention as live balance",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SupplierAccountPage.tsx",[39m
+[31m+     "line": 582,[39m
+[31m+     "text": "<p className=\"text-xs text-gray-600 dark:text-gray-300\">{liveBalance > 0 ? 'له مديونية علينا (دائن)' : liveBalance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري'}</p>",[39m
+[31m+   },[39m
+[31m+   Object {[39m
+[31m+     "file": "../pages/SupplierAccountPage.tsx",[39m
+[31m+     "line": 583,[39m
+[31m+     "text": "<p className={`text-lg font-bold ${(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>",[39m
+[31m+   },[39m
+[31m+ ][39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m375:17[22m[39m
+    [90m373| [39m    [90m// SuppliersPage 86,87,224 · CustomerAccountPage 567,568,483 ·[39m
+    [90m374| [39m    [90m// SupplierAccountPage 582,583,494) lack isSettled( on their line.[39m
+    [90m375| [39m    [34mexpect[39m(bad)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m376| [39m  })[33m;[39m
+    [90m377| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/13]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m13 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (15)[39m
+[2m   Start at [22m 14:46:19
+[2m   Duration [22m 16.70s[2m (transform 1.44s, setup 3.78s, collect 1.94s, tests 9.81s, environment 0ms, prepare 657ms)[22m
+
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev12BalanceDust.test.ts[22m" exited with code 1

@@ -1,0 +1,4 @@
+?? .opencode/skills/clean-code-guard/
+?? .opencode/skills/docs-guard/
+?? .opencode/skills/test-guard/
+?? specs/001-audit-rev1-data-integrity/evidence/final/

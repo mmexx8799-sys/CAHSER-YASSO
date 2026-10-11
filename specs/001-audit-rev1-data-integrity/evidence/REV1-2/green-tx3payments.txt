@@ -1,0 +1,35 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/tx3Payments.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/tx3Payments.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/tx3Payments.test.ts[2m > [22m[2mREQ-TX3-PAYMENTS: addCustomerPayment stable key[2m > [22m[2mcust-same-key-twice-cashier: 33.33 ×2 calls same key → 1 doc, balance once, 3 attempts, stored doc has NO opKey
+[22m[39m[2026-10-10T14:03:45.709Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+ [32m✓[39m tests/tx3Payments.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 10815[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addCustomerPayment stable key[2m > [22mcust-same-key-twice-cashier: 33.33 ×2 calls same key → 1 doc, balance once, 3 attempts, stored doc has NO opKey [33m1887[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addCustomerPayment stable key[2m > [22mcust-same-key-twice-admin: 33.33 as admin → 1 doc, balance once [33m579[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addCustomerPayment stable key[2m > [22mdifferent-customer-same-key: seeded customer A, call customer B same amount → OpKeyMismatchError [33m301[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addCustomerPayment stable key[2m > [22mcust-parallel-same-key: two concurrent same-key calls → 1 doc, balance once [33m1590[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addSupplierPayment stable key[2m > [22msup-same-key-twice-cashier: 33.33 ×2 calls same key → 1 doc, balance once, 3 attempts, stored doc has NO opKey [33m442[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addSupplierPayment stable key[2m > [22msup-same-key-twice-admin: 33.33 as admin → 1 doc, balance once [33m502[2mms[22m[39m
+   [33m[2m✓[22m[39m REQ-TX3-PAYMENTS: addSupplierPayment stable key[2m > [22msup-parallel-same-key: two concurrent same-key calls → 1 doc, balance once [33m1325[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m17 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 17:03:39
+[2m   Duration [22m 13.25s[2m (transform 661ms, setup 506ms, collect 841ms, tests 10.82s, environment 1ms, prepare 649ms)[22m
+
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

@@ -1,0 +1,80 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev12BalanceDust.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev12BalanceDust.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev12BalanceDust.test.ts[2m > [22m[2mREV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22m[2msale-dust: credit total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3
+[22m[39m[2026-10-10T13:59:21.354Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+ [31m❯[39m tests/rev12BalanceDust.test.ts [2m([22m[2m17 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 8926[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msale-dust: credit total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3 [33m2010[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mreturn-dust: on-account return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3 [33m465[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22mpurchase-dust: total 0.1+0.2 on balance 0 stores 0.30000000000000004, not 0.3 [33m315[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — the six writers persist dust (raw code)[2m > [22msupplier-return-dust: return 0.1+0.2 on balance 0 stores -0.30000000000000004, not -0.3 [33m308[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msingle-payment: 19.99+33.33+10.1+7.7 credit then one 71.12 payment ⇒ stored === 0 [33m469[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-2 T2.2 — AC-2.4 settlement (cents literals)[2m > [22msplit-payments: same sale then literal 53.32 and 17.8 ⇒ stored === 0 [33m618[2mms[22m[39m
+[31m   [31m×[31m REV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mpayment-cust-missing-balance: 100 on a customer doc WITHOUT balance stores exactly -100 (finite)[90m 134[2mms[22m[31m[39m
+[31m     → expected +0 to be -100 // Object.is equality[39m
+[31m   [31m×[31m REV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mpayment-sup-missing-balance: 100 on a supplier doc WITHOUT balance stores exactly -100 (finite)[90m 127[2mms[22m[31m[39m
+[31m     → expected +0 to be -100 // Object.is equality[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 2 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mpayment-cust-missing-balance: 100 on a customer doc WITHOUT balance stores exactly -100 (finite)
+[31m[1mAssertionError[22m: expected +0 to be -100 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -100[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m326:17[22m[39m
+    [90m324| [39m    [35mconst[39m bal [33m=[39m [35mawait[39m [34mreadBalance[39m([32m'customers'[39m[33m,[39m [32m'dust-mpcust'[39m)[33m;[39m
+    [90m325| [39m    [34mexpect[39m([33mNumber[39m[33m.[39m[34misFinite[39m(bal))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m326| [39m    [34mexpect[39m(bal)[33m.[39m[34mtoBe[39m([33m-[39m[34m100[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m327| [39m  })[33m;[39m
+    [90m328| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev12BalanceDust.test.ts[2m > [22mREV1-2 T2.2 — missing balance, kept creditor, kept negative[2m > [22mpayment-sup-missing-balance: 100 on a supplier doc WITHOUT balance stores exactly -100 (finite)
+[31m[1mAssertionError[22m: expected +0 to be -100 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -100[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/rev12BalanceDust.test.ts:[2m337:17[22m[39m
+    [90m335| [39m    [35mconst[39m bal [33m=[39m [35mawait[39m [34mreadBalance[39m([32m'suppliers'[39m[33m,[39m [32m'dust-mpsup'[39m)[33m;[39m
+    [90m336| [39m    [34mexpect[39m([33mNumber[39m[33m.[39m[34misFinite[39m(bal))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m337| [39m    [34mexpect[39m(bal)[33m.[39m[34mtoBe[39m([33m-[39m[34m100[39m)[33m;[39m
+    [90m   | [39m                [31m^[39m
+    [90m338| [39m  })[33m;[39m
+    [90m339| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m15 passed[39m[22m[90m (17)[39m
+[2m   Start at [22m 16:59:10
+[2m   Duration [22m 15.07s[2m (transform 750ms, setup 2.87s, collect 1.52s, tests 8.93s, environment 0ms, prepare 1.23s)[22m
+
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev12BalanceDust.test.ts[22m" exited with code 1

@@ -11,6 +11,7 @@ import {
 import type { CartItem, PurchaseInvoice, SupplierReturn } from '../../types';
 import { toast } from 'react-hot-toast';
 import { withInFlightGuard } from '../inflight';
+import { round2 } from '../../utils/money';
 import {
     db,
     assertOnline,
@@ -108,7 +109,7 @@ export const processPurchase = withInFlightGuard(async (purchaseData: {
 
             // --- PHASE 2: ALL WRITES ---
             const currentBalance = supplierDoc.data().balance || 0;
-            transaction.update(supplierRef, { balance: currentBalance + purchaseData.total });
+            transaction.update(supplierRef, { balance: round2(currentBalance + purchaseData.total) });
 
             // تحديث العدّاد ذريًا مع باقي الكتابات
             if (purchaseCounterDoc.exists()) {
@@ -248,7 +249,7 @@ export const processSupplierReturn = withInFlightGuard(async (items: CartItem[],
             }
 
             const currentBalance = supplierDoc.data().balance || 0;
-            transaction.update(supplierRef, { balance: currentBalance - totalReturnAmount });
+            transaction.update(supplierRef, { balance: round2(currentBalance - totalReturnAmount) });
 
             const newReturn: Omit<SupplierReturn, 'id'> = {
                 items,

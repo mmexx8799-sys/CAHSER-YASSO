@@ -9,6 +9,7 @@ import { subscribeToCollection, subscribeToDocument } from '../services/dataCach
 import { InvoiceDetailModal } from '../components/InvoiceDetailModal';
 import { where, orderBy, Timestamp } from 'firebase/firestore';
 import { usePermissions } from '../hooks/usePermissions';
+import { isSettled } from '../utils/money';
 import { opKeyStore, settleLabels, FLOW_META } from '../utils/opKeyStore';
 import type { DecideInfo, DecideChoice } from '../utils/opKeyStore';
 import { firebaseRecordDoc } from '../utils/opKeyRecordDoc';
@@ -491,7 +492,7 @@ export default function SupplierAccountPage() {
             footerBalance.numFmt = numFmt;
             footerBalance.font = {
                 bold: true, size: 12,
-                color: { argb: liveBalance >= 0 ? 'FFB91C1C' : 'FF15803D' }, // same red/green convention as live balance
+                color: { argb: (isSettled(liveBalance) || liveBalance > 0) ? 'FFB91C1C' : 'FF15803D' }, // same red/green convention as live balance
             };
             footerBalance.alignment = { horizontal: 'center', vertical: 'middle' };
             footerRow.commit();
@@ -579,8 +580,8 @@ export default function SupplierAccountPage() {
                         )}
                     </div>
                     <div className="text-left shrink-0">
-                        <p className="text-xs text-gray-600 dark:text-gray-300">{liveBalance > 0 ? 'له مديونية علينا (دائن)' : liveBalance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري'}</p>
-                        <p className={`text-lg font-bold ${(liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                        <p className="text-xs text-gray-600 dark:text-gray-300">{isSettled(liveBalance) ? 'رصيد صفري' : liveBalance > 0 ? 'له مديونية علينا (دائن)' : liveBalance < 0 ? 'له رصيد (مدين)' : 'رصيد صفري'}</p>
+                        <p className={`text-lg font-bold ${isSettled(liveBalance) ? 'text-gray-900 dark:text-gray-100' : (liveBalance > 0) ? 'text-red-700 dark:text-red-300' : (liveBalance < 0) ? 'text-green-700 dark:text-green-300' : 'text-gray-900 dark:text-gray-100'}`}>
                             {Math.abs(liveBalance).toFixed(2)} ج.م
                         </p>
                     </div>

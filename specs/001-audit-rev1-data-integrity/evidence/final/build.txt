@@ -1,0 +1,51 @@
+
+> casher-yasoo@1.0.0 build
+> tsc && vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 1772 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mmanifest.webmanifest                        [39m[1m[2m  0.41 kB[22m[1m[22m
+[2mdist/[22m[32mindex.html                                  [39m[1m[2m  2.88 kB[22m[1m[22m[2m │ gzip:   1.30 kB[22m
+[2mdist/[22m[35massets/index-DQXQu5K4.css                   [39m[1m[2m 48.53 kB[22m[1m[22m[2m │ gzip:   8.15 kB[22m
+[2mdist/[22m[36massets/money-loRn2tyx.js                    [39m[1m[2m  0.06 kB[22m[1m[22m[2m │ gzip:   0.08 kB[22m
+[2mdist/[22m[36massets/archiveCalculations-ChUt1AiE.js      [39m[1m[2m  0.17 kB[22m[1m[22m[2m │ gzip:   0.12 kB[22m
+[2mdist/[22m[36massets/useDebounce-DyxeO4oK.js              [39m[1m[2m  0.19 kB[22m[1m[22m[2m │ gzip:   0.16 kB[22m
+[2mdist/[22m[36massets/web-B0m5iOa9.js                      [39m[1m[2m  0.45 kB[22m[1m[22m[2m │ gzip:   0.30 kB[22m
+[2mdist/[22m[36massets/stockAlerts-C5EJHHxw.js              [39m[1m[2m  0.60 kB[22m[1m[22m[2m │ gzip:   0.36 kB[22m
+[2mdist/[22m[36massets/web-g5QGBt8A.js                      [39m[1m[2m  0.76 kB[22m[1m[22m[2m │ gzip:   0.39 kB[22m
+[2mdist/[22m[36massets/OpKeySettleDialog-ChZy43tj.js        [39m[1m[2m  2.26 kB[22m[1m[22m[2m │ gzip:   1.04 kB[22m
+[2mdist/[22m[36massets/utils-KLKL3Jie.js                    [39m[1m[2m  2.90 kB[22m[1m[22m[2m │ gzip:   1.29 kB[22m
+[2mdist/[22m[36massets/ArchivePage-CVNVnwm0.js              [39m[1m[2m  3.18 kB[22m[1m[22m[2m │ gzip:   1.38 kB[22m
+[2mdist/[22m[36massets/LoginPage-CGv_kAL5.js                [39m[1m[2m  4.97 kB[22m[1m[22m[2m │ gzip:   1.88 kB[22m
+[2mdist/[22m[36massets/InvoiceDetailModal-B783AkUh.js       [39m[1m[2m  5.63 kB[22m[1m[22m[2m │ gzip:   1.73 kB[22m
+[2mdist/[22m[36massets/workbox-window.prod.es5-BqEJf4Xk.js  [39m[1m[2m  5.71 kB[22m[1m[22m[2m │ gzip:   2.34 kB[22m
+[2mdist/[22m[36massets/ReportsPage-Dc5-lH6W.js              [39m[1m[2m  6.36 kB[22m[1m[22m[2m │ gzip:   2.50 kB[22m
+[2mdist/[22m[36massets/ProductSearch-B9VCNNp_.js            [39m[1m[2m  7.80 kB[22m[1m[22m[2m │ gzip:   3.41 kB[22m
+[2mdist/[22m[36massets/SuppliersPage-qECAd4TJ.js            [39m[1m[2m  8.44 kB[22m[1m[22m[2m │ gzip:   2.94 kB[22m
+[2mdist/[22m[36massets/CustomersPage--csh2eMC.js            [39m[1m[2m  8.44 kB[22m[1m[22m[2m │ gzip:   2.93 kB[22m
+[2mdist/[22m[36massets/web-DN5mo9ZM.js                      [39m[1m[2m  8.72 kB[22m[1m[22m[2m │ gzip:   2.99 kB[22m
+[2mdist/[22m[36massets/UsersPage-Bmxh3UYc.js                [39m[1m[2m 13.74 kB[22m[1m[22m[2m │ gzip:   5.00 kB[22m
+[2mdist/[22m[36massets/SettingsPage-H0bWA0Wa.js             [39m[1m[2m 14.16 kB[22m[1m[22m[2m │ gzip:   4.28 kB[22m
+[2mdist/[22m[36massets/DashboardPage-CmbNKOm3.js            [39m[1m[2m 16.72 kB[22m[1m[22m[2m │ gzip:   4.75 kB[22m
+[2mdist/[22m[36massets/POSPage-DSNjOIeE.js                  [39m[1m[2m 21.86 kB[22m[1m[22m[2m │ gzip:   6.88 kB[22m
+[2mdist/[22m[36massets/CustomerAccountPage-BnVDEKFR.js      [39m[1m[2m 23.86 kB[22m[1m[22m[2m │ gzip:   7.22 kB[22m
+[2mdist/[22m[36massets/backup-CesIGwwp.js                   [39m[1m[2m 26.46 kB[22m[1m[22m[2m │ gzip:   8.82 kB[22m
+[2mdist/[22m[36massets/ReturnsPage-DMwA6gvR.js              [39m[1m[2m 28.92 kB[22m[1m[22m[2m │ gzip:   8.70 kB[22m
+[2mdist/[22m[36massets/SupplierAccountPage-CDvQaqIr.js      [39m[1m[2m 43.07 kB[22m[1m[22m[2m │ gzip:  10.51 kB[22m
+[2mdist/[22m[36massets/ponyfill-CSfpN3v-.js                 [39m[1m[2m 43.30 kB[22m[1m[22m[2m │ gzip:  15.33 kB[22m
+[2mdist/[22m[36massets/index-DgT_FXn6.js                    [39m[1m[2m 53.63 kB[22m[1m[22m[2m │ gzip:  18.98 kB[22m
+[2mdist/[22m[36massets/ProductsPage-oVrUzTqr.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gzip:  22.10 kB[22m
+[2mdist/[22m[36massets/vendor-D115r7Kk.js                   [39m[1m[2m198.56 kB[22m[1m[22m[2m │ gzip:  62.78 kB[22m
+[2mdist/[22m[36massets/firebase-VVBEvl-A.js                 [39m[1m[2m562.96 kB[22m[1m[22m[2m │ gzip: 132.66 kB[22m
+[2mdist/[22m[36massets/index-CJ-RXt_T.js                    [39m[1m[2m938.00 kB[22m[1m[22m[2m │ gzip: 270.96 kB[22m
+[32m✓ built in 19.19s[39m
+
+PWA v1.3.0
+mode      generateSW
+precache  42 entries (2439.49 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-2fbc6a65.js

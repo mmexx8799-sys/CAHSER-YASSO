@@ -1,0 +1,428 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev13Quantities.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev13Quantities.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message 0
+[22m[39m[2026-10-07T06:51:39.773Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only available on platforms that support LocalStorage.
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message -1
+[22m[39mError processing sale: Error: الإجمالي الفرعي لا يمكن أن يكون سالبًا
+    at [90mE:\Nour-Elrahman\[39mservices\api\sales.ts:107:23
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message NaN
+[22m[39mError processing sale: [FirebaseError: 7 PERMISSION_DENIED: 
+evaluation error at L258:24 for 'update' @ L258, evaluation error at L171:24 for 'create' @ L171, evaluation error at L245:24 for 'update' @ L245, evaluation error at L141:24 for 'update' @ L141, false for 'create' @ L171] {
+  code: [32m'permission-denied'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m,
+  _txExhausted: [33mtrue[39m,
+  _txAttempts: [33m4[39m,
+  _txLabel: [32m'processSale'[39m
+}
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message Infinity
+[22m[39mError processing sale: Error: الكمية غير كافية للمنتج rev13-p
+    at [90mE:\Nour-Elrahman\[39mservices\api\sales.ts:90:27
+    at Array.forEach (<anonymous>)
+    at [90mE:\Nour-Elrahman\[39mservices\api\sales.ts:83:31
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message undefined
+[22m[39mError processing sale: [FirebaseError: Function Transaction.set() called with invalid data. Unsupported field value: undefined (found in document invoices/2cdc8c41-01ea-4f27-8d51-359cb8b938e9)] {
+  code: [32m'invalid-argument'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m
+}
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message -1
+[22m[39mError processing return: [FirebaseError: 7 PERMISSION_DENIED: 
+evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'create' @ L186] {
+  code: [32m'permission-denied'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m,
+  _txExhausted: [33mtrue[39m,
+  _txAttempts: [33m7[39m,
+  _txLabel: [32m'processReturn'[39m
+}
+[monitoring:processReturn] Error: [TX_EXHAUSTED] label=processReturn code=permission-denied attempts=7 invoice=none ts=1791355908679
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:260:21
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at Module.wrapped [90m(E:\Nour-Elrahman\[39mservices\inflight.ts:44:14[90m)[39m
+    at run [90m(E:\Nour-Elrahman\[39mutils\opKeyStore.ts:493:17[90m)[39m
+    at [90mE:\Nour-Elrahman\[39mtests\rev13Quantities.test.ts:209:5
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:5
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message NaN
+[22m[39mError processing return: [FirebaseError: 7 PERMISSION_DENIED: 
+evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'create' @ L186] {
+  code: [32m'permission-denied'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m,
+  _txExhausted: [33mtrue[39m,
+  _txAttempts: [33m7[39m,
+  _txLabel: [32m'processReturn'[39m
+}
+[monitoring:processReturn] Error: [TX_EXHAUSTED] label=processReturn code=permission-denied attempts=7 invoice=none ts=1791355914322
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:260:21
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at Module.wrapped [90m(E:\Nour-Elrahman\[39mservices\inflight.ts:44:14[90m)[39m
+    at run [90m(E:\Nour-Elrahman\[39mutils\opKeyStore.ts:493:17[90m)[39m
+    at [90mE:\Nour-Elrahman\[39mtests\rev13Quantities.test.ts:209:5
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:5
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message 2
+[22m[39mError processing return: [FirebaseError: 7 PERMISSION_DENIED: 
+evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'update' @ L258, Unsupported operation error. Received: string >= int. Expected: string >= string, bytes >= bytes, int >= int, float >= float, duration >= duration, timestamp >= timestamp, constraint >= any, any >= constraint. for 'update' @ L141] {
+  code: [32m'permission-denied'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m,
+  _txExhausted: [33mtrue[39m,
+  _txAttempts: [33m7[39m,
+  _txLabel: [32m'processReturn'[39m
+}
+[monitoring:processReturn] Error: [TX_EXHAUSTED] label=processReturn code=permission-denied attempts=7 invoice=none ts=1791355920059
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:260:21
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at Module.wrapped [90m(E:\Nour-Elrahman\[39mservices\inflight.ts:44:14[90m)[39m
+    at run [90m(E:\Nour-Elrahman\[39mutils\opKeyStore.ts:493:17[90m)[39m
+    at [90mE:\Nour-Elrahman\[39mtests\rev13Quantities.test.ts:209:5
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:5
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22m[2mbuyQuantity=%p rejects with the Arabic message undefined
+[22m[39mError processing return: [FirebaseError: Function Transaction.set() called with invalid data. Unsupported field value: undefined (found in document returns/a8bbf7a5-39ab-4364-a6b7-487c6f9e5173)] {
+  code: [32m'invalid-argument'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m
+}
+
+[90mstderr[2m | tests/rev13Quantities.test.ts[2m > [22m[2mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22m[2mrejected return writes nothing (stock/archive/docs unchanged)
+[22m[39mError processing return: [FirebaseError: 7 PERMISSION_DENIED: 
+evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'update' @ L258, false for 'update' @ L141, false for 'create' @ L186] {
+  code: [32m'permission-denied'[39m,
+  customData: [90mundefined[39m,
+  toString: [36m[Function (anonymous)][39m,
+  _txExhausted: [33mtrue[39m,
+  _txAttempts: [33m7[39m,
+  _txLabel: [32m'processReturn'[39m
+}
+[monitoring:processReturn] Error: [TX_EXHAUSTED] label=processReturn code=permission-denied attempts=7 invoice=none ts=1791355925679
+    at [90mE:\Nour-Elrahman\[39mservices\api\returns.ts:260:21
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at Module.wrapped [90m(E:\Nour-Elrahman\[39mservices\inflight.ts:44:14[90m)[39m
+    at run [90m(E:\Nour-Elrahman\[39mutils\opKeyStore.ts:493:17[90m)[39m
+    at [90mE:\Nour-Elrahman\[39mtests\rev13Quantities.test.ts:216:5
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:5
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:11[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+
+ [31m❯[39m tests/rev13Quantities.test.ts [2m([22m[2m20 tests[22m[2m | [22m[31m18 failed[39m[2m)[22m[33m 29467[2mms[22m[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0[33m 615[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message -1[90m 81[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'الإجمالي الفرعي لا يمكن أن يكون سالبًا'[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message NaN[33m 1805[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية البيع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message Infinity[90m 58[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'الكمية غير كافية للمنتج rev13-p'[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 2[90m 108[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message undefined[90m 75[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'Function Transaction.set() called wit…'[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0[90m 114[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mrejected sale writes nothing (stock/archive/docs unchanged)[33m 317[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0[90m 85[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message -1[33m 5511[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message NaN[33m 5643[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message Infinity[90m 85[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 2[33m 5649[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message undefined[90m 38[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got 'Function Transaction.set() called wit…'[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0[90m 59[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mrejected return writes nothing (stock/archive/docs unchanged)[33m 5523[2mms[22m[31m[39m
+[31m     → expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+[31m   [31m×[31m REQ-REV1-3: opKey state across reject + recall[2m > [22mreject then corrected recall succeeds (fresh key, no lingering block)[90m 62[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+[31m   [31m×[31m REQ-REV1-3: opKey state across reject + recall[2m > [22msame uncorrected cart reuses the key and repeats the error[90m 69[2mms[22m[31m[39m
+[31m     → promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 18 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 2
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0
+[31m[1mAssertionError[22m: promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "outcome": "sent",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m186:41[22m[39m
+    [90m184| [39m[34mdescribe[39m([32m'REQ-REV1-3: sale rejects bad buyQuantity before any write'[39m[33m,[39m …
+    [90m185| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m186| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m                                        [31m^[39m
+    [90m187| [39m  })[33m;[39m
+    [90m188| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message -1
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'الإجمالي الفرعي لا يمكن أن يكون سالبًا'[39m
+
+Expected: [32m"كمية البيع غير صالحة"[39m
+Received: [31m"الإجمالي الفرعي لا يمكن أن يكون سالبًا"[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m186:5[22m[39m
+    [90m184| [39m[34mdescribe[39m([32m'REQ-REV1-3: sale rejects bad buyQuantity before any write'[39m[33m,[39m …
+    [90m185| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m186| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m    [31m^[39m
+    [90m187| [39m  })[33m;[39m
+    [90m188| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message NaN
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية البيع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- كمية البيع غير صالحة[39m
+[31m+ 7 PERMISSION_DENIED: [39m
+[31m+ evaluation error at L258:24 for 'update' @ L258, evaluation error at L171:24 for 'create' @ L171, evaluation error at L245:24 for 'update' @ L245, evaluation error at L141:24 for 'update' @ L141, false for 'create' @ L171[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m186:5[22m[39m
+    [90m184| [39m[34mdescribe[39m([32m'REQ-REV1-3: sale rejects bad buyQuantity before any write'[39m[33m,[39m …
+    [90m185| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m186| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m    [31m^[39m
+    [90m187| [39m  })[33m;[39m
+    [90m188| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message Infinity
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'الكمية غير كافية للمنتج rev13-p'[39m
+
+Expected: [32m"كمية [7mالبيع غير صالحة[27m"[39m
+Received: [31m"[7mال[27mكمية [7mغير كافية للمنتج rev13-p[27m"[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m186:5[22m[39m
+    [90m184| [39m[34mdescribe[39m([32m'REQ-REV1-3: sale rejects bad buyQuantity before any write'[39m[33m,[39m …
+    [90m185| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m186| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m    [31m^[39m
+    [90m187| [39m  })[33m;[39m
+    [90m188| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message undefined
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية البيع غير صالحة' but got 'Function Transaction.set() called wit…'[39m
+
+Expected: [32m"كمية البيع غير صالحة"[39m
+Received: [31m"Function Transaction.set() called with invalid data. Unsupported field value: undefined (found in document invoices/2cdc8c41-01ea-4f27-8d51-359cb8b938e9)"[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m186:5[22m[39m
+    [90m184| [39m[34mdescribe[39m([32m'REQ-REV1-3: sale rejects bad buyQuantity before any write'[39m[33m,[39m …
+    [90m185| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m186| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m    [31m^[39m
+    [90m187| [39m  })[33m;[39m
+    [90m188| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: sale rejects bad buyQuantity before any write[2m > [22mrejected sale writes nothing (stock/archive/docs unchanged)
+[31m[1mAssertionError[22m: promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "outcome": "sent",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m193:41[22m[39m
+    [90m191| [39m    [35mconst[39m archBefore [33m=[39m [35mawait[39m [34marchiveTotals[39m()[33m;[39m
+    [90m192| [39m    [35mconst[39m nBefore [33m=[39m [35mawait[39m [34mdocCount[39m([32m'invoices'[39m)[33m;[39m
+    [90m193| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m([34m0[39m)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m                                        [31m^[39m
+    [90m194| [39m    [34mexpect[39m([35mawait[39m [34mstockOf[39m())[33m.[39m[34mtoBe[39m(stockBefore)[33m;[39m
+    [90m195| [39m    [34mexpect[39m([35mawait[39m [34marchiveTotals[39m())[33m.[39m[34mtoEqual[39m(archBefore)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message Infinity
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 0
+[31m[1mAssertionError[22m: promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "outcome": "sent",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m209:43[22m[39m
+    [90m207| [39m[34mdescribe[39m([32m'REQ-REV1-3: return rejects bad buyQuantity before any write'[39m…
+    [90m208| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m209| [39m    [35mawait[39m [34mexpect[39m([34mreturnSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mRETURN_BAD[39m…
+    [90m   | [39m                                          [31m^[39m
+    [90m210| [39m  })[33m;[39m
+    [90m211| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message -1
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message NaN
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message 2
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- كمية المرتجع غير صالحة[39m
+[31m+ 7 PERMISSION_DENIED: [39m
+[31m+ evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'create' @ L186[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m209:5[22m[39m
+    [90m207| [39m[34mdescribe[39m([32m'REQ-REV1-3: return rejects bad buyQuantity before any write'[39m…
+    [90m208| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m209| [39m    [35mawait[39m [34mexpect[39m([34mreturnSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mRETURN_BAD[39m…
+    [90m   | [39m    [31m^[39m
+    [90m210| [39m  })[33m;[39m
+    [90m211| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mbuyQuantity=%p rejects with the Arabic message undefined
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got 'Function Transaction.set() called wit…'[39m
+
+Expected: [32m"كمية المرتجع غير صالحة"[39m
+Received: [31m"Function Transaction.set() called with invalid data. Unsupported field value: undefined (found in document returns/a8bbf7a5-39ab-4364-a6b7-487c6f9e5173)"[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m209:5[22m[39m
+    [90m207| [39m[34mdescribe[39m([32m'REQ-REV1-3: return rejects bad buyQuantity before any write'[39m…
+    [90m208| [39m  test[33m.[39m[34meach[39m([33mBAD_QTYS[39m)([32m'buyQuantity=%p rejects with the Arabic message'[39m…
+    [90m209| [39m    [35mawait[39m [34mexpect[39m([34mreturnSend[39m([[34mcartItem[39m(q)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mRETURN_BAD[39m…
+    [90m   | [39m    [31m^[39m
+    [90m210| [39m  })[33m;[39m
+    [90m211| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: return rejects bad buyQuantity before any write[2m > [22mrejected return writes nothing (stock/archive/docs unchanged)
+[31m[1mAssertionError[22m: expected [Function] to throw error including 'كمية المرتجع غير صالحة' but got '7 PERMISSION_DENIED: \nevaluation err…'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- كمية المرتجع غير صالحة[39m
+[31m+ 7 PERMISSION_DENIED: [39m
+[31m+ evaluation error at L258:24 for 'update' @ L258, evaluation error at L186:24 for 'create' @ L186, evaluation error at L141:24 for 'update' @ L141, evaluation error at L245:24 for 'update' @ L245, false for 'update' @ L258, false for 'update' @ L141, false for 'create' @ L186[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m216:5[22m[39m
+    [90m214| [39m    [35mconst[39m archBefore [33m=[39m [35mawait[39m [34marchiveTotals[39m()[33m;[39m
+    [90m215| [39m    [35mconst[39m nBefore [33m=[39m [35mawait[39m [34mdocCount[39m([32m'returns'[39m)[33m;[39m
+    [90m216| [39m    [35mawait[39m [34mexpect[39m([34mreturnSend[39m([[34mcartItem[39m([33m-[39m[34m3[39m)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mRETURN_BA[39m…
+    [90m   | [39m    [31m^[39m
+    [90m217| [39m    [34mexpect[39m([35mawait[39m [34mstockOf[39m())[33m.[39m[34mtoBe[39m(stockBefore)[33m;[39m
+    [90m218| [39m    [34mexpect[39m([35mawait[39m [34marchiveTotals[39m())[33m.[39m[34mtoEqual[39m(archBefore)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: opKey state across reject + recall[2m > [22mreject then corrected recall succeeds (fresh key, no lingering block)
+[31m[1mAssertionError[22m: promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "outcome": "sent",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m232:41[22m[39m
+    [90m230| [39m[34mdescribe[39m([32m'REQ-REV1-3: opKey state across reject + recall'[39m[33m,[39m () [33m=>[39m {
+    [90m231| [39m  [34mtest[39m([32m'reject then corrected recall succeeds (fresh key, no lingering[39m…
+    [90m232| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m([[34mcartItem[39m([34m0[39m)]))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m…
+    [90m   | [39m                                        [31m^[39m
+    [90m233| [39m    [35mconst[39m nBefore [33m=[39m [35mawait[39m [34mdocCount[39m([32m'invoices'[39m)[33m;[39m
+    [90m234| [39m    [35mconst[39m result [33m=[39m [35mawait[39m [34msaleSend[39m([[34mcartItem[39m([34m2[39m)])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev13Quantities.test.ts[2m > [22mREQ-REV1-3: opKey state across reject + recall[2m > [22msame uncorrected cart reuses the key and repeats the error
+[31m[1mAssertionError[22m: promise resolved "{ outcome: 'sent' }" instead of rejecting[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [Error: rejected promise][39m
+[31m+ Object {[39m
+[31m+   "outcome": "sent",[39m
+[31m+ }[39m
+
+[36m [2m❯[22m tests/rev13Quantities.test.ts:[2m241:31[22m[39m
+    [90m239| [39m  [34mtest[39m([32m'same uncorrected cart reuses the key and repeats the error'[39m[33m,[39m [35ma[39m…
+    [90m240| [39m    [35mconst[39m bad [33m=[39m [[34mcartItem[39m([34m0[39m)][33m;[39m
+    [90m241| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m(bad))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m)[33m;[39m
+    [90m   | [39m                              [31m^[39m
+    [90m242| [39m    [35mawait[39m [34mexpect[39m([34msaleSend[39m(bad))[33m.[39mrejects[33m.[39m[34mtoThrow[39m([33mSALE_BAD_MSG[39m)[33m;[39m
+    [90m243| [39m    [35mconst[39m badRet [33m=[39m [[34mcartItem[39m([33mNaN[39m)][33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/18]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m18 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (20)[39m
+[2m   Start at [22m 09:51:34
+[2m   Duration [22m 31.00s[2m (transform 392ms, setup 474ms, collect 563ms, tests 29.47s, environment 0ms, prepare 151ms)[22m
+
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev13Quantities.test.ts[22m" exited with code 1

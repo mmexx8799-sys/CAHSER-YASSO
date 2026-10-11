@@ -1,0 +1,516 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev1Cache.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev1Cache.test.ts[2m > [22m[2mREV1-1 — dataCache key collision + fan-out[2m > [22m[2monSnapshot error callback: listener stable
+[22m[39mError listening to test-err:  Error: test error
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:380:18
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+
+ [31m❯[39m tests/rev1Cache.test.ts [2m([22m[2m27 tests[22m[2m | [22m[31m18 failed[39m[2m)[22m[90m 66[2mms[22m[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x==2 should NOT share a listener[90m 17[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs y==1 should NOT share a listener[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x!=1 should NOT share a listener[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: orderBy n asc vs desc should NOT share a listener[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: startAfter 5 vs 10 should NOT share a listener[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mR3: collision — B never receives A data; separate listeners[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: [where, orderBy] and [orderBy, where] are semantically equal ⇒ share[90m 1[2mms[22m[31m[39m
+[31m     → expected 2 to be 1 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: [orderBy a, orderBy b] vs [orderBy b, orderBy a] do NOT share (orderBy order matters)[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: same-type wheres in different order do NOT share (no reordering)[90m 4[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: shared B receives two consecutive live updates (last-call content)[90m 4[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: A+B+C all receive the live update content[90m 2[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: shared B receives live update (fan-out)[90m 2[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7: A leaves, B stays and receives updates; A gets nothing new[90m 1[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '2', x: 1 } ][39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7b: double-unsubscribe is idempotent; B keeps receiving[90m 1[2mms[22m[31m[39m
+[31m     → expected +0 to be 1 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6b: a throwing subscriber callback does not starve the rest[90m 1[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4: throwing query construction fails closed — no sharing[90m 4[2mms[22m[31m[39m
+[31m     → expected [Function] to throw an error[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4b: queryEqual throws ⇒ no sharing (private entries)[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.3: dataCache.ts has no private SDK member reliance[90m 10[2mms[22m[31m[39m
+[31m     → expected '\nimport { \n  collection, \n  onSnap…' not to contain '_toFieldFilter'[39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 18 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x==2 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs y==1 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x!=1 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: orderBy n asc vs desc should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: startAfter 5 vs 10 should NOT share a listener
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m154:32[22m[39m
+    [90m152| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m(path[33m,[39m () [33m=>[39m {}[33m,[39m constra…
+    [90m153| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m(path[33m,[39m () [33m=>[39m {}[33m,[39m constra…
+    [90m154| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m155| [39m    [34munsubA[39m()[33m;[39m
+    [90m156| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mR3: collision — B never receives A data; separate listeners
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m170:32[22m[39m
+    [90m168| [39m    [34mexpect[39m([34mliveCalls[39m(callsB))[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m169| [39m    [90m// Collision: one shared listener instead of two.[39m
+    [90m170| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m171| [39m    [90m// Late subscriber with a THIRD different constraint must not get [39m…
+    [90m172| [39m    [35mconst[39m callsC[33m:[39m unknown[][] [33m=[39m [][33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: [where, orderBy] and [orderBy, where] are semantically equal ⇒ share
+[31m[1mAssertionError[22m: expected 2 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m218:32[22m[39m
+    [90m216| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12e'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m217| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12e'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m218| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m219| [39m    [34munsubA[39m()[33m;[39m
+    [90m220| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: [orderBy a, orderBy b] vs [orderBy b, orderBy a] do NOT share (orderBy order matters)
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m226:32[22m[39m
+    [90m224| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12h'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m225| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12h'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m226| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m227| [39m    [34munsubA[39m()[33m;[39m
+    [90m228| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.2: same-type wheres in different order do NOT share (no reordering)
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m242:32[22m[39m
+    [90m240| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12g'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m241| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac12g'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m242| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m243| [39m    [34munsubA[39m()[33m;[39m
+    [90m244| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: shared B receives two consecutive live updates (last-call content)
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m254:30[22m[39m
+    [90m252| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m253| [39m    [34mexpect[39m([34mlastCall[39m(callsA))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m254| [39m    [34mexpect[39m([34mlastCall[39m(callsB))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m255| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m256| [39m    [34mexpect[39m([34mlastCall[39m(callsA))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: A+B+C all receive the live update content
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m271:30[22m[39m
+    [90m269| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m270| [39m    [34mexpect[39m([34mlastCall[39m(callsA))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m271| [39m    [34mexpect[39m([34mlastCall[39m(callsB))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m272| [39m    [34mexpect[39m([34mlastCall[39m(callsC))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m273| [39m    [34munsubA[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: shared B receives live update (fan-out)
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m285:21[22m[39m
+    [90m283| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m284| [39m    [34mexpect[39m(latestA)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m285| [39m    [34mexpect[39m(latestB)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m286| [39m    [34munsubA[39m()[33m;[39m
+    [90m287| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7: A leaves, B stays and receives updates; A gets nothing new
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '2', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "2",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m300:30[22m[39m
+    [90m298| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m299| [39m    [90m// B (still subscribed) receives the second update.[39m
+    [90m300| [39m    [34mexpect[39m([34mlastCall[39m(callsB))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m301| [39m    [90m// A (unsubscribed) receives nothing new: exactly its one snapshot[39m…
+    [90m302| [39m    [34mexpect[39m(callsA[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7b: double-unsubscribe is idempotent; B keeps receiving
+[31m[1mAssertionError[22m: expected +0 to be 1 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m316:32[22m[39m
+    [90m314| [39m    [34munsubA[39m()[33m;[39m
+    [90m315| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+    [90m316| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m317| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m318| [39m    [34mexpect[39m([34mlastCall[39m(callsB))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6b: a throwing subscriber callback does not starve the rest
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m333:30[22m[39m
+    [90m331| [39m      [90m// A threw; with per-callback isolation B still gets the update.[39m
+    [90m332| [39m    }
+    [90m333| [39m    [34mexpect[39m([34mlastCall[39m(callsB))[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                             [31m^[39m
+    [90m334| [39m    [34munsubA[39m()[33m;[39m
+    [90m335| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4: throwing query construction fails closed — no sharing
+[31m[1mAssertionError[22m: expected [Function] to throw an error[39m
+
+[32m- Expected:[39m 
+null
+
+[31m+ Received:[39m 
+undefined
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m358:89[22m[39m
+    [90m356| [39m    [90m// is treated independently (its own construction attempt throws) [39m…
+    [90m357| [39m    [90m// than being swallowed into A's leaked ref-count.[39m
+    [90m358| [39m    [34mexpect[39m(() [33m=>[39m [34msubscribeToCollection[39m([32m'test-ac14'[39m[33m,[39m () [33m=>[39m {}[33m,[39m [[34mmarkedC[39m…
+    [90m   | [39m                                                                                        [31m^[39m
+    [90m359| [39m      [32m'REV1-1 fail-closed probe: marked constraint'[39m[33m,[39m
+    [90m360| [39m    )[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4b: queryEqual throws ⇒ no sharing (private entries)
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m368:32[22m[39m
+    [90m366| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac14b'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m367| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac14b'[39m[33m,[39m () [33m=>[39m {}[33m,[39m…
+    [90m368| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m369| [39m    [34munsubA[39m()[33m;[39m
+    [90m370| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/18]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.3: dataCache.ts has no private SDK member reliance
+[31m[1mAssertionError[22m: expected '\nimport { \n  collection, \n  onSnap…' not to contain '_toFieldFilter'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- _toFieldFilter[39m
+[31m+[39m
+[31m+ import { [39m
+[31m+   collection, [39m
+[31m+   onSnapshot, [39m
+[31m+   query,[39m
+[31m+   doc[39m
+[31m+ } from "firebase/firestore";[39m
+[31m+ import type { QueryConstraint, DocumentData } from 'firebase/firestore';[39m
+[31m+ import { getDB } from './firebase';[39m
+[31m+[39m
+[31m+ interface CacheEntry<T> {[39m
+[31m+   data: T;[39m
+[31m+   unsubscribe: () => void;[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ const db = getDB();[39m
+[31m+ const cache = new Map<string, CacheEntry<any>>();[39m
+[31m+ const activeSubscriptions = new Map<string, number>();[39m
+[31m+[39m
+[31m+ // A simple key generator for queries.[39m
+[31m+ const generateCacheKey = (path: string, constraints: QueryConstraint[]): string => {[39m
+[31m+     try {[39m
+[31m+         const constraintString = constraints.map(c => JSON.stringify((c as any)._toFieldFilter ? (c as any)._toFieldFilter() : c.type)).join(';');[39m
+[31m+         return `${path}::${constraintString}`;[39m
+[31m+     } catch {[39m
+[31m+         return `${path}::${constraints.length}`;[39m
+[31m+     }[39m
+[31m+ };[39m
+[31m+[39m
+[31m+ type Unsubscribe = () => void;[39m
+[31m+[39m
+[31m+ /**[39m
+[31m+  * Delays the actual Firestore unsubscribe call to a microtask, so it never[39m
+[31m+  * races with an in-flight remote event being processed by the SyncEngine[39m
+[31m+  * (workaround for SDK 10.14.1 "INTERNAL ASSERTION FAILED: Unexpected state"[39m
+[31m+  * thrown when teardown happens mid-watch-processing).[39m
+[31m+  */[39m
+[31m+ const safeUnsubscribe = (unsub: () => void) => {[39m
+[31m+     queueMicrotask(() => {[39m
+[31m+         try {[39m
+[31m+             unsub();[39m
+[31m+         } catch (e) {[39m
+[31m+             // Swallow post-teardown SDK assertion errors — listener is gone anyway.[39m
+[31m+             console.warn('Firestore unsubscribe swallowed an internal error:', e);[39m
+[31m+         }[39m
+[31m+     });[39m
+[31m+ };[39m
+[31m+[39m
+[31m+ /**[39m
+[31m+  * Subscribes to a Firestore collection with caching and automatic listener management.[39m
+[31m+  * @param path The collection path.[39m
+[31m+  * @param callback The function to call with the data.[39m
+[31m+  * @param constraints Firestore query constraints.[39m
+[31m+  * @returns An unsubscribe function.[39m
+[31m+  */[39m
+[31m+ export const subscribeToCollection = <T extends DocumentData>([39m
+[31m+     path: string, [39m
+[31m+     callback: (data: (T & { id: string })[]) => void,[39m
+[31m+     constraints: QueryConstraint[] = [][39m
+[31m+ ): Unsubscribe => {[39m
+[31m+     const cacheKey = generateCacheKey(path, constraints);[39m
+[31m+     [39m
+[31m+     const currentSubCount = activeSubscriptions.get(cacheKey) || 0;[39m
+[31m+     activeSubscriptions.set(cacheKey, currentSubCount + 1);[39m
+[31m+[39m
+[31m+     const cachedEntry = cache.get(cacheKey);[39m
+[31m+     if (cachedEntry) {[39m
+[31m+         // Return cached data immediately to improve perceived performance[39m
+[31m+         callback(cachedEntry.data);[39m
+[31m+     }[39m
+[31m+[39m
+[31m+     if (currentSubCount === 0) {[39m
+[31m+         // This is the first subscriber for this query, so create a new listener.[39m
+[31m+         const q = query(collection(db, path), ...constraints);[39m
+[31m+         const unsubscribe = onSnapshot(q, (snapshot) => {[39m
+[31m+             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as (T & { id: string })));[39m
+[31m+             [39m
+[31m+             const newEntry: CacheEntry<(T & { id: string })[]> = { data, unsubscribe };[39m
+[31m+             cache.set(cacheKey, newEntry);[39m
+[31m+             [39m
+[31m+             callback(data);[39m
+[31m+         }, (error) => {[39m
+[31m+             console.error(`Error listening to ${path}: `, error);[39m
+[31m+         });[39m
+[31m+         [39m
+[31m+         const entry = cache.get(cacheKey) || { data: [], unsubscribe };[39m
+[31m+         entry.unsubscribe = unsubscribe;[39m
+[31m+         cache.set(cacheKey, entry);[39m
+[31m+     }[39m
+[31m+[39m
+[31m+     return () => {[39m
+[31m+         const count = activeSubscriptions.get(cacheKey);[39m
+[31m+         if (count && count > 1) {[39m
+[31m+             activeSubscriptions.set(cacheKey, count - 1);[39m
+[31m+         } else {[39m
+[31m+             const entry = cache.get(cacheKey);[39m
+[31m+             if (entry && entry.unsubscribe) {[39m
+[31m+                 safeUnsubscribe(entry.unsubscribe);[39m
+[31m+             }[39m
+[31m+             activeSubscriptions.delete(cacheKey);[39m
+[31m+         }[39m
+[31m+     };[39m
+[31m+ };[39m
+[31m+[39m
+[31m+ /**[39m
+[31m+  * Subscribes to a single Firestore document with caching.[39m
+[31m+  * @param path The collection path.[39m
+[31m+  * @param docId The document ID.[39m
+[31m+  * @param callback The function to call with the data.[39m
+[31m+  * @returns An unsubscribe function.[39m
+[31m+  */[39m
+[31m+ export const subscribeToDocument = <T extends DocumentData>([39m
+[31m+     path: string,[39m
+[31m+     docId: string,[39m
+[31m+     callback: (data: (T & { id: string }) | null) => void[39m
+[31m+ ): Unsubscribe => {[39m
+[31m+     const cacheKey = `${path}/${docId}`;[39m
+[31m+     [39m
+[31m+     const currentSubCount = activeSubscriptions.get(cacheKey) || 0;[39m
+[31m+     activeSubscriptions.set(cacheKey, currentSubCount + 1);[39m
+[31m+[39m
+[31m+     const cachedEntry = cache.get(cacheKey);[39m
+[31m+     if (cachedEntry) {[39m
+[31m+         callback(cachedEntry.data);[39m
+[31m+     }[39m
+[31m+[39m
+[31m+     if (currentSubCount === 0) {[39m
+[31m+         const docRef = doc(db, path, docId);[39m
+[31m+         const unsubscribe = onSnapshot(docRef, (docSnap) => {[39m
+[31m+             let data: (T & { id: string }) | null = null;[39m
+[31m+             if (docSnap.exists()) {[39m
+[31m+                 data = { id: docSnap.id, ...docSnap.data() } as (T & { id: string });[39m
+[31m+             }[39m
+[31m+             cache.set(cacheKey, { data, unsubscribe });[39m
+[31m+             callback(data);[39m
+[31m+         }, (error) => {[39m
+[31m+             console.error(`Error listening to document ${cacheKey}:`, error);[39m
+[31m+         });[39m
+[31m+[39m
+[31m+         const entry = cache.get(cacheKey) || { data: null, unsubscribe };[39m
+[31m+         entry.unsubscribe = unsubscribe;[39m
+[31m+         cache.set(cacheKey, entry);[39m
+[31m+     }[39m
+[31m+[39m
+[31m+     return () => {[39m
+[31m+         const count = activeSubscriptions.get(cacheKey);[39m
+[31m+         if (count && count > 1) {[39m
+[31m+             activeSubscriptions.set(cacheKey, count - 1);[39m
+[31m+         } else {[39m
+[31m+             const entry = cache.get(cacheKey);[39m
+[31m+             if (entry && entry.unsubscribe) {[39m
+[31m+                 safeUnsubscribe(entry.unsubscribe);[39m
+[31m+             }[39m
+[31m+             activeSubscriptions.delete(cacheKey);[39m
+[31m+         }[39m
+[31m+     };[39m
+[31m+ };[39m
+[31m+[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m375:21[22m[39m
+    [90m373| [39m  [34mit[39m([32m'AC-1.3: dataCache.ts has no private SDK member reliance'[39m[33m,[39m () [33m=>[39m {
+    [90m374| [39m    [35mconst[39m src [33m=[39m [34mreadFileSync[39m([34mresolve[39m([32m'services/dataCache.ts'[39m)[33m,[39m [32m'utf8'[39m)[33m;[39m
+    [90m375| [39m    [34mexpect[39m(src)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'_toFieldFilter'[39m)[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m376| [39m  })[33m;[39m
+    [90m377| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/18]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m18 failed[39m[22m[2m | [22m[1m[32m9 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 12:30:31
+[2m   Duration [22m 8.35s[2m (transform 1.15s, setup 6.63s, collect 141ms, tests 66ms, environment 1ms, prepare 1.15s)[22m
+

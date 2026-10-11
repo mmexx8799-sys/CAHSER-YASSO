@@ -224,8 +224,8 @@ describe('REQ-TX3-PAYMENTS: addCustomerPayment stable key', () => {
     };
     expect.soft(observed.attempts).toBe(3);
     expect.soft(observed.docs).toBe(1);
-    // Same expression as the service: currentBalance - amount.
-    expect.soft(observed.balance).toBe(200 - AMT);
+    // Cents-rounded service result: round2(currentBalance - amount) = 166.67.
+    expect.soft(observed.balance).toBe(166.67);
     // opKey NEVER stored; no new fields — exact key set of the write path.
     expect.soft(observed.hasOpKey).toBe(false);
     expect.soft(observed.keys).toEqual(['amount', 'customerId', 'date', 'notes']);
@@ -242,7 +242,7 @@ describe('REQ-TX3-PAYMENTS: addCustomerPayment stable key', () => {
     await addCustomerPayment(custPay('tx3pay-cust', AMT, K_C_ADMIN));
 
     expect.soft(await countDocs('customerPayments')).toBe(1);
-    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(200 - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(166.67);
   });
 
   it('cust-mismatch-different-amount: seeded 33.33, call 50 → OpKeyMismatchError, fixed toast once, nothing moves', async () => {
@@ -337,7 +337,7 @@ describe('REQ-TX3-PAYMENTS: addCustomerPayment stable key', () => {
     ]);
 
     expect.soft(await countDocs('customerPayments')).toBe(1);
-    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(200 - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(166.67);
   });
 
   it('cust-key-format: bad key + amount 0 → key error wins (validation before amount check, pre-contact)', async () => {
@@ -365,7 +365,7 @@ describe('REQ-TX3-PAYMENTS: addCustomerPayment stable key', () => {
     await addCustomerPayment(custPay('tx3pay-cust', AMT));
 
     expect.soft(await countDocs('customerPayments')).toBe(2);
-    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(200 - AMT - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'customers', 'tx3pay-cust'))).data() as any).balance).toBe(133.34);
   });
 });
 
@@ -391,7 +391,7 @@ describe('REQ-TX3-PAYMENTS: addSupplierPayment stable key', () => {
     };
     expect.soft(observed.attempts).toBe(3);
     expect.soft(observed.docs).toBe(1);
-    expect.soft(observed.balance).toBe(200 - AMT);
+    expect.soft(observed.balance).toBe(166.67);
     // opKey NEVER stored; no new fields — exact key set of the write path.
     expect.soft(observed.hasOpKey).toBe(false);
     expect.soft(observed.keys).toEqual(['amount', 'date', 'notes', 'supplierId']);
@@ -408,7 +408,7 @@ describe('REQ-TX3-PAYMENTS: addSupplierPayment stable key', () => {
     await addSupplierPayment(supPay('tx3pay-sup', AMT, K_S_ADMIN));
 
     expect.soft(await countDocs('supplierPayments')).toBe(1);
-    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(200 - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(166.67);
   });
 
   it('sup-mismatch-different-amount: seeded 33.33, call 50 → OpKeyMismatchError, fixed toast once, nothing moves', async () => {
@@ -475,7 +475,7 @@ describe('REQ-TX3-PAYMENTS: addSupplierPayment stable key', () => {
     ]);
 
     expect.soft(await countDocs('supplierPayments')).toBe(1);
-    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(200 - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(166.67);
   });
 
   it('sup-key-format: invalid key rejected before any Firestore contact', async () => {
@@ -501,6 +501,6 @@ describe('REQ-TX3-PAYMENTS: addSupplierPayment stable key', () => {
     await addSupplierPayment(supPay('tx3pay-sup', AMT));
 
     expect.soft(await countDocs('supplierPayments')).toBe(2);
-    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(200 - AMT - AMT);
+    expect.soft(((await getDoc(doc(getDB(), 'suppliers', 'tx3pay-sup'))).data() as any).balance).toBe(133.34);
   });
 });

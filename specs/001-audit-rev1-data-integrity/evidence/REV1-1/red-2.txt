@@ -1,0 +1,171 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev1Cache.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev1Cache.test.ts[2m > [22m[2mREV1-1 — dataCache key collision + fan-out[2m > [22m[2monSnapshot error callback: listener stable
+[22m[39mError listening to test-err:  Error: test error
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:237:18
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+
+ [31m❯[39m tests/rev1Cache.test.ts [2m([22m[2m21 tests[22m[2m | [22m[31m10 failed[39m[2m)[22m[90m 53[2mms[22m[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x==2 should NOT share a listener[90m 17[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs y==1 should NOT share a listener[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x!=1 should NOT share a listener[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: orderBy n asc vs desc should NOT share a listener[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: startAfter 5 vs 10 should NOT share a listener[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mR3: collision — A data does not reach B[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be +0 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: B receives two consecutive live updates[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7: A leaves, B stays and receives updates[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4: fail-closed — bad constraints do not share[90m 1[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.3: B shared receives live updates (fan-out)[90m 5[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[31m⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 10 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x==2 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs y==1 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: where x==1 vs x!=1 should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: orderBy n asc vs desc should NOT share a listener
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.1: startAfter 5 vs 10 should NOT share a listener
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m104:32[22m[39m
+    [90m102| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac11'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m103| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac11'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m104| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m105| [39m    [34munsubA[39m()[33m;[39m
+    [90m106| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mR3: collision — A data does not reach B
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m116:27[22m[39m
+    [90m114| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { name[33m:[39m [32m'test'[39m } }])[33m;[39m
+    [90m115| [39m    [34mexpect[39m(callsA[33m.[39mlength)[33m.[39m[34mtoBeGreaterThan[39m([34m0[39m)[33m;[39m
+    [90m116| [39m    [34mexpect[39m(callsB[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m117| [39m    [34munsubA[39m()[33m;[39m
+    [90m118| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.6: B receives two consecutive live updates
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m177:27[22m[39m
+    [90m175| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m176| [39m    [34mexpect[39m(callsA[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m177| [39m    [34mexpect[39m(callsB[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m178| [39m    [34munsubA[39m()[33m;[39m
+    [90m179| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.7: A leaves, B stays and receives updates
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m206:27[22m[39m
+    [90m204| [39m    [34munsubA[39m()[33m;[39m
+    [90m205| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'2'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m206| [39m    [34mexpect[39m(callsB[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m207| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m208| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.4: fail-closed — bad constraints do not share
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m230:32[22m[39m
+    [90m228| [39m    [35mconst[39m unsubA [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac14'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m229| [39m    [35mconst[39m unsubB [33m=[39m [34mtrack[39m([34msubscribeToCollection[39m([32m'test-ac14'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m230| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m231| [39m    [34munsubA[39m()[33m;[39m
+    [90m232| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mAC-1.3: B shared receives live updates (fan-out)
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m251:21[22m[39m
+    [90m249| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m250| [39m    [34mexpect[39m(latestA)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m251| [39m    [34mexpect[39m(latestB)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m252| [39m    [34munsubA[39m()[33m;[39m
+    [90m253| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m10 failed[39m[22m[2m | [22m[1m[32m11 passed[39m[22m[90m (21)[39m
+[2m   Start at [22m 18:22:13
+[2m   Duration [22m 1.89s[2m (transform 179ms, setup 525ms, collect 119ms, tests 53ms, environment 0ms, prepare 167ms)[22m
+

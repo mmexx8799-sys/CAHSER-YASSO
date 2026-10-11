@@ -1,0 +1,10 @@
+ services/api/returns.ts | 11 +++++++++++
+ services/api/sales.ts   | 11 +++++++++++
+ 2 files changed, 22 insertions(+)
+ M services/api/returns.ts
+ M services/api/sales.ts
+?? .opencode/skills/clean-code-guard/
+?? .opencode/skills/docs-guard/
+?? .opencode/skills/test-guard/
+?? specs/
+?? tests/rev13Quantities.test.ts

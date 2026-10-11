@@ -1,0 +1,96 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev1Cache.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstderr[2m | tests/rev1Cache.test.ts[2m > [22m[2mREV1-1 — dataCache key collision + fan-out[2m > [22m[2mfail-closed: error callback invoked, listener stable
+[22m[39mError listening to test-failclosed:  Error: test error
+    at [90mE:\Nour-Elrahman\[39mtests\rev1Cache.test.ts:121:18
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:146:14
+    at [90mfile:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:533:11
+    at runWithTimeout [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:39:7[90m)[39m
+    at runTest [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1056:17[90m)[39m
+[90m    at processTicksAndRejections (node:internal/process/task_queues:105:5)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runSuite [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1205:15[90m)[39m
+    at runFiles [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1262:5[90m)[39m
+    at startTests [90m(file:///E:/Nour-Elrahman/[39mnode_modules/[4m@vitest[24m/runner/dist/index.js:1271:3[90m)[39m
+
+ [31m❯[39m tests/rev1Cache.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 31[2mms[22m[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mA-vs-B collision: orderBy("name") and orderBy("age") should NOT share a listener[90m 14[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mA-vs-B collision: limit(5) and limit(10) should NOT share a listener[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be 2 // Object.is equality[39m
+[31m   [31m×[31m REV1-1 — dataCache key collision + fan-out[2m > [22mB shared receives live updates (fan-out)[90m 6[2mms[22m[31m[39m
+[31m     → expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 3 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mA-vs-B collision: orderBy("name") and orderBy("age") should NOT share a listener
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m68:32[22m[39m
+    [90m 66| [39m    [35mconst[39m unsubA [33m=[39m [34msubscribeToCollection[39m([32m'test-collision'[39m[33m,[39m () [33m=>[39m {}[33m,[39m […
+    [90m 67| [39m    [35mconst[39m unsubB [33m=[39m [34msubscribeToCollection[39m([32m'test-collision'[39m[33m,[39m () [33m=>[39m {}[33m,[39m […
+    [90m 68| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m 69| [39m    [34munsubA[39m()[33m;[39m
+    [90m 70| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mA-vs-B collision: limit(5) and limit(10) should NOT share a listener
+[31m[1mAssertionError[22m: expected 1 to be 2 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m76:32[22m[39m
+    [90m 74| [39m    [35mconst[39m unsubA [33m=[39m [34msubscribeToCollection[39m([32m'test-collision2'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m 75| [39m    [35mconst[39m unsubB [33m=[39m [34msubscribeToCollection[39m([32m'test-collision2'[39m[33m,[39m () [33m=>[39m {}[33m,[39m …
+    [90m 76| [39m    [34mexpect[39m([34mgetListenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m   | [39m                               [31m^[39m
+    [90m 77| [39m    [34munsubA[39m()[33m;[39m
+    [90m 78| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev1Cache.test.ts[2m > [22mREV1-1 — dataCache key collision + fan-out[2m > [22mB shared receives live updates (fan-out)
+[31m[1mAssertionError[22m: expected [] to deeply equal [ { id: '1', x: 1 } ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [[39m
+[32m-   Object {[39m
+[32m-     "id": "1",[39m
+[32m-     "x": 1,[39m
+[32m-   },[39m
+[32m- ][39m
+[31m+ Array [][39m
+
+[36m [2m❯[22m tests/rev1Cache.test.ts:[2m96:21[22m[39m
+    [90m 94| [39m    [34mtriggerSnapshot[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m data[33m:[39m { x[33m:[39m [34m1[39m } }])[33m;[39m
+    [90m 95| [39m    [34mexpect[39m(latestA)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m 96| [39m    [34mexpect[39m(latestB)[33m.[39m[34mtoEqual[39m([{ id[33m:[39m [32m'1'[39m[33m,[39m x[33m:[39m [34m1[39m }])[33m;[39m
+    [90m   | [39m                    [31m^[39m
+    [90m 97| [39m    [34munsubA[39m()[33m;[39m
+    [90m 98| [39m    [34munsubB[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (9)[39m
+[2m   Start at [22m 16:12:44
+[2m   Duration [22m 1.01s[2m (transform 129ms, setup 460ms, collect 61ms, tests 31ms, environment 0ms, prepare 149ms)[22m
+

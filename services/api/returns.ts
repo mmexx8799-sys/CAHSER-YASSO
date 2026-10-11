@@ -12,6 +12,7 @@ import {
 import type { CartItem, Return, Invoice } from '../../types';
 import { toast } from 'react-hot-toast';
 import { withInFlightGuard } from '../inflight';
+import { round2 } from '../../utils/money';
 import { reportError } from '../monitoring';
 import {
     db,
@@ -44,6 +45,17 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
     // before the pre-transaction getDocs(returnsQuery) below. Old callers
     // send nothing (undefined → random-id path, unchanged).
     assertValidOpKey(opts?.opKey);
+    // REQ-REV1-3: reject malformed quantities/prices before any network
+    // contact or read (same position as assertValidOpKey — outside any try,
+    // so the Arabic message reaches the caller verbatim).
+    items.forEach((item) => {
+        if (typeof item.buyQuantity !== 'number' || !Number.isFinite(item.buyQuantity) || item.buyQuantity <= 0) {
+            throw new Error(`كمية المرتجع غير صالحة للصنف ${item.name || item.id}`);
+        }
+        if (typeof item.price !== 'number' || !Number.isFinite(item.price) || item.price < 0) {
+            throw new Error(`سعر المرتجع غير صالح للصنف ${item.name || item.id}`);
+        }
+    });
     await assertOnline();
     // تطبيع originalInvoiceId: undefined للتوافق العكسي ولفاتورة نقدية بدون ربط
     const linkedInvoiceId = originalInvoiceId && originalInvoiceId.trim() ? originalInvoiceId.trim() : undefined;
@@ -229,7 +241,7 @@ export const processReturn = withInFlightGuard(async (items: CartItem[], dailyAr
 
             if (customer && customerRef && customerDoc) {
                 const currentBalance = customerDoc.data().balance || 0;
-                transaction.update(customerRef, { balance: currentBalance - totalReturnAmount });
+                transaction.update(customerRef, { balance: round2(currentBalance - totalReturnAmount) });
             }
 
             const currentReturns = archiveDoc.data().totalReturns || 0;
