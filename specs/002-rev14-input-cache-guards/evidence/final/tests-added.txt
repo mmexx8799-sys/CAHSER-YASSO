@@ -1,0 +1,20 @@
+# TF.2 — tests added in REV1-4 (counts measured, not estimated)
+
+## New files (zero pre-existing tests modified)
+- tests/rev14FiniteGuards.test.ts — 30 tests (REQ-REV1-4a: NaN / Infinity /
+  -Infinity × invoiceData.subtotal, invoiceData.total, purchaseData.subtotal,
+  purchaseData.total, payment.amount both parties, asserting the verbatim
+  Arabic message + assertOnline never called; 12 finite controls ending at
+  STOP-AFTER-GUARD; RED-first on unfixed code: 18 RED / 12 GREEN)
+- tests/rev14CacheClear.test.ts — 20 tests (REQ-REV1-4b: clear invokes every
+  stored unsubscribe exactly once; resubscribe-fresh; AC-4b.6 stale-closure
+  exactly-once; signOut ordering; released-entries skipped by later clears;
+  shouldSubscribeAppSettings truth table; didAuthIdentityChange truth table;
+  3 static wiring proofs; double-clear + clear-empty no-ops; RED-first on
+  unfixed code: 11 RED / 0, then 6 RED on the guard additions)
+
+## Totals
+- New: 30 + 20 = 50 tests in 2 files
+- Modified pre-existing tests: NONE (tx3Payments untouched in this cycle)
+- Full suite at HEAD: 62 files / 673 tests, all green first try
+  (623 at cycle base cadf9f3 + 30 + 20)

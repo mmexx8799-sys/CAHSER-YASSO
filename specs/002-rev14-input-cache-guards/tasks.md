@@ -57,6 +57,6 @@ commit. Do not start a fix before its RED output is saved.
   commit docs, STOP (no push without a written order).
 
 ## Finish (after both commits)
-- [ ] TF.2 Final verification at HEAD into evidence/final/ (status, log,
+- [x] TF.2 Final verification at HEAD into evidence/final/ (status, log,
   diff-stat, constraints proof, typecheck, full test:rules, build, eslint)
   + REPORT addendum per prompt §6 + zip evidence/.
