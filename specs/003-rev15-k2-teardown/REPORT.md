@@ -134,11 +134,15 @@ touched files 0 errors) → `git diff --stat` + full diff + constraints.
 Raw outputs pasted in `evidence/REV1-5/` and `evidence/final/`.
 Follow-up runs (tests/docs/whitespace/comment only — zero runtime
 behavior change, so no full-suite re-run; the 63/681 green stands on
-semantically identical production code): targeted plain run → 29 passed /
-1 skipped (T7 SKIPPED, reason on stdout —
+semantically identical production code): follow-up targeted plain run →
+29 passed / 1 skipped (T7 SKIPPED —
 `evidence/REV1-5/green-followup.txt`); same two files under
-emulators:exec → 30/30 with T7 live-clean including the new
-swallowed-warn assertion (`evidence/REV1-5/green-followup-emulator.txt`);
+emulators:exec → 30/30 with T7 live-clean including the swallowed-warn
+assertion (`evidence/REV1-5/green-followup-emulator.txt`); small-prompt
+batch targeted plain run → 29 passed / 2 skipped (T7+T2c SKIPPED —
+`evidence/REV1-5/green-smallprompt.txt`); same two files under
+emulators:exec → 31/31 (`evidence/REV1-5/green-smallprompt-emulator.txt`:
+T2c measured 5/5 unsubs-first with latencies; T7 live-clean);
 `npx tsc --noEmit` re-run exit 0 (command + exit code in
 `evidence/final/typecheck.txt`).
 
@@ -161,6 +165,35 @@ claim:
 - `ctx.skip()` note: the installed vitest 2.1.9 types
   (`@vitest/runner`) and runtime define `skip: () => void` — no reason
   argument. T7 logs its skip reason to stdout, then calls `ctx.skip()`.
+
+## T2c — real auth-emulator order measurement (small-prompt batch)
+
+Answers T2b-ii's open question against the REAL auth SDK on the
+emulator: 5 rounds of sign-in → subscribe ×2 → clear + REAL signOut (same
+order as `services/auth.ts`; its own signOut can't be used — this file
+mocks `firebase/auth` signOut for T2/T2b), with the null-callback tag
+pushed into the SHARED order log so each round's slice is the TRUE
+interleave. Firestore listeners stay mocked; completion asserted, order
+recorded.
+- Observed (emulator, 5/5 rounds): `[unsub,unsub,rN:auth-null]` — both
+  unsubs executed before the real auth-null callback every round.
+- Latency data: auth-null arrived ~0ms after signOut resolved in the
+  final run — but a diagnostic run needed >300ms per round (callbacks had
+  not arrived 300ms+flush after signOut;
+  `evidence/REV1-5/t2c-diag-slow-callback.txt`). Callback latency varies
+  run-to-run (0ms to 300ms+ observed); unsubs are ~immediate microtasks
+  in all runs.
+- Honest reading: on the emulator the margin favored unsubs-first in all
+  measured rounds, but the variance proves timing-dependence — a
+  fast-callback inversion is conceivable in principle (never observed)
+  and production timing is a different transport altogether. Recorded,
+  not pinned; K2 stays open.
+- Measurement-bug episode (kept honest): the first T2c revision appeared
+  to show zero callbacks — root cause was a split event log (auth tags
+  went to a separate array while slices read only the unsub channel),
+  not an SDK behavior; fixed by unifying the log. Failing run preserved
+  in `evidence/REV1-5/t2c-v2-split-channel.txt`; final green run in
+  `evidence/REV1-5/green-smallprompt-emulator.txt` (31/31).
 
 ## Stale-closure coverage (follow-up, item 3)
 
@@ -196,8 +229,35 @@ once) — no duplicate test was added.
   expected from config semantics (the drop sits in the shared `esbuild`
   key, not under `build`, so it applies to dev transforms too) — stated
   as expected, not re-verified with a dev-mode probe in this cycle.
-- Unaffected: automated T7/T7a capture (vitest runs unbundled code, which
-  is why the tests can assert on console output at all).
+- Unaffected: automated T7 capture (vitest runs unbundled code, including
+  the warn-fail assertion of item 1a — there is no test named "T7a"; that
+  wording is corrected everywhere it appeared — which is why the tests can
+  assert on console output at all).
+
+## Owner-reported manual-debug observation (separate open issue, cause unconfirmed)
+
+Source: owner screenshot, debug preview build on :4174 (temporary
+untracked `vite.debug.config.ts`, created at owner request, never
+committed, kept until the owner confirms no further debug runs are
+needed), post-logout state (#/login + toast «تم تسجيل الخروج بنجاح.»):
+- Observed: toast «حدث خطأ أثناء تحميل المنتجات.» with the full console
+  line `Error fetching paginated products: FirebaseError: Missing or
+  insufficient permissions.` (source: `services/api/products.ts:235-236`
+  — one-shot `getDocs` from POSPage/ProductsPage/ReturnsPage).
+- Classification: read-vs-auth-loss race during the transition (expected
+  from code analysis — NOT proven). NOT an `INTERNAL ASSERTION`, NOT a K2
+  signal (no `Error listening to ...`, no swallowed-unsub warn in the
+  shot; T7's fail conditions would not have fired on it).
+- Separately in the same shot: `Failed to check users existence ...
+  permissions` (×2, LoginPage bundle) — anonymous read of `users`,
+  denied by rules (`LoginPage.tsx:23` runs on page mount while logged
+  out) — pre-existing noise newly visible under the debug build, outside
+  K2 scope.
+- NOT observed in the captured shot: any Listen request with 400, any
+  `INTERNAL ASSERTION`. A claimed Listen-400 needs Network details
+  (Request URL + Response) from a re-observed run to be recorded
+  precisely. Recorded in `docs/known-issues.md` as
+  POST-LOGOUT-PRODUCTS-FETCH (open, owner-reported).
 
 ## Honest deviations from the plan
 

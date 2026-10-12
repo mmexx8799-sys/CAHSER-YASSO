@@ -8,7 +8,9 @@
 // is added with the 5b commit. T7 needs the Firestore emulator; without one
 // it reports SKIPPED via ctx.skip() with the reason on stdout — never a
 // silent pass, nothing faked. T2b pins the boundary of the ordering
-// guarantee across modeled auth-delivery modes (see its comments).
+// guarantee across modeled auth-delivery modes (see its comments). T2c
+// measures the REAL auth-emulator order over 5 logout cycles (recorded,
+// not pinned — timing-dependent by construction).
 //
 // Mock pattern follows tests/rev14CacheClear.test.ts: `onSnapshot` mocked
 // at the boundary (records `unsub` events + per-listener handles), with a
@@ -120,6 +122,20 @@ async function flush(): Promise<void> {
 const sleep = (ms: number): Promise<void> =>
   new Promise((r) => setTimeout(r, ms));
 
+function tcpReachable(host: string, port: number, ms: number): Promise<boolean> {
+  return new Promise((resolveTcp) => {
+    const s = net.connect(port, host, () => {
+      s.destroy();
+      resolveTcp(true);
+    });
+    s.on('error', () => resolveTcp(false));
+    s.setTimeout(ms, () => {
+      s.destroy();
+      resolveTcp(false);
+    });
+  });
+}
+
 beforeEach(async () => {
   // Drain teardown microtasks queued by the PREVIOUS test's last release
   // or clear (deferred path): without this, a stale 'unsub' lands in the
@@ -212,6 +228,109 @@ describe('REV1-5 T2b — auth-delivery modes: what is (and is not) guaranteed', 
     expect(mockCtl.order).toEqual(['auth-lost', 'unsub', 'unsub']);
     expect(listenerCount()).toBe(0);
   });
+});
+
+describe('REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)', () => {
+  // Answers T2b-ii's open question against the REAL auth SDK on the
+  // emulator: when signOut() runs clear-then-real-signOut (same order as
+  // services/auth.ts), in what order do the queued SDK unsubs vs the real
+  // onAuthStateChanged(null) callback actually run? Firestore listeners
+  // stay MOCKED (no reads needed); only Auth is real. The order is the
+  // MEASUREMENT — completion is asserted, order is logged + reported in
+  // REPORT (timing-dependent by construction, never pinned as a guarantee).
+  const EMAIL = 'k2-t2c@test.local';
+  const PW = 'secret123';
+  const ROUNDS = 5;
+
+  async function waitFor(cond: () => boolean, ms: number, label: string): Promise<void> {
+    const t0 = Date.now();
+    while (!cond()) {
+      if (Date.now() - t0 > ms) throw new Error(`T2c timeout waiting for ${label}`);
+      await sleep(50);
+    }
+  }
+
+  it(
+    'measures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles',
+    { timeout: 120000 },
+    async (ctx) => {
+      if (
+        !(await tcpReachable('127.0.0.1', 8080, 2000)) ||
+        !(await tcpReachable('127.0.0.1', 9099, 2000))
+      ) {
+        console.log('T2c SKIPPED: emulator (8080/9099) unreachable (plain run?)');
+        ctx.skip();
+        return;
+      }
+      const { getAuthInstance } = await import('../services/firebase');
+      const realAuth =
+        await vi.importActual<typeof import('firebase/auth')>('firebase/auth');
+      const fbAuth = getAuthInstance();
+      try {
+        await fbAuth.signOut();
+      } catch {
+        /* not signed in */
+      }
+      try {
+        await realAuth.createUserWithEmailAndPassword(fbAuth, EMAIL, PW);
+      } catch (e: unknown) {
+        if (String((e as { code?: string })?.code ?? e).indexOf('email-already-in-use') < 0) throw e;
+      }
+      // Real auth-state listener: records sign-in (auth-user) and sign-out
+      // (auth-null) callbacks, tagged by round. Auth-null tags go to the
+      // SHARED mockCtl.order log too, so each round's slice shows the TRUE
+      // interleave of executed unsubs vs the real callback. Delivery timing
+      // is the measured quantity — the test WAITS for each event (poll,
+      // 10s cap) instead of assuming any latency.
+      const seen: string[] = [];
+      const orders: string[][] = [];
+      const nullLatMs: number[] = [];
+      let round = -1;
+      const stop = realAuth.onAuthStateChanged(fbAuth, (u) => {
+        const tag = `r${round}:${u === null ? 'auth-null' : 'auth-user'}`;
+        seen.push(tag);
+        if (u === null) mockCtl.order.push(tag);
+      });
+      try {
+        for (let i = 0; i < ROUNDS; i++) {
+          round = i;
+          await realAuth.signInWithEmailAndPassword(fbAuth, EMAIL, PW);
+          await waitFor(() => seen.includes(`r${i}:auth-user`), 10000, `r${i}:auth-user`);
+          subscribeToCollection('k2-t2c', () => {}, [where('x', '==', 1)]);
+          subscribeToDocument('k2-t2c', 'doc1', () => {});
+          const mark = mockCtl.order.length;
+          // Same order as services/auth signOut (clear first), but with the
+          // REAL firebase signOut so the REAL auth callback fires. (The
+          // services/auth signOut itself can't be used here: this file mocks
+          // firebase/auth signOut for T2/T2b.)
+          clearSubscriptionCache();
+          await realAuth.signOut(fbAuth);
+          const tSignedOut = Date.now();
+          await waitFor(() => seen.includes(`r${i}:auth-null`), 10000, `r${i}:auth-null`);
+          nullLatMs.push(Date.now() - tSignedOut);
+          await flush();
+          orders.push(mockCtl.order.slice(mark));
+          expect(listenerCount()).toBe(0);
+        }
+      } finally {
+        stop();
+        try {
+          await fbAuth.signOut();
+        } catch {
+          /* hygiene only */
+        }
+      }
+      console.log('T2c observed orders: ' + orders.map((o) => '[' + o.join(',') + ']').join(' '));
+      console.log('T2c auth-null latency after signOut resolved (ms): [' + nullLatMs.join(',') + ']');
+      // Completion only: every round tore down both listeners AND delivered
+      // the null callback. ORDER IS NOT PINNED — it is the measurement
+      // reported in REPORT (timing-dependent by construction).
+      expect(orders).toHaveLength(ROUNDS);
+      orders.forEach((o, i) => {
+        expect([...o].sort()).toEqual([`r${i}:auth-null`, 'unsub', 'unsub'].sort());
+      });
+    },
+  );
 });
 
 describe('REV1-5 T3 — double clear schedules nothing extra', () => {
@@ -318,20 +437,6 @@ describe('REV1-5 T7 — best-effort real-SDK reproduction (emulator)', () => {
     }
     testEnv = undefined;
   });
-
-  function tcpReachable(host: string, port: number, ms: number): Promise<boolean> {
-    return new Promise((resolveTcp) => {
-      const s = net.connect(port, host, () => {
-        s.destroy();
-        resolveTcp(true);
-      });
-      s.on('error', () => resolveTcp(false));
-      s.setTimeout(ms, () => {
-        s.destroy();
-        resolveTcp(false);
-      });
-    });
-  }
 
   it(
     'no INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms',

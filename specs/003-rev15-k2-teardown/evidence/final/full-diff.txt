@@ -30,15 +30,17 @@ index 18c8c5a..6cc5387 100644
  - **REQ-TX2-SALE — حارس idempotency للبيع (sales.ts, أول AUDIT-TX-2):** رفع `invoiceRef` خارج `runTransactionWithRetry` + قراءة `transaction.get` كأول سطر وخروج بلا كتابة لو المستند موجود — المسار العادي بايت-مطابق سلوكيًا — التحقق: RED أولًا على الكود القديم (2/2: `expected 2 to be 1`) ثم GREEN بعد الإصلاح · `tsc` نظيف · `test:rules` **402/402** (400 قديم بلا رجوع + 2 جديد `tx2Sale`: آجل + نقدي-منتجين) · صفر لمس لغير `sales.ts` — **Done 2026-09-30**
  - **REQ-TX2-PURCHASE — حارس idempotency للشراء (purchases.ts, processPurchase فقط):** نفس الشكل (رفع `purchaseRef` + قراءة وجود أولًا + خروج عارٍ) بلا أرقام أسطر في التعليقات — التحقق: RED أولًا (4 انتهاكات soft ظاهرة: مستندان/200/104/عداد+2) ثم GREEN · `tsc` نظيف · `test:rules` **403/403** (402 قديم بلا رجوع + 1 جديد `tx2Purchase`: إثبات المحاولتين + كل القيم أولًا) · `processSupplierReturn` لم يُمس · صفر لمس لغير `purchases.ts` — **Done 2026-09-30**
 diff --git a/docs/known-issues.md b/docs/known-issues.md
-index e727a76..157a786 100644
+index e727a76..d21dfb8 100644
 --- a/docs/known-issues.md
 +++ b/docs/known-issues.md
-@@ -90,6 +90,9 @@
+@@ -90,6 +90,11 @@
  
  ## مفتوحة (Open)
  
 +K2 — تفكيك logout عبر safeUnsubscribe المؤجل (**fix applied 2026-10-12 — NOT closed/NOT verified — يتطلب اختبار جهاز حقيقي قبل أي نشر**): `clearSubscriptionCache()` صار يجدول كل unsubscribe عبر `safeUnsubscribe` (microtask — workaround خطأ SDK 10.14.1 `INTERNAL ASSERTION FAILED`) بدل الاستدعاء الخام المتزامن (commits fcc5cd9 + a7bdcad — REQ-REV1-5). المثبت: إثبات mock (T1/T2/T6 + mutation) + تشغيل T7 حي على المحاكي (8 مجموعات ×300 مستند، 8 مستمعين حقيقيين، clear عند 0/1/5/20/50ms) لم يعِد إنتاج الخطأ لا على القديم ولا الجديد — نافذة السباق ضيقة + المحاكي بـmemory-cache fallback في Node، فالـpass ليس proof of absence (مصرّح به في REPORT). غير المثبت: خروج حقيقي أثناء تدفق قوائم كبير على جهاز/متصفح حقيقي ببيانات حقيقية ومراقبة الـconsole لـ`INTERNAL ASSERTION FAILED` — مطلوب قبل أي نشر. K3 (epoch guard للمستندات) مغلق مع نفس الدفعة (تقوية دفاعية — لا أحد معرّض اليوم). Ref: specs/003-rev15-k2-teardown/REPORT.md.
-+عمى الاختبار اليدوي (observed 2026-10-12، follow-up — يُضعف الاختبار المطلوب أعلاه): `vite.config.ts:39-41` يضبط `esbuild.drop: ['console','debugger']` بلا شرط (observed بالقراءة)، وبعد `npm run build` لا توجد أي من سلسلتي التطبيق (`Firestore unsubscribe swallowed` من safeUnsubscribe، و`Error notifying subscriber` من dataCache) في `dist/assets/*.js` (observed بالـgrep) — أي أن فحص الـconsole اليدوي على نسخ preview/dev لا يستطيع عرض مخرجات التطبيق نفسه، ومنها الأثر المرئي الوحيد لخطأ SDK مبتَلَع. النتيجة المتوقعة (expected، لم يُجرَّب يدويًا في هذه الدورة): فحص "خروج أثناء قائمة ثقيلة" اليدوي لا يستطيع تأكيد K2 أو نفيه عبر الـconsole — صمت الـconsole هناك ليس دليلًا (الانهيار/التعليق سيظهران). التقاط T7/T7a الآلي غير متأثر (vitest يشغّل الكود بلا bundling). تصحيح صياغة (follow-up): سُحب وصف "macrotask" لتوقيت إشعار الـSDK — غير متحقق منه مقابل كود الـSDK؛ الثابت المثبت هو أن كل unsubscribe يُجدول قبل استدعاء `firebaseSignOut` (microtask FIFO) — والتفصيل في REPORT.
++عمى الاختبار اليدوي (observed 2026-10-12، follow-up — يُضعف الاختبار المطلوب أعلاه): `vite.config.ts:39-41` يضبط `esbuild.drop: ['console','debugger']` بلا شرط (observed بالقراءة)، وبعد `npm run build` لا توجد أي من سلسلتي التطبيق (`Firestore unsubscribe swallowed` من safeUnsubscribe، و`Error notifying subscriber` من dataCache) في `dist/assets/*.js` (observed بالـgrep) — أي أن فحص الـconsole اليدوي على نسخ preview/dev لا يستطيع عرض مخرجات التطبيق نفسه، ومنها الأثر المرئي الوحيد لخطأ SDK مبتَلَع. النتيجة المتوقعة (expected، لم يُجرَّب يدويًا في هذه الدورة): فحص "خروج أثناء قائمة ثقيلة" اليدوي لا يستطيع تأكيد K2 أو نفيه عبر الـconsole — صمت الـconsole هناك ليس دليلًا (الانهيار/التعليق سيظهران). التقاط T7 الآلي غير متأثر (vitest يشغّل الكود بلا bundling — بما فيه warn-fail assertion البند 1a). تصحيح صياغة (follow-up): سُحب وصف "macrotask" لتوقيت إشعار الـSDK — غير متحقق منه مقابل كود الـSDK؛ الثابت المثبت هو أن كل unsubscribe يُجدول قبل استدعاء `firebaseSignOut` (microtask FIFO) — والتفصيل في REPORT.
++
++POST-LOGOUT-PRODUCTS-FETCH — toast تحميل المنتجات بعد الخروج (**مفتوح — owner-reported 2026-10-12 من نسخة debug preview على :4174 — السبب غير مؤكد**): بعد logout ناجح (toast «تم تسجيل الخروج بنجاح.» ثم صفحة #/login) ظهر toast «حدث خطأ أثناء تحميل المنتجات.» مع سطر الـ console الكامل `Error fetching paginated products: FirebaseError: Missing or insufficient permissions.` (مصدره `services/api/products.ts:235-236` — قراءة one-shot بـ`getDocs` من POSPage/ProductsPage/ReturnsPage). التصنيف: سباق قراءة-ضد-فقدان-الـauth أثناء الانتقال (متوقع من تحليل الكود — غير مثبت) — **ليس** `INTERNAL ASSERTION` و**ليس** إشارة K2 (لا `Error listening to ...` ولا swallowed-unsub warn في اللقطة، وشروط فشل T7 ما كانت لتشتغل عليه). منفصل عنه في نفس اللقطة: `Failed to check users existence ... permissions` (مرتين، من حزمة LoginPage) — قراءة anonymous لمجموعة `users` والقواعد ترفضها (`LoginPage.tsx:23` يعمل عند mount الصفحة بلا login) — ضجيج pre-existing ظهر مع نسخة الـ debug، خارج نطاق K2. **غير مرصود في اللقطة الملتقطة**: أي طلب Listen بـ400 وأي `INTERNAL ASSERTION` — ادعاء الـ 400 يحتاج تفاصيل Network (Request URL + Response) من run يُعاد رصده لتسجيله بدقة. Ref: specs/003-rev15-k2-teardown/REPORT.md (بند T2c/الملاحظة اليدوية).
 +
  Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)
  
@@ -192,10 +194,10 @@ index e896f3a..70c4285 100644
              activeSubscriptions.set(cacheKey, count - 1);
 diff --git a/specs/003-rev15-k2-teardown/REPORT.md b/specs/003-rev15-k2-teardown/REPORT.md
 new file mode 100644
-index 0000000..ca91a06
+index 0000000..66ca5b5
 --- /dev/null
 +++ b/specs/003-rev15-k2-teardown/REPORT.md
-@@ -0,0 +1,237 @@
+@@ -0,0 +1,297 @@
 +# REPORT — REV1-5: deferred-unsubscribe logout teardown (K2) + epoch guard (K3-variant)
 +
 +Base: `a15d8fe` (REV1-4 final evidence + REPORT). Commits: `fcc5cd9`
@@ -332,11 +334,15 @@ index 0000000..ca91a06
 +Raw outputs pasted in `evidence/REV1-5/` and `evidence/final/`.
 +Follow-up runs (tests/docs/whitespace/comment only — zero runtime
 +behavior change, so no full-suite re-run; the 63/681 green stands on
-+semantically identical production code): targeted plain run → 29 passed /
-+1 skipped (T7 SKIPPED, reason on stdout —
++semantically identical production code): follow-up targeted plain run →
++29 passed / 1 skipped (T7 SKIPPED —
 +`evidence/REV1-5/green-followup.txt`); same two files under
-+emulators:exec → 30/30 with T7 live-clean including the new
-+swallowed-warn assertion (`evidence/REV1-5/green-followup-emulator.txt`);
++emulators:exec → 30/30 with T7 live-clean including the swallowed-warn
++assertion (`evidence/REV1-5/green-followup-emulator.txt`); small-prompt
++batch targeted plain run → 29 passed / 2 skipped (T7+T2c SKIPPED —
++`evidence/REV1-5/green-smallprompt.txt`); same two files under
++emulators:exec → 31/31 (`evidence/REV1-5/green-smallprompt-emulator.txt`:
++T2c measured 5/5 unsubs-first with latencies; T7 live-clean);
 +`npx tsc --noEmit` re-run exit 0 (command + exit code in
 +`evidence/final/typecheck.txt`).
 +
@@ -359,6 +365,35 @@ index 0000000..ca91a06
 +- `ctx.skip()` note: the installed vitest 2.1.9 types
 +  (`@vitest/runner`) and runtime define `skip: () => void` — no reason
 +  argument. T7 logs its skip reason to stdout, then calls `ctx.skip()`.
++
++## T2c — real auth-emulator order measurement (small-prompt batch)
++
++Answers T2b-ii's open question against the REAL auth SDK on the
++emulator: 5 rounds of sign-in → subscribe ×2 → clear + REAL signOut (same
++order as `services/auth.ts`; its own signOut can't be used — this file
++mocks `firebase/auth` signOut for T2/T2b), with the null-callback tag
++pushed into the SHARED order log so each round's slice is the TRUE
++interleave. Firestore listeners stay mocked; completion asserted, order
++recorded.
++- Observed (emulator, 5/5 rounds): `[unsub,unsub,rN:auth-null]` — both
++  unsubs executed before the real auth-null callback every round.
++- Latency data: auth-null arrived ~0ms after signOut resolved in the
++  final run — but a diagnostic run needed >300ms per round (callbacks had
++  not arrived 300ms+flush after signOut;
++  `evidence/REV1-5/t2c-diag-slow-callback.txt`). Callback latency varies
++  run-to-run (0ms to 300ms+ observed); unsubs are ~immediate microtasks
++  in all runs.
++- Honest reading: on the emulator the margin favored unsubs-first in all
++  measured rounds, but the variance proves timing-dependence — a
++  fast-callback inversion is conceivable in principle (never observed)
++  and production timing is a different transport altogether. Recorded,
++  not pinned; K2 stays open.
++- Measurement-bug episode (kept honest): the first T2c revision appeared
++  to show zero callbacks — root cause was a split event log (auth tags
++  went to a separate array while slices read only the unsub channel),
++  not an SDK behavior; fixed by unifying the log. Failing run preserved
++  in `evidence/REV1-5/t2c-v2-split-channel.txt`; final green run in
++  `evidence/REV1-5/green-smallprompt-emulator.txt` (31/31).
 +
 +## Stale-closure coverage (follow-up, item 3)
 +
@@ -394,8 +429,35 @@ index 0000000..ca91a06
 +  expected from config semantics (the drop sits in the shared `esbuild`
 +  key, not under `build`, so it applies to dev transforms too) — stated
 +  as expected, not re-verified with a dev-mode probe in this cycle.
-+- Unaffected: automated T7/T7a capture (vitest runs unbundled code, which
-+  is why the tests can assert on console output at all).
++- Unaffected: automated T7 capture (vitest runs unbundled code, including
++  the warn-fail assertion of item 1a — there is no test named "T7a"; that
++  wording is corrected everywhere it appeared — which is why the tests can
++  assert on console output at all).
++
++## Owner-reported manual-debug observation (separate open issue, cause unconfirmed)
++
++Source: owner screenshot, debug preview build on :4174 (temporary
++untracked `vite.debug.config.ts`, created at owner request, never
++committed, kept until the owner confirms no further debug runs are
++needed), post-logout state (#/login + toast «تم تسجيل الخروج بنجاح.»):
++- Observed: toast «حدث خطأ أثناء تحميل المنتجات.» with the full console
++  line `Error fetching paginated products: FirebaseError: Missing or
++  insufficient permissions.` (source: `services/api/products.ts:235-236`
++  — one-shot `getDocs` from POSPage/ProductsPage/ReturnsPage).
++- Classification: read-vs-auth-loss race during the transition (expected
++  from code analysis — NOT proven). NOT an `INTERNAL ASSERTION`, NOT a K2
++  signal (no `Error listening to ...`, no swallowed-unsub warn in the
++  shot; T7's fail conditions would not have fired on it).
++- Separately in the same shot: `Failed to check users existence ...
++  permissions` (×2, LoginPage bundle) — anonymous read of `users`,
++  denied by rules (`LoginPage.tsx:23` runs on page mount while logged
++  out) — pre-existing noise newly visible under the debug build, outside
++  K2 scope.
++- NOT observed in the captured shot: any Listen request with 400, any
++  `INTERNAL ASSERTION`. A claimed Listen-400 needs Network details
++  (Request URL + Response) from a re-observed run to be recorded
++  precisely. Recorded in `docs/known-issues.md` as
++  POST-LOGOUT-PRODUCTS-FETCH (open, owner-reported).
 +
 +## Honest deviations from the plan
 +
@@ -433,6 +495,83 @@ index 0000000..ca91a06
 +  (`specs/REV1-5-evidence.zip`) holds the on-disk CRLF bytes; the hash in
 +  `specs/REV1-5-evidence.sha256` pins the zip as stored.
 +- No other deviation exists in specs/003 beyond what this list states.
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
+new file mode 100644
+index 0000000..fed62a7
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
+@@ -0,0 +1,6 @@
++
++E:\Nour-Elrahman\services\dataCache.ts
++  18:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
++
++✖ 1 problem (0 errors, 1 warning)
++
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
+new file mode 100644
+index 0000000..e543592
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
+@@ -0,0 +1,33 @@
++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts tests/rev14CacheClear.test.ts[22m
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev14CacheClear.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 22[2mms[22m[39m
++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 6853[2mms[22m[39m
++   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m6564[2mms[22m[39m
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
++[22m[39mT7: signed in as cashier KylbM50VSsUf7eOl1gzaRoUXNvaF | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T12:16:17.535Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
++
++
++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
++[2m      Tests [22m [1m[32m30 passed[39m[22m[90m (30)[39m
++[2m   Start at [22m 15:16:10
++[2m   Duration [22m 8.01s[2m (transform 260ms, setup 893ms, collect 459ms, tests 6.87s, environment 1ms, prepare 287ms)[22m
++
++[32m[1m+ [22m[39m Script exited successfully (code 0)
++[36m[1mi  emulators:[22m[39m Shutting down emulators.
++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
++[36m[1mi  hub:[22m[39m Stopping emulator hub
++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
+new file mode 100644
+index 0000000..2c72ac1
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
+@@ -0,0 +1,20 @@
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev14CacheClear.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
++[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
++
++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[90m 265[2mms[22m[39m
++
++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
++[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (30)[39m
++[2m   Start at [22m 15:15:25
++[2m   Duration [22m 4.55s[2m (transform 355ms, setup 5.42s, collect 1.16s, tests 287ms, environment 3ms, prepare 678ms)[22m
++
 diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-k2-restored.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-k2-restored.txt
 new file mode 100644
 index 0000000..20d7a63
@@ -511,6 +650,83 @@ index 0000000..846e1b7
 +[2m   Start at [22m 13:32:16
 +[2m   Duration [22m 2.00s[2m (transform 307ms, setup 1.01s, collect 527ms, tests 263ms, environment 1ms, prepare 333ms)[22m
 +
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
+new file mode 100644
+index 0000000..b5ae11d
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
+@@ -0,0 +1,37 @@
++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts tests/rev14CacheClear.test.ts[22m
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev14CacheClear.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c observed orders: [unsub,unsub,r0:auth-null] [unsub,unsub,r1:auth-null] [unsub,unsub,r2:auth-null] [unsub,unsub,r3:auth-null] [unsub,unsub,r4:auth-null]
++T2c auth-null latency after signOut resolved (ms): [0,0,0,0,0]
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
++[22m[39mT7: signed in as cashier rIwSbS0pFKVeFfmTh2B4sUW5Zuss | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T12:48:00.512Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
++
++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 6857[2mms[22m[39m
++   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m6365[2mms[22m[39m
++
++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
++[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
++[2m   Start at [22m 15:47:53
++[2m   Duration [22m 8.83s[2m (transform 358ms, setup 1.13s, collect 555ms, tests 6.88s, environment 1ms, prepare 343ms)[22m
++
++[32m[1m+ [22m[39m Script exited successfully (code 0)
++[36m[1mi  emulators:[22m[39m Shutting down emulators.
++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
++[36m[1mi  hub:[22m[39m Stopping emulator hub
++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
+new file mode 100644
+index 0000000..bca3d48
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
+@@ -0,0 +1,28 @@
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev14CacheClear.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 25[2mms[22m[39m
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c SKIPPED: emulator (8080/9099) unreachable (plain run?)
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
++[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
++
++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[90m 292[2mms[22m[39m
++
++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
++[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (31)[39m
++[2m   Start at [22m 15:40:15
++[2m   Duration [22m 4.80s[2m (transform 354ms, setup 5.58s, collect 1.25s, tests 317ms, environment 1ms, prepare 743ms)[22m
++
++npm notice
++npm notice New major version of npm available! 10.9.2 -> 12.2.0
++npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
++npm notice To update run: npm install -g npm@12.2.0
++npm notice
 diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/mutation-5a1.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/mutation-5a1.txt
 new file mode 100644
 index 0000000..7aacc3d
@@ -1203,6 +1419,166 @@ index 0000000..aed59fb
 +[2m   Start at [22m 13:23:32
 +[2m   Duration [22m 18.36s[2m (transform 1.05s, setup 11.37s, collect 197ms, tests 5.19s, environment 0ms, prepare 994ms)[22m
 +
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
+new file mode 100644
+index 0000000..2c82a3e
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
+@@ -0,0 +1,90 @@
++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r0: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r0: after signOut currentUser=null
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r1: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r1: after signOut currentUser=null
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r2: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r2: after signOut currentUser=null
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r3: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r3: after signOut currentUser=null
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r4: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag r4: after signOut currentUser=null
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c observed orders: [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub]
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c-diag seen[] after +2s: [r0:auth-user,r0:auth-null,r1:auth-user,r1:auth-null,r2:auth-user,r2:auth-null,r3:auth-user,r3:auth-null,r4:auth-user,r4:auth-null]
++
++ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m10 skipped[39m[2m)[22m[33m 3869[2mms[22m[39m
++[31m   [31m×[31m REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles[33m 3867[2mms[22m[31m[39m
++[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
++
++[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
++
++[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
++
++[32m- Expected[39m
++[31m+ Received[39m
++
++[2m  Array [[22m
++[32m-   "r0:auth-null",[39m
++[2m    "unsub",[22m
++[2m    "unsub",[22m
++[2m  ][22m
++
++[36m [2m❯[22m tests/rev15K2.test.ts:[2m317:31[22m[39m
++    [90m315| [39m      [34mexpect[39m(orders)[33m.[39m[34mtoHaveLength[39m([33mROUNDS[39m)[33m;[39m
++    [90m316| [39m      orders[33m.[39m[34mforEach[39m((o[33m,[39m i) [33m=>[39m {
++    [90m317| [39m        [34mexpect[39m([[33m...[39mo][33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m`r[39m[36m${[39mi[36m}[39m[32m:auth-null`[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'un[39m…
++    [90m   | [39m                              [31m^[39m
++    [90m318| [39m      })[33m;[39m
++    [90m319| [39m    }[33m,[39m
++[90m [2m❯[22m tests/rev15K2.test.ts:[2m316:14[22m[39m
++
++[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
++
++[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
++[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m10 skipped[39m[90m (11)[39m
++[2m   Start at [22m 15:43:19
++[2m   Duration [22m 5.74s[2m (transform 208ms, setup 489ms, collect 253ms, tests 3.87s, environment 0ms, prepare 177ms)[22m
++
++[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
++[36m[1mi  emulators:[22m[39m Shutting down emulators.
++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
++[36m[1mi  hub:[22m[39m Stopping emulator hub
++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
++
++[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m" exited with code 1
+diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
+new file mode 100644
+index 0000000..5589c1a
+--- /dev/null
++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
+@@ -0,0 +1,58 @@
++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m
++
++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
++
++[90mstdout[2m | tests/rev15K2.test.ts
++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
++
++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[22m[39mT2c observed orders: [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub]
++T2c auth-null latency after signOut resolved (ms): [1,0,0,0,0]
++
++ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m10 skipped[39m[2m)[22m[90m 251[2mms[22m[39m
++[31m   [31m×[31m REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles[90m 248[2mms[22m[31m[39m
++[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
++
++[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
++
++[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
++[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
++
++[32m- Expected[39m
++[31m+ Received[39m
++
++[2m  Array [[22m
++[32m-   "r0:auth-null",[39m
++[2m    "unsub",[22m
++[2m    "unsub",[22m
++[2m  ][22m
++
++[36m [2m❯[22m tests/rev15K2.test.ts:[2m326:31[22m[39m
++    [90m324| [39m      [34mexpect[39m(orders)[33m.[39m[34mtoHaveLength[39m([33mROUNDS[39m)[33m;[39m
++    [90m325| [39m      orders[33m.[39m[34mforEach[39m((o[33m,[39m i) [33m=>[39m {
++    [90m326| [39m        [34mexpect[39m([[33m...[39mo][33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m`r[39m[36m${[39mi[36m}[39m[32m:auth-null`[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'un[39m…
++    [90m   | [39m                              [31m^[39m
++    [90m327| [39m      })[33m;[39m
++    [90m328| [39m    }[33m,[39m
++[90m [2m❯[22m tests/rev15K2.test.ts:[2m325:14[22m[39m
++
++[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
++
++[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
++[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m10 skipped[39m[90m (11)[39m
++[2m   Start at [22m 15:46:02
++[2m   Duration [22m 2.06s[2m (transform 215ms, setup 471ms, collect 273ms, tests 251ms, environment 0ms, prepare 166ms)[22m
++
++[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
++[36m[1mi  emulators:[22m[39m Shutting down emulators.
++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
++[36m[1mi  hub:[22m[39m Stopping emulator hub
++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
++
++[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m" exited with code 1
 diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/tsc-5a.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/tsc-5a.txt
 new file mode 100644
 index 0000000..e69de29
@@ -1251,8 +1627,7 @@ index 0000000..71756ba
 +[2mdist/[22m[36massets/SupplierAccountPage-Mh3D9Qtd.js      [39m[1m[2m 43.07 kB[22m[1m[22m[2m │ gzip:  10.51 kB[22m
 +[2mdist/[22m[36massets/ponyfill-CSfpN3v-.js                 [39m[1m[2m 43.30 kB[22m[1m[22m[2m │ gzip:  15.33 kB[22m
 +[2mdist/[22m[36massets/index-DE5yCy-S.js                    [39m[1m[2m 54.04 kB[22m[1m[22m[2m │ gzip:  19.14 kB[22m
-+[2mdist/[22m[36massets/Prodwarning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/constraints.txt', CRLF will be replaced by LF the next time Git touches it
-uctsPage-DYJs0KPp.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gzip:  22.10 kB[22m
++[2mdist/[22m[36massets/ProductsPage-DYJs0KPp.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gzip:  22.10 kB[22m
 +[2mdist/[22m[36massets/vendor-D115r7Kk.js                   [39m[1m[2m198.56 kB[22m[1m[22m[2m │ gzip:  62.78 kB[22m
 +[2mdist/[22m[36massets/firebase-DnsDQ9pT.js                 [39m[1m[2m562.96 kB[22m[1m[22m[2m │ gzip: 132.66 kB[22m
 +[2mdist/[22m[36massets/index-DqIud8C4.js                    [39m[1m[2m938.00 kB[22m[1m[22m[2m │ gzip: 270.95 kB[22m
@@ -1266,56 +1641,60 @@ uctsPage-DYJs0KPp.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gz
 +  dist/workbox-2fbc6a65.js
 diff --git a/specs/003-rev15-k2-teardown/evidence/final/constraints.txt b/specs/003-rev15-k2-teardown/evidence/final/constraints.txt
 new file mode 100644
-index 0000000..45de987
+index 0000000..86901f0
 --- /dev/null
 +++ b/specs/003-rev15-k2-teardown/evidence/final/constraints.txt
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,55 @@
 +"=== 1. Cycle diff on hard-constraint paths (a15d8fe..worktree) - must be EMPTY ==="  
 +"=== 2. Cycle diff-stat (all files, a15d8fe..worktree) ==="  
 +warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/constraints.txt', CRLF will be replaced by LF the next time Git touches it
 +warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/typecheck.txt', CRLF will be replaced by LF the next time Git touches it
 + docs/backlog.md                                    |    3 +-
 + docs/changelog.md                                  |    2 +
-+ docs/known-issues.md                               |    3 +
++ docs/known-issues.md                               |    5 +
 + services/dataCache.ts                              |   94 +-
-+ specs/003-rev15-k2-teardown/REPORT.md              |  237 +
++ specs/003-rev15-k2-teardown/REPORT.md              |  293 +
++ .../evidence/REV1-5/green-followup-emulator.txt    |   33 +
++ .../evidence/REV1-5/green-followup.txt             |   20 +
 + .../evidence/REV1-5/green-k2-restored.txt          |   20 +
 + .../evidence/REV1-5/green-k2-stage1.txt            |   20 +
 + .../evidence/REV1-5/green-k2.txt                   |   20 +
-+ .../evidence/REV1-5/mutation-5a1.txt               |  247 ++
++ .../evidence/REV1-5/mutation-5a1.txt               |  247 +
 + .../evidence/REV1-5/mutation-5b2.txt               |   39 +
 + .../evidence/REV1-5/red-k2-emulator.txt            |  198 +
 + .../evidence/REV1-5/red-k2.txt                     |  184 +
 + .../evidence/REV1-5/tsc-5a.txt                     |    0
 + .../003-rev15-k2-teardown/evidence/final/build.txt |   51 +
 + .../evidence/final/constraints.txt                 |    2 +
-+ .../evidence/final/eslint-full.txt                 |  887 ++++
++ .../evidence/final/eslint-full.txt                 |  887 ++
 + .../evidence/final/eslint-quiet.txt                |  131 +
 + .../evidence/final/eslint-scope.txt                |    6 +
-+ .../evidence/final/full-diff.txt                   | 4625 ++++++++++++++++++++
-+ .../evidence/final/test-rules.txt                  | 3206 ++++++++++++++
++ .../evidence/final/full-diff.txt                   | 8797 ++++++++++++++++++++
++ .../evidence/final/test-rules.txt                  | 3206 +++++++
 + .../evidence/final/typecheck.txt                   |    1 +
 + specs/003-rev15-k2-teardown/plan.md                |   89 +
 + specs/003-rev15-k2-teardown/spec.md                |  105 +
 + specs/003-rev15-k2-teardown/tasks.md               |   63 +
 + specs/REV1-5-evidence.sha256                       |    1 +
 + tests/rev14CacheClear.test.ts                      |   34 +-
-+ tests/rev15K2.test.ts                              |  489 +++
-+ 27 files changed, 10710 insertions(+), 47 deletions(-)
++ tests/rev15K2.test.ts                              |  594 ++
++ 29 files changed, 15098 insertions(+), 47 deletions(-)
 +"=== 3. Working tree status ==="  
 + M docs/known-issues.md
-+ M services/dataCache.ts
 + M specs/003-rev15-k2-teardown/REPORT.md
 + M specs/003-rev15-k2-teardown/evidence/final/constraints.txt
-+ M specs/003-rev15-k2-teardown/evidence/final/typecheck.txt
-+ M tests/rev14CacheClear.test.ts
 + M tests/rev15K2.test.ts
 +?? .opencode/skills/clean-code-guard/
 +?? .opencode/skills/docs-guard/
 +?? .opencode/skills/test-guard/
-+?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
-+?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
++?? specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
++?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
++?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
++?? vite.debug.config.ts
 +"=== 4. Log ==="  
++3b4c52a test/docs: REV1-5 follow-up review fixes (T7 skip+warn-fail, T2b modes, wording)
 +986a89b docs: REV1-5 final evidence + REPORT (K2-7)
 +a7bdcad fix(cache): document epoch guard against stale release (REQ-REV1-5b)
 +fcc5cd9 fix(cache): deferred-unsubscribe logout teardown (REQ-REV1-5a)
@@ -2365,10 +2744,10 @@ index 0000000..fed62a7
 +
 diff --git a/specs/003-rev15-k2-teardown/evidence/final/full-diff.txt b/specs/003-rev15-k2-teardown/evidence/final/full-diff.txt
 new file mode 100644
-index 0000000..e9b10ea
+index 0000000..af2e3f7
 --- /dev/null
 +++ b/specs/003-rev15-k2-teardown/evidence/final/full-diff.txt
-@@ -0,0 +1,2344 @@
+@@ -0,0 +1,2728 @@
 +diff --git a/docs/backlog.md b/docs/backlog.md
 +index cc7d822..f43b47b 100644
 +--- a/docs/backlog.md
@@ -2401,15 +2780,17 @@ index 0000000..e9b10ea
 + - **REQ-TX2-SALE — حارس idempotency للبيع (sales.ts, أول AUDIT-TX-2):** رفع `invoiceRef` خارج `runTransactionWithRetry` + قراءة `transaction.get` كأول سطر وخروج بلا كتابة لو المستند موجود — المسار العادي بايت-مطابق سلوكيًا — التحقق: RED أولًا على الكود القديم (2/2: `expected 2 to be 1`) ثم GREEN بعد الإصلاح · `tsc` نظيف · `test:rules` **402/402** (400 قديم بلا رجوع + 2 جديد `tx2Sale`: آجل + نقدي-منتجين) · صفر لمس لغير `sales.ts` — **Done 2026-09-30**
 + - **REQ-TX2-PURCHASE — حارس idempotency للشراء (purchases.ts, processPurchase فقط):** نفس الشكل (رفع `purchaseRef` + قراءة وجود أولًا + خروج عارٍ) بلا أرقام أسطر في التعليقات — التحقق: RED أولًا (4 انتهاكات soft ظاهرة: مستندان/200/104/عداد+2) ثم GREEN · `tsc` نظيف · `test:rules` **403/403** (402 قديم بلا رجوع + 1 جديد `tx2Purchase`: إثبات المحاولتين + كل القيم أولًا) · `processSupplierReturn` لم يُمس · صفر لمس لغير `purchases.ts` — **Done 2026-09-30**
 +diff --git a/docs/known-issues.md b/docs/known-issues.md
-+index e727a76..157a786 100644
++index e727a76..d21dfb8 100644
 +--- a/docs/known-issues.md
 ++++ b/docs/known-issues.md
-+@@ -90,6 +90,9 @@
++@@ -90,6 +90,11 @@
 + 
 + ## مفتوحة (Open)
 + 
 ++K2 — تفكيك logout عبر safeUnsubscribe المؤجل (**fix applied 2026-10-12 — NOT closed/NOT verified — يتطلب اختبار جهاز حقيقي قبل أي نشر**): `clearSubscriptionCache()` صار يجدول كل unsubscribe عبر `safeUnsubscribe` (microtask — workaround خطأ SDK 10.14.1 `INTERNAL ASSERTION FAILED`) بدل الاستدعاء الخام المتزامن (commits fcc5cd9 + a7bdcad — REQ-REV1-5). المثبت: إثبات mock (T1/T2/T6 + mutation) + تشغيل T7 حي على المحاكي (8 مجموعات ×300 مستند، 8 مستمعين حقيقيين، clear عند 0/1/5/20/50ms) لم يعِد إنتاج الخطأ لا على القديم ولا الجديد — نافذة السباق ضيقة + المحاكي بـmemory-cache fallback في Node، فالـpass ليس proof of absence (مصرّح به في REPORT). غير المثبت: خروج حقيقي أثناء تدفق قوائم كبير على جهاز/متصفح حقيقي ببيانات حقيقية ومراقبة الـconsole لـ`INTERNAL ASSERTION FAILED` — مطلوب قبل أي نشر. K3 (epoch guard للمستندات) مغلق مع نفس الدفعة (تقوية دفاعية — لا أحد معرّض اليوم). Ref: specs/003-rev15-k2-teardown/REPORT.md.
-++عمى الاختبار اليدوي (observed 2026-10-12، follow-up — يُضعف الاختبار المطلوب أعلاه): `vite.config.ts:39-41` يضبط `esbuild.drop: ['console','debugger']` بلا شرط (observed بالقراءة)، وبعد `npm run build` لا توجد أي من سلسلتي التطبيق (`Firestore unsubscribe swallowed` من safeUnsubscribe، و`Error notifying subscriber` من dataCache) في `dist/assets/*.js` (observed بالـgrep) — أي أن فحص الـconsole اليدوي على نسخ preview/dev لا يستطيع عرض مخرجات التطبيق نفسه، ومنها الأثر المرئي الوحيد لخطأ SDK مبتَلَع. النتيجة المتوقعة (expected، لم يُجرَّب يدويًا في هذه الدورة): فحص "خروج أثناء قائمة ثقيلة" اليدوي لا يستطيع تأكيد K2 أو نفيه عبر الـconsole — صمت الـconsole هناك ليس دليلًا (الانهيار/التعليق سيظهران). التقاط T7/T7a الآلي غير متأثر (vitest يشغّل الكود بلا bundling). تصحيح صياغة (follow-up): سُحب وصف "macrotask" لتوقيت إشعار الـSDK — غير متحقق منه مقابل كود الـSDK؛ الثابت المثبت هو أن كل unsubscribe يُجدول قبل استدعاء `firebaseSignOut` (microtask FIFO) — والتفصيل في REPORT.
+++عمى الاختبار اليدوي (observed 2026-10-12، follow-up — يُضعف الاختبار المطلوب أعلاه): `vite.config.ts:39-41` يضبط `esbuild.drop: ['console','debugger']` بلا شرط (observed بالقراءة)، وبعد `npm run build` لا توجد أي من سلسلتي التطبيق (`Firestore unsubscribe swallowed` من safeUnsubscribe، و`Error notifying subscriber` من dataCache) في `dist/assets/*.js` (observed بالـgrep) — أي أن فحص الـconsole اليدوي على نسخ preview/dev لا يستطيع عرض مخرجات التطبيق نفسه، ومنها الأثر المرئي الوحيد لخطأ SDK مبتَلَع. النتيجة المتوقعة (expected، لم يُجرَّب يدويًا في هذه الدورة): فحص "خروج أثناء قائمة ثقيلة" اليدوي لا يستطيع تأكيد K2 أو نفيه عبر الـconsole — صمت الـconsole هناك ليس دليلًا (الانهيار/التعليق سيظهران). التقاط T7 الآلي غير متأثر (vitest يشغّل الكود بلا bundling — بما فيه warn-fail assertion البند 1a). تصحيح صياغة (follow-up): سُحب وصف "macrotask" لتوقيت إشعار الـSDK — غير متحقق منه مقابل كود الـSDK؛ الثابت المثبت هو أن كل unsubscribe يُجدول قبل استدعاء `firebaseSignOut` (microtask FIFO) — والتفصيل في REPORT.
+++
+++POST-LOGOUT-PRODUCTS-FETCH — toast تحميل المنتجات بعد الخروج (**مفتوح — owner-reported 2026-10-12 من نسخة debug preview على :4174 — السبب غير مؤكد**): بعد logout ناجح (toast «تم تسجيل الخروج بنجاح.» ثم صفحة #/login) ظهر toast «حدث خطأ أثناء تحميل المنتجات.» مع سطر الـ console الكامل `Error fetching paginated products: FirebaseError: Missing or insufficient permissions.` (مصدره `services/api/products.ts:235-236` — قراءة one-shot بـ`getDocs` من POSPage/ProductsPage/ReturnsPage). التصنيف: سباق قراءة-ضد-فقدان-الـauth أثناء الانتقال (متوقع من تحليل الكود — غير مثبت) — **ليس** `INTERNAL ASSERTION` و**ليس** إشارة K2 (لا `Error listening to ...` ولا swallowed-unsub warn في اللقطة، وشروط فشل T7 ما كانت لتشتغل عليه). منفصل عنه في نفس اللقطة: `Failed to check users existence ... permissions` (مرتين، من حزمة LoginPage) — قراءة anonymous لمجموعة `users` والقواعد ترفضها (`LoginPage.tsx:23` يعمل عند mount الصفحة بلا login) — ضجيج pre-existing ظهر مع نسخة الـ debug، خارج نطاق K2. **غير مرصود في اللقطة الملتقطة**: أي طلب Listen بـ400 وأي `INTERNAL ASSERTION` — ادعاء الـ 400 يحتاج تفاصيل Network (Request URL + Response) من run يُعاد رصده لتسجيله بدقة. Ref: specs/003-rev15-k2-teardown/REPORT.md (بند T2c/الملاحظة اليدوية).
 ++
 + Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)
 + 
@@ -2563,10 +2944,10 @@ index 0000000..e9b10ea
 +             activeSubscriptions.set(cacheKey, count - 1);
 +diff --git a/specs/003-rev15-k2-teardown/REPORT.md b/specs/003-rev15-k2-teardown/REPORT.md
 +new file mode 100644
-+index 0000000..ca91a06
++index 0000000..66ca5b5
 +--- /dev/null
 ++++ b/specs/003-rev15-k2-teardown/REPORT.md
-+@@ -0,0 +1,237 @@
++@@ -0,0 +1,297 @@
 ++# REPORT — REV1-5: deferred-unsubscribe logout teardown (K2) + epoch guard (K3-variant)
 ++
 ++Base: `a15d8fe` (REV1-4 final evidence + REPORT). Commits: `fcc5cd9`
@@ -2703,11 +3084,15 @@ index 0000000..e9b10ea
 ++Raw outputs pasted in `evidence/REV1-5/` and `evidence/final/`.
 ++Follow-up runs (tests/docs/whitespace/comment only — zero runtime
 ++behavior change, so no full-suite re-run; the 63/681 green stands on
-++semantically identical production code): targeted plain run → 29 passed /
-++1 skipped (T7 SKIPPED, reason on stdout —
+++semantically identical production code): follow-up targeted plain run →
+++29 passed / 1 skipped (T7 SKIPPED —
 ++`evidence/REV1-5/green-followup.txt`); same two files under
-++emulators:exec → 30/30 with T7 live-clean including the new
-++swallowed-warn assertion (`evidence/REV1-5/green-followup-emulator.txt`);
+++emulators:exec → 30/30 with T7 live-clean including the swallowed-warn
+++assertion (`evidence/REV1-5/green-followup-emulator.txt`); small-prompt
+++batch targeted plain run → 29 passed / 2 skipped (T7+T2c SKIPPED —
+++`evidence/REV1-5/green-smallprompt.txt`); same two files under
+++emulators:exec → 31/31 (`evidence/REV1-5/green-smallprompt-emulator.txt`:
+++T2c measured 5/5 unsubs-first with latencies; T7 live-clean);
 ++`npx tsc --noEmit` re-run exit 0 (command + exit code in
 ++`evidence/final/typecheck.txt`).
 ++
@@ -2730,6 +3115,35 @@ index 0000000..e9b10ea
 ++- `ctx.skip()` note: the installed vitest 2.1.9 types
 ++  (`@vitest/runner`) and runtime define `skip: () => void` — no reason
 ++  argument. T7 logs its skip reason to stdout, then calls `ctx.skip()`.
+++
+++## T2c — real auth-emulator order measurement (small-prompt batch)
+++
+++Answers T2b-ii's open question against the REAL auth SDK on the
+++emulator: 5 rounds of sign-in → subscribe ×2 → clear + REAL signOut (same
+++order as `services/auth.ts`; its own signOut can't be used — this file
+++mocks `firebase/auth` signOut for T2/T2b), with the null-callback tag
+++pushed into the SHARED order log so each round's slice is the TRUE
+++interleave. Firestore listeners stay mocked; completion asserted, order
+++recorded.
+++- Observed (emulator, 5/5 rounds): `[unsub,unsub,rN:auth-null]` — both
+++  unsubs executed before the real auth-null callback every round.
+++- Latency data: auth-null arrived ~0ms after signOut resolved in the
+++  final run — but a diagnostic run needed >300ms per round (callbacks had
+++  not arrived 300ms+flush after signOut;
+++  `evidence/REV1-5/t2c-diag-slow-callback.txt`). Callback latency varies
+++  run-to-run (0ms to 300ms+ observed); unsubs are ~immediate microtasks
+++  in all runs.
+++- Honest reading: on the emulator the margin favored unsubs-first in all
+++  measured rounds, but the variance proves timing-dependence — a
+++  fast-callback inversion is conceivable in principle (never observed)
+++  and production timing is a different transport altogether. Recorded,
+++  not pinned; K2 stays open.
+++- Measurement-bug episode (kept honest): the first T2c revision appeared
+++  to show zero callbacks — root cause was a split event log (auth tags
+++  went to a separate array while slices read only the unsub channel),
+++  not an SDK behavior; fixed by unifying the log. Failing run preserved
+++  in `evidence/REV1-5/t2c-v2-split-channel.txt`; final green run in
+++  `evidence/REV1-5/green-smallprompt-emulator.txt` (31/31).
 ++
 ++## Stale-closure coverage (follow-up, item 3)
 ++
@@ -2765,8 +3179,35 @@ index 0000000..e9b10ea
 ++  expected from config semantics (the drop sits in the shared `esbuild`
 ++  key, not under `build`, so it applies to dev transforms too) — stated
 ++  as expected, not re-verified with a dev-mode probe in this cycle.
-++- Unaffected: automated T7/T7a capture (vitest runs unbundled code, which
-++  is why the tests can assert on console output at all).
+++- Unaffected: automated T7 capture (vitest runs unbundled code, including
+++  the warn-fail assertion of item 1a — there is no test named "T7a"; that
+++  wording is corrected everywhere it appeared — which is why the tests can
+++  assert on console output at all).
+++
+++## Owner-reported manual-debug observation (separate open issue, cause unconfirmed)
+++
+++Source: owner screenshot, debug preview build on :4174 (temporary
+++untracked `vite.debug.config.ts`, created at owner request, never
+++committed, kept until the owner confirms no further debug runs are
+++needed), post-logout state (#/login + toast «تم تسجيل الخروج بنجاح.»):
+++- Observed: toast «حدث خطأ أثناء تحميل المنتجات.» with the full console
+++  line `Error fetching paginated products: FirebaseError: Missing or
+++  insufficient permissions.` (source: `services/api/products.ts:235-236`
+++  — one-shot `getDocs` from POSPage/ProductsPage/ReturnsPage).
+++- Classification: read-vs-auth-loss race during the transition (expected
+++  from code analysis — NOT proven). NOT an `INTERNAL ASSERTION`, NOT a K2
+++  signal (no `Error listening to ...`, no swallowed-unsub warn in the
+++  shot; T7's fail conditions would not have fired on it).
+++- Separately in the same shot: `Failed to check users existence ...
+++  permissions` (×2, LoginPage bundle) — anonymous read of `users`,
+++  denied by rules (`LoginPage.tsx:23` runs on page mount while logged
+++  out) — pre-existing noise newly visible under the debug build, outside
+++  K2 scope.
+++- NOT observed in the captured shot: any Listen request with 400, any
+++  `INTERNAL ASSERTION`. A claimed Listen-400 needs Network details
+++  (Request URL + Response) from a re-observed run to be recorded
+++  precisely. Recorded in `docs/known-issues.md` as
+++  POST-LOGOUT-PRODUCTS-FETCH (open, owner-reported).
 ++
 ++## Honest deviations from the plan
 ++
@@ -2804,6 +3245,83 @@ index 0000000..e9b10ea
 ++  (`specs/REV1-5-evidence.zip`) holds the on-disk CRLF bytes; the hash in
 ++  `specs/REV1-5-evidence.sha256` pins the zip as stored.
 ++- No other deviation exists in specs/003 beyond what this list states.
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
++new file mode 100644
++index 0000000..fed62a7
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
++@@ -0,0 +1,6 @@
+++
+++E:\Nour-Elrahman\services\dataCache.ts
+++  18:42  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+++
+++✖ 1 problem (0 errors, 1 warning)
+++
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
++new file mode 100644
++index 0000000..e543592
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
++@@ -0,0 +1,33 @@
+++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts tests/rev14CacheClear.test.ts[22m
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev14CacheClear.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 6853[2mms[22m[39m
+++   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m6564[2mms[22m[39m
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+++[22m[39mT7: signed in as cashier KylbM50VSsUf7eOl1gzaRoUXNvaF | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T12:16:17.535Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
+++
+++
+++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+++[2m      Tests [22m [1m[32m30 passed[39m[22m[90m (30)[39m
+++[2m   Start at [22m 15:16:10
+++[2m   Duration [22m 8.01s[2m (transform 260ms, setup 893ms, collect 459ms, tests 6.87s, environment 1ms, prepare 287ms)[22m
+++
+++[32m[1m+ [22m[39m Script exited successfully (code 0)
+++[36m[1mi  emulators:[22m[39m Shutting down emulators.
+++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+++[36m[1mi  hub:[22m[39m Stopping emulator hub
+++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
++new file mode 100644
++index 0000000..2c72ac1
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
++@@ -0,0 +1,20 @@
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev14CacheClear.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+++[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
+++
+++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[90m 265[2mms[22m[39m
+++
+++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+++[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (30)[39m
+++[2m   Start at [22m 15:15:25
+++[2m   Duration [22m 4.55s[2m (transform 355ms, setup 5.42s, collect 1.16s, tests 287ms, environment 3ms, prepare 678ms)[22m
+++
 +diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-k2-restored.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-k2-restored.txt
 +new file mode 100644
 +index 0000000..20d7a63
@@ -2882,6 +3400,83 @@ index 0000000..e9b10ea
 ++[2m   Start at [22m 13:32:16
 ++[2m   Duration [22m 2.00s[2m (transform 307ms, setup 1.01s, collect 527ms, tests 263ms, environment 1ms, prepare 333ms)[22m
 ++
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
++new file mode 100644
++index 0000000..b5ae11d
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
++@@ -0,0 +1,37 @@
+++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts tests/rev14CacheClear.test.ts[22m
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev14CacheClear.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c observed orders: [unsub,unsub,r0:auth-null] [unsub,unsub,r1:auth-null] [unsub,unsub,r2:auth-null] [unsub,unsub,r3:auth-null] [unsub,unsub,r4:auth-null]
+++T2c auth-null latency after signOut resolved (ms): [0,0,0,0,0]
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+++[22m[39mT7: signed in as cashier rIwSbS0pFKVeFfmTh2B4sUW5Zuss | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T12:48:00.512Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
+++
+++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 6857[2mms[22m[39m
+++   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m6365[2mms[22m[39m
+++
+++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+++[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+++[2m   Start at [22m 15:47:53
+++[2m   Duration [22m 8.83s[2m (transform 358ms, setup 1.13s, collect 555ms, tests 6.88s, environment 1ms, prepare 343ms)[22m
+++
+++[32m[1m+ [22m[39m Script exited successfully (code 0)
+++[36m[1mi  emulators:[22m[39m Shutting down emulators.
+++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+++[36m[1mi  hub:[22m[39m Stopping emulator hub
+++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
++new file mode 100644
++index 0000000..bca3d48
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
++@@ -0,0 +1,28 @@
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev14CacheClear.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c SKIPPED: emulator (8080/9099) unreachable (plain run?)
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+++[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
+++
+++ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[90m 292[2mms[22m[39m
+++
+++[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+++[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (31)[39m
+++[2m   Start at [22m 15:40:15
+++[2m   Duration [22m 4.80s[2m (transform 354ms, setup 5.58s, collect 1.25s, tests 317ms, environment 1ms, prepare 743ms)[22m
+++
+++npm notice
+++npm notice New major version of npm available! 10.9.2 -> 12.2.0
+++npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+++npm notice To update run: npm install -g npm@12.2.0
+++npm notice
 +diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/mutation-5a1.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/mutation-5a1.txt
 +new file mode 100644
 +index 0000000..7aacc3d
@@ -3574,6 +4169,166 @@ index 0000000..e9b10ea
 ++[2m   Start at [22m 13:23:32
 ++[2m   Duration [22m 18.36s[2m (transform 1.05s, setup 11.37s, collect 197ms, tests 5.19s, environment 0ms, prepare 994ms)[22m
 ++
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
++new file mode 100644
++index 0000000..2c82a3e
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
++@@ -0,0 +1,90 @@
+++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r0: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r0: after signOut currentUser=null
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r1: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r1: after signOut currentUser=null
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r2: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r2: after signOut currentUser=null
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r3: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r3: after signOut currentUser=null
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r4: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag r4: after signOut currentUser=null
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c observed orders: [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub]
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c-diag seen[] after +2s: [r0:auth-user,r0:auth-null,r1:auth-user,r1:auth-null,r2:auth-user,r2:auth-null,r3:auth-user,r3:auth-null,r4:auth-user,r4:auth-null]
+++
+++ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m10 skipped[39m[2m)[22m[33m 3869[2mms[22m[39m
+++[31m   [31m×[31m REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles[33m 3867[2mms[22m[31m[39m
+++[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+++
+++[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+++
+++[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+++
+++[32m- Expected[39m
+++[31m+ Received[39m
+++
+++[2m  Array [[22m
+++[32m-   "r0:auth-null",[39m
+++[2m    "unsub",[22m
+++[2m    "unsub",[22m
+++[2m  ][22m
+++
+++[36m [2m❯[22m tests/rev15K2.test.ts:[2m317:31[22m[39m
+++    [90m315| [39m      [34mexpect[39m(orders)[33m.[39m[34mtoHaveLength[39m([33mROUNDS[39m)[33m;[39m
+++    [90m316| [39m      orders[33m.[39m[34mforEach[39m((o[33m,[39m i) [33m=>[39m {
+++    [90m317| [39m        [34mexpect[39m([[33m...[39mo][33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m`r[39m[36m${[39mi[36m}[39m[32m:auth-null`[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'un[39m…
+++    [90m   | [39m                              [31m^[39m
+++    [90m318| [39m      })[33m;[39m
+++    [90m319| [39m    }[33m,[39m
+++[90m [2m❯[22m tests/rev15K2.test.ts:[2m316:14[22m[39m
+++
+++[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+++
+++[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+++[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m10 skipped[39m[90m (11)[39m
+++[2m   Start at [22m 15:43:19
+++[2m   Duration [22m 5.74s[2m (transform 208ms, setup 489ms, collect 253ms, tests 3.87s, environment 0ms, prepare 177ms)[22m
+++
+++[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+++[36m[1mi  emulators:[22m[39m Shutting down emulators.
+++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+++[36m[1mi  hub:[22m[39m Stopping emulator hub
+++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+++
+++[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m" exited with code 1
++diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
++new file mode 100644
++index 0000000..5589c1a
++--- /dev/null
+++++ b/specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
++@@ -0,0 +1,58 @@
+++[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+++[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+++[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+++[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+++[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m
+++
+++[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+++
+++[90mstdout[2m | tests/rev15K2.test.ts
+++[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+++
+++[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[22m[39mT2c observed orders: [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub]
+++T2c auth-null latency after signOut resolved (ms): [1,0,0,0,0]
+++
+++ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m10 skipped[39m[2m)[22m[90m 251[2mms[22m[39m
+++[31m   [31m×[31m REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles[90m 248[2mms[22m[31m[39m
+++[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+++
+++[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+++
+++[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+++[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+++
+++[32m- Expected[39m
+++[31m+ Received[39m
+++
+++[2m  Array [[22m
+++[32m-   "r0:auth-null",[39m
+++[2m    "unsub",[22m
+++[2m    "unsub",[22m
+++[2m  ][22m
+++
+++[36m [2m❯[22m tests/rev15K2.test.ts:[2m326:31[22m[39m
+++    [90m324| [39m      [34mexpect[39m(orders)[33m.[39m[34mtoHaveLength[39m([33mROUNDS[39m)[33m;[39m
+++    [90m325| [39m      orders[33m.[39m[34mforEach[39m((o[33m,[39m i) [33m=>[39m {
+++    [90m326| [39m        [34mexpect[39m([[33m...[39mo][33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m`r[39m[36m${[39mi[36m}[39m[32m:auth-null`[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'un[39m…
+++    [90m   | [39m                              [31m^[39m
+++    [90m327| [39m      })[33m;[39m
+++    [90m328| [39m    }[33m,[39m
+++[90m [2m❯[22m tests/rev15K2.test.ts:[2m325:14[22m[39m
+++
+++[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+++
+++[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+++[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m10 skipped[39m[90m (11)[39m
+++[2m   Start at [22m 15:46:02
+++[2m   Duration [22m 2.06s[2m (transform 215ms, setup 471ms, collect 273ms, tests 251ms, environment 0ms, prepare 166ms)[22m
+++
+++[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+++[36m[1mi  emulators:[22m[39m Shutting down emulators.
+++[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+++[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+++[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+++[36m[1mi  hub:[22m[39m Stopping emulator hub
+++[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+++
+++[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m" exited with code 1
 +diff --git a/specs/003-rev15-k2-teardown/evidence/REV1-5/tsc-5a.txt b/specs/003-rev15-k2-teardown/evidence/REV1-5/tsc-5a.txt
 +new file mode 100644
 +index 0000000..e69de29
@@ -3622,8 +4377,7 @@ index 0000000..e9b10ea
 ++[2mdist/[22m[36massets/SupplierAccountPage-Mh3D9Qtd.js      [39m[1m[2m 43.07 kB[22m[1m[22m[2m │ gzip:  10.51 kB[22m
 ++[2mdist/[22m[36massets/ponyfill-CSfpN3v-.js                 [39m[1m[2m 43.30 kB[22m[1m[22m[2m │ gzip:  15.33 kB[22m
 ++[2mdist/[22m[36massets/index-DE5yCy-S.js                    [39m[1m[2m 54.04 kB[22m[1m[22m[2m │ gzip:  19.14 kB[22m
-++[2mdist/[22m[36massets/Prodwarning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/constraints.txt', CRLF will be replaced by LF the next time Git touches it
-+uctsPage-DYJs0KPp.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gzip:  22.10 kB[22m
+++[2mdist/[22m[36massets/ProductsPage-DYJs0KPp.js             [39m[1m[2m100.50 kB[22m[1m[22m[2m │ gzip:  22.10 kB[22m
 ++[2mdist/[22m[36massets/vendor-D115r7Kk.js                   [39m[1m[2m198.56 kB[22m[1m[22m[2m │ gzip:  62.78 kB[22m
 ++[2mdist/[22m[36massets/firebase-DnsDQ9pT.js                 [39m[1m[2m562.96 kB[22m[1m[22m[2m │ gzip: 132.66 kB[22m
 ++[2mdist/[22m[36massets/index-DqIud8C4.js                    [39m[1m[2m938.00 kB[22m[1m[22m[2m │ gzip: 270.95 kB[22m
@@ -3637,56 +4391,60 @@ index 0000000..e9b10ea
 ++  dist/workbox-2fbc6a65.js
 +diff --git a/specs/003-rev15-k2-teardown/evidence/final/constraints.txt b/specs/003-rev15-k2-teardown/evidence/final/constraints.txt
 +new file mode 100644
-+index 0000000..45de987
++index 0000000..86901f0
 +--- /dev/null
 ++++ b/specs/003-rev15-k2-teardown/evidence/final/constraints.txt
-+@@ -0,0 +1,51 @@
++@@ -0,0 +1,55 @@
 ++"=== 1. Cycle diff on hard-constraint paths (a15d8fe..worktree) - must be EMPTY ==="  
 ++"=== 2. Cycle diff-stat (all files, a15d8fe..worktree) ==="  
 ++warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/constraints.txt', CRLF will be replaced by LF the next time Git touches it
 ++warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/typecheck.txt', CRLF will be replaced by LF the next time Git touches it
 ++ docs/backlog.md                                    |    3 +-
 ++ docs/changelog.md                                  |    2 +
-++ docs/known-issues.md                               |    3 +
+++ docs/known-issues.md                               |    5 +
 ++ services/dataCache.ts                              |   94 +-
-++ specs/003-rev15-k2-teardown/REPORT.md              |  237 +
+++ specs/003-rev15-k2-teardown/REPORT.md              |  293 +
+++ .../evidence/REV1-5/green-followup-emulator.txt    |   33 +
+++ .../evidence/REV1-5/green-followup.txt             |   20 +
 ++ .../evidence/REV1-5/green-k2-restored.txt          |   20 +
 ++ .../evidence/REV1-5/green-k2-stage1.txt            |   20 +
 ++ .../evidence/REV1-5/green-k2.txt                   |   20 +
-++ .../evidence/REV1-5/mutation-5a1.txt               |  247 ++
+++ .../evidence/REV1-5/mutation-5a1.txt               |  247 +
 ++ .../evidence/REV1-5/mutation-5b2.txt               |   39 +
 ++ .../evidence/REV1-5/red-k2-emulator.txt            |  198 +
 ++ .../evidence/REV1-5/red-k2.txt                     |  184 +
 ++ .../evidence/REV1-5/tsc-5a.txt                     |    0
 ++ .../003-rev15-k2-teardown/evidence/final/build.txt |   51 +
 ++ .../evidence/final/constraints.txt                 |    2 +
-++ .../evidence/final/eslint-full.txt                 |  887 ++++
+++ .../evidence/final/eslint-full.txt                 |  887 ++
 ++ .../evidence/final/eslint-quiet.txt                |  131 +
 ++ .../evidence/final/eslint-scope.txt                |    6 +
-++ .../evidence/final/full-diff.txt                   | 4625 ++++++++++++++++++++
-++ .../evidence/final/test-rules.txt                  | 3206 ++++++++++++++
+++ .../evidence/final/full-diff.txt                   | 8797 ++++++++++++++++++++
+++ .../evidence/final/test-rules.txt                  | 3206 +++++++
 ++ .../evidence/final/typecheck.txt                   |    1 +
 ++ specs/003-rev15-k2-teardown/plan.md                |   89 +
 ++ specs/003-rev15-k2-teardown/spec.md                |  105 +
 ++ specs/003-rev15-k2-teardown/tasks.md               |   63 +
 ++ specs/REV1-5-evidence.sha256                       |    1 +
 ++ tests/rev14CacheClear.test.ts                      |   34 +-
-++ tests/rev15K2.test.ts                              |  489 +++
-++ 27 files changed, 10710 insertions(+), 47 deletions(-)
+++ tests/rev15K2.test.ts                              |  594 ++
+++ 29 files changed, 15098 insertions(+), 47 deletions(-)
 ++"=== 3. Working tree status ==="  
 ++ M docs/known-issues.md
-++ M services/dataCache.ts
 ++ M specs/003-rev15-k2-teardown/REPORT.md
 ++ M specs/003-rev15-k2-teardown/evidence/final/constraints.txt
-++ M specs/003-rev15-k2-teardown/evidence/final/typecheck.txt
-++ M tests/rev14CacheClear.test.ts
 ++ M tests/rev15K2.test.ts
 ++?? .opencode/skills/clean-code-guard/
 ++?? .opencode/skills/docs-guard/
 ++?? .opencode/skills/test-guard/
-++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup-emulator.txt
-++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-followup.txt
+++?? specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
+++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
+++?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
+++?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
+++?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
+++?? vite.debug.config.ts
 ++"=== 4. Log ==="  
+++3b4c52a test/docs: REV1-5 follow-up review fixes (T7 skip+warn-fail, T2b modes, wording)
 ++986a89b docs: REV1-5 final evidence + REPORT (K2-7)
 ++a7bdcad fix(cache): document epoch guard against stale release (REQ-REV1-5b)
 ++fcc5cd9 fix(cache): deferred-unsubscribe logout teardown (REQ-REV1-5a)
@@ -4712,7 +5470,12 @@ index 0000000..e9b10ea
 ++  21:1   error  'console' is not defined                 no-undef
 ++  23:3   error  'console' is not defined                 no-undef
 ++  24:3   error  'console' is not defined                 no-undef
-++  27:35  error  'conso
+++  27:35  error  'console' is not defined                 no-undef
+++  28:3   error  'console' is not defined                 no-undef
+++  30:1   error  'console' is not defined                 no-undef
+++  35:1   error  'console' is not defined                 no-undef
+++  36:26  error  'console' is not defined                 no-undef
+++  38:1   error  'console' is not defined                 n
 \ No newline at end of file
 diff --git a/specs/003-rev15-k2-teardown/evidence/final/test-rules.txt b/specs/003-rev15-k2-teardown/evidence/final/test-rules.txt
 new file mode 100644
@@ -7920,8 +8683,7 @@ index 0000000..5ff5f5d
 +[2m   Duration [22m 342.45s[2m (transform 1.86s, setup 24.87s, collect 31.46s, tests 261.39s, environment 22ms, prepare 9.67s)[22m
 +
 +[32m[1m+ [22m[39m Script exited successfully (code 0)
-+[36m[1mi  emulators:[22m[39m Shutting dowarning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/typecheck.txt', CRLF will be replaced by LF the next time Git touches it
-wn emulators.
++[36m[1mi  emulators:[22m[39m Shutting down emulators.
 +[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
 +[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
 +[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
@@ -8211,11 +8973,11 @@ index 0000000..69e5f5a
 +  deployed.
 diff --git a/specs/REV1-5-evidence.sha256 b/specs/REV1-5-evidence.sha256
 new file mode 100644
-index 0000000..1133168
+index 0000000..f8ab282
 --- /dev/null
 +++ b/specs/REV1-5-evidence.sha256
 @@ -0,0 +1 @@
-+6A0B7F7DDCD5E7CAE9D42BA1F65D47249CA981ACA9AD8086A7D2EFAB540EB95A
++6F7A735A62BC16C2B3C7C61388BAA85408D05E9F0CF8A348A91F4A870413FA26
 diff --git a/tests/rev14CacheClear.test.ts b/tests/rev14CacheClear.test.ts
 index 6b52839..24d6326 100644
 --- a/tests/rev14CacheClear.test.ts
@@ -8302,10 +9064,10 @@ index 6b52839..24d6326 100644
    });
 diff --git a/tests/rev15K2.test.ts b/tests/rev15K2.test.ts
 new file mode 100644
-index 0000000..a56bdf8
+index 0000000..894d4a5
 --- /dev/null
 +++ b/tests/rev15K2.test.ts
-@@ -0,0 +1,489 @@
+@@ -0,0 +1,594 @@
 +// REV1-5 K2 — deferred-unsubscribe logout teardown + K3-variant epoch guard.
 +//
 +// RED-FIRST on UNFIXED code: `clearSubscriptionCache` calls raw
@@ -8316,7 +9078,9 @@ index 0000000..a56bdf8
 +// is added with the 5b commit. T7 needs the Firestore emulator; without one
 +// it reports SKIPPED via ctx.skip() with the reason on stdout — never a
 +// silent pass, nothing faked. T2b pins the boundary of the ordering
-+// guarantee across modeled auth-delivery modes (see its comments).
++// guarantee across modeled auth-delivery modes (see its comments). T2c
++// measures the REAL auth-emulator order over 5 logout cycles (recorded,
++// not pinned — timing-dependent by construction).
 +//
 +// Mock pattern follows tests/rev14CacheClear.test.ts: `onSnapshot` mocked
 +// at the boundary (records `unsub` events + per-listener handles), with a
@@ -8428,6 +9192,20 @@ index 0000000..a56bdf8
 +const sleep = (ms: number): Promise<void> =>
 +  new Promise((r) => setTimeout(r, ms));
 +
++function tcpReachable(host: string, port: number, ms: number): Promise<boolean> {
++  return new Promise((resolveTcp) => {
++    const s = net.connect(port, host, () => {
++      s.destroy();
++      resolveTcp(true);
++    });
++    s.on('error', () => resolveTcp(false));
++    s.setTimeout(ms, () => {
++      s.destroy();
++      resolveTcp(false);
++    });
++  });
++}
++
 +beforeEach(async () => {
 +  // Drain teardown microtasks queued by the PREVIOUS test's last release
 +  // or clear (deferred path): without this, a stale 'unsub' lands in the
@@ -8520,6 +9298,109 @@ index 0000000..a56bdf8
 +    expect(mockCtl.order).toEqual(['auth-lost', 'unsub', 'unsub']);
 +    expect(listenerCount()).toBe(0);
 +  });
++});
++
++describe('REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)', () => {
++  // Answers T2b-ii's open question against the REAL auth SDK on the
++  // emulator: when signOut() runs clear-then-real-signOut (same order as
++  // services/auth.ts), in what order do the queued SDK unsubs vs the real
++  // onAuthStateChanged(null) callback actually run? Firestore listeners
++  // stay MOCKED (no reads needed); only Auth is real. The order is the
++  // MEASUREMENT — completion is asserted, order is logged + reported in
++  // REPORT (timing-dependent by construction, never pinned as a guarantee).
++  const EMAIL = 'k2-t2c@test.local';
++  const PW = 'secret123';
++  const ROUNDS = 5;
++
++  async function waitFor(cond: () => boolean, ms: number, label: string): Promise<void> {
++    const t0 = Date.now();
++    while (!cond()) {
++      if (Date.now() - t0 > ms) throw new Error(`T2c timeout waiting for ${label}`);
++      await sleep(50);
++    }
++  }
++
++  it(
++    'measures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles',
++    { timeout: 120000 },
++    async (ctx) => {
++      if (
++        !(await tcpReachable('127.0.0.1', 8080, 2000)) ||
++        !(await tcpReachable('127.0.0.1', 9099, 2000))
++      ) {
++        console.log('T2c SKIPPED: emulator (8080/9099) unreachable (plain run?)');
++        ctx.skip();
++        return;
++      }
++      const { getAuthInstance } = await import('../services/firebase');
++      const realAuth =
++        await vi.importActual<typeof import('firebase/auth')>('firebase/auth');
++      const fbAuth = getAuthInstance();
++      try {
++        await fbAuth.signOut();
++      } catch {
++        /* not signed in */
++      }
++      try {
++        await realAuth.createUserWithEmailAndPassword(fbAuth, EMAIL, PW);
++      } catch (e: unknown) {
++        if (String((e as { code?: string })?.code ?? e).indexOf('email-already-in-use') < 0) throw e;
++      }
++      // Real auth-state listener: records sign-in (auth-user) and sign-out
++      // (auth-null) callbacks, tagged by round. Auth-null tags go to the
++      // SHARED mockCtl.order log too, so each round's slice shows the TRUE
++      // interleave of executed unsubs vs the real callback. Delivery timing
++      // is the measured quantity — the test WAITS for each event (poll,
++      // 10s cap) instead of assuming any latency.
++      const seen: string[] = [];
++      const orders: string[][] = [];
++      const nullLatMs: number[] = [];
++      let round = -1;
++      const stop = realAuth.onAuthStateChanged(fbAuth, (u) => {
++        const tag = `r${round}:${u === null ? 'auth-null' : 'auth-user'}`;
++        seen.push(tag);
++        if (u === null) mockCtl.order.push(tag);
++      });
++      try {
++        for (let i = 0; i < ROUNDS; i++) {
++          round = i;
++          await realAuth.signInWithEmailAndPassword(fbAuth, EMAIL, PW);
++          await waitFor(() => seen.includes(`r${i}:auth-user`), 10000, `r${i}:auth-user`);
++          subscribeToCollection('k2-t2c', () => {}, [where('x', '==', 1)]);
++          subscribeToDocument('k2-t2c', 'doc1', () => {});
++          const mark = mockCtl.order.length;
++          // Same order as services/auth signOut (clear first), but with the
++          // REAL firebase signOut so the REAL auth callback fires. (The
++          // services/auth signOut itself can't be used here: this file mocks
++          // firebase/auth signOut for T2/T2b.)
++          clearSubscriptionCache();
++          await realAuth.signOut(fbAuth);
++          const tSignedOut = Date.now();
++          await waitFor(() => seen.includes(`r${i}:auth-null`), 10000, `r${i}:auth-null`);
++          nullLatMs.push(Date.now() - tSignedOut);
++          await flush();
++          orders.push(mockCtl.order.slice(mark));
++          expect(listenerCount()).toBe(0);
++        }
++      } finally {
++        stop();
++        try {
++          await fbAuth.signOut();
++        } catch {
++          /* hygiene only */
++        }
++      }
++      console.log('T2c observed orders: ' + orders.map((o) => '[' + o.join(',') + ']').join(' '));
++      console.log('T2c auth-null latency after signOut resolved (ms): [' + nullLatMs.join(',') + ']');
++      // Completion only: every round tore down both listeners AND delivered
++      // the null callback. ORDER IS NOT PINNED — it is the measurement
++      // reported in REPORT (timing-dependent by construction).
++      expect(orders).toHaveLength(ROUNDS);
++      orders.forEach((o, i) => {
++        expect([...o].sort()).toEqual([`r${i}:auth-null`, 'unsub', 'unsub'].sort());
++      });
++    },
++  );
 +});
 +
 +describe('REV1-5 T3 — double clear schedules nothing extra', () => {
@@ -8626,20 +9507,6 @@ index 0000000..a56bdf8
 +    }
 +    testEnv = undefined;
 +  });
-+
-+  function tcpReachable(host: string, port: number, ms: number): Promise<boolean> {
-+    return new Promise((resolveTcp) => {
-+      const s = net.connect(port, host, () => {
-+        s.destroy();
-+        resolveTcp(true);
-+      });
-+      s.on('error', () => resolveTcp(false));
-+      s.setTimeout(ms, () => {
-+        s.destroy();
-+        resolveTcp(false);
-+      });
-+    });
-+  }
 +
 +  it(
 +    'no INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms',
