@@ -1,0 +1,198 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+[22m[39mT7: signed in as cashier YuJFMQDDKFrJM0jgqQnpA2wMYjDh | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T10:29:20.224Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
+
+ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m7 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[33m 5946[2mms[22m[39m
+[31m   [31m×[31m REV1-5 T1 — clearSubscriptionCache defers SDK unsubscribes[2m > [22mraw SDK unsubscribe mocks: 0 calls synchronously, exactly once each after flush[90m 26[2mms[22m[31m[39m
+[31m     → expected 2 to be +0 // Object.is equality[39m
+[31m   [31m×[31m REV1-5 T2 — ordering: scheduled unsubs precede auth-state loss[2m > [22mall 'unsub' events precede 'auth-lost' via real signOut()[90m 17[2mms[22m[31m[39m
+[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [][39m
+[31m   [31m×[31m REV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache references safeUnsubscribe[90m 14[2mms[22m[31m[39m
+[31m     → expected 'export const clearSubscriptionCache =…' to match /safeUnsubscribe\s*\(\s*entry\.unsubsc…/[39m
+[31m   [31m×[31m REV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache contains no direct entry.unsubscribe()[90m 16[2mms[22m[31m[39m
+[31m     → expected 'export const clearSubscriptionCache =…' not to match /\.unsubscribe\s*\(\s*\)/[39m
+   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m5809[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 4 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T1 — clearSubscriptionCache defers SDK unsubscribes[2m > [22mraw SDK unsubscribe mocks: 0 calls synchronously, exactly once each after flush
+[31m[1mAssertionError[22m: expected 2 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m135:26[22m[39m
+    [90m133| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m134| [39m    [90m// K2: teardown is scheduled, not synchronous.[39m
+    [90m135| [39m    [34mexpect[39m([34munsubCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m136| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m137| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2 — ordering: scheduled unsubs precede auth-state loss[2m > [22mall 'unsub' events precede 'auth-lost' via real signOut()
+[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [][39m
+[31m+ Array [[39m
+[31m+   "unsub",[39m
+[31m+   "unsub",[39m
+[31m+ ][39m
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m149:27[22m[39m
+    [90m147| [39m    [35mconst[39m p [33m=[39m [34msignOut[39m()[33m;[39m
+    [90m148| [39m    [90m// Deferred, not sync: nothing has run before the first await.[39m
+    [90m149| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m150| [39m    [35mawait[39m p[33m;[39m
+    [90m151| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache references safeUnsubscribe
+[31m[1mAssertionError[22m: expected 'export const clearSubscriptionCache =…' to match /safeUnsubscribe\s*\(\s*entry\.unsubsc…/[39m
+
+[32m- Expected:[39m 
+/safeUnsubscribe\s*\(\s*entry\.unsubscribe\s*\)/
+
+[31m+ Received:[39m 
+"export const clearSubscriptionCache = (): void => {
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // Only live entries: an already-released entry fired its SDK
+            // unsubscribe through the normal release path — firing again
+            // would double-teardown.
+            if (entry.listening) {
+                try {
+                    entry.unsubscribe();
+                } catch {
+                    // Logout path: one bad listener must not block the rest.
+                }
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // Same rule for documents: only keys still ref-counted are live
+        // (a released document drops its key from activeSubscriptions
+        // while its entry object lingers for F6 immediate-data behavior).
+        if (activeSubscriptions.has(key)) {
+            try {
+                entry.unsubscribe();
+            } catch {
+                // Same guard for document entries.
+            }
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+"
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m206:26[22m[39m
+    [90m204| [39m
+    [90m205| [39m  [34mit[39m([32m'clearSubscriptionCache references safeUnsubscribe'[39m[33m,[39m () [33m=>[39m {
+    [90m206| [39m    [34mexpect[39m([34mclearSlice[39m())[33m.[39m[34mtoMatch[39m([36m/safeUnsubscribe\s*\(\s*entry\.unsubs[39m…
+    [90m   | [39m                         [31m^[39m
+    [90m207| [39m  })[33m;[39m
+    [90m208| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache contains no direct entry.unsubscribe()
+[31m[1mAssertionError[22m: expected 'export const clearSubscriptionCache =…' not to match /\.unsubscribe\s*\(\s*\)/[39m
+
+[32m- Expected:[39m 
+/\.unsubscribe\s*\(\s*\)/
+
+[31m+ Received:[39m 
+"export const clearSubscriptionCache = (): void => {
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // Only live entries: an already-released entry fired its SDK
+            // unsubscribe through the normal release path — firing again
+            // would double-teardown.
+            if (entry.listening) {
+                try {
+                    entry.unsubscribe();
+                } catch {
+                    // Logout path: one bad listener must not block the rest.
+                }
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // Same rule for documents: only keys still ref-counted are live
+        // (a released document drops its key from activeSubscriptions
+        // while its entry object lingers for F6 immediate-data behavior).
+        if (activeSubscriptions.has(key)) {
+            try {
+                entry.unsubscribe();
+            } catch {
+                // Same guard for document entries.
+            }
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+"
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m214:26[22m[39m
+    [90m212| [39m      [32m''[39m[33m,[39m
+    [90m213| [39m    )[33m;[39m
+    [90m214| [39m    [34mexpect[39m(stripped)[33m.[39mnot[33m.[39m[34mtoMatch[39m([36m/\.unsubscribe\s*\(\s*\)/[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m215| [39m  })[33m;[39m
+    [90m216| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (7)[39m
+[2m   Start at [22m 13:29:14
+[2m   Duration [22m 7.97s[2m (transform 208ms, setup 489ms, collect 286ms, tests 5.95s, environment 0ms, prepare 540ms)[22m
+
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts[22m" exited with code 1

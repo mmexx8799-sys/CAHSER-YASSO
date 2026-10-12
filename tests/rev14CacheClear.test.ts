@@ -84,21 +84,26 @@ afterEach(() => {
 });
 
 describe('REV1-4 T4.2 — clearSubscriptionCache', () => {
-  it('invokes every stored unsubscribe exactly once (collection + document)', () => {
+  it('invokes every stored unsubscribe exactly once (collection + document)', async () => {
     const unsubA = subscribeToCollection('test-clear', () => {}, [where('x', '==', 1)]);
     const unsubB = subscribeToDocument('test-clear', 'doc1', () => {});
     expect(listenerCount()).toBe(2);
     clearSubscriptionCache();
+    // REV1-5 (K2): teardown is scheduled via safeUnsubscribe, not
+    // synchronous — nothing has fired yet at this point.
+    expect(mockCtl.order.filter((m) => m === 'unsub').length).toBe(0);
+    await flush();
     expect(mockCtl.order).toEqual(['unsub', 'unsub']);
     expect(listenerCount()).toBe(0);
     unsubA();
     unsubB();
   });
 
-  it('resubscribing the same query after a clear creates a FRESH listener', () => {
+  it('resubscribing the same query after a clear creates a FRESH listener', async () => {
     const unsubA = subscribeToCollection('test-resub', () => {}, [where('x', '==', 1)]);
     expect(listenerCount()).toBe(1);
     clearSubscriptionCache();
+    await flush(); // REV1-5 (K2): scheduled teardown completes here.
     expect(listenerCount()).toBe(0);
     const unsubB = subscribeToCollection('test-resub', () => {}, [where('x', '==', 1)]);
     expect(listenerCount()).toBe(1);
@@ -106,10 +111,13 @@ describe('REV1-4 T4.2 — clearSubscriptionCache', () => {
     unsubB();
   });
 
-  it('AC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)', () => {
+  it('AC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)', async () => {
     const unsubA = subscribeToCollection('test-stale', () => {}, [where('x', '==', 1)]);
     expect(listenerCount()).toBe(1);
     clearSubscriptionCache();
+    // REV1-5 (K2): 0 synchronously; exactly 1 after the scheduled run.
+    expect(mockCtl.order.filter((m) => m === 'unsub').length).toBe(0);
+    await flush();
     const unsubsAfterClear = mockCtl.order.filter((m) => m === 'unsub').length;
     expect(unsubsAfterClear).toBe(1);
     unsubA();
@@ -121,16 +129,28 @@ describe('REV1-4 T4.2 — clearSubscriptionCache', () => {
   it('signOut() tears the cache down strictly BEFORE the auth call', async () => {
     subscribeToCollection('test-order', () => {}, [where('x', '==', 1)]);
     subscribeToDocument('test-order', 'doc1', () => {});
-    await signOut();
+    const p = signOut();
+    // REV1-5 (K2): the clear CALL still precedes firebaseSignOut (auth.ts
+    // order, proven by the static wiring test below), but the SDK
+    // unsubscribes are scheduled, not synchronous. This mock pushes 'auth'
+    // synchronously at CALL time — it models the call, not the macrotask
+    // auth-state notification — so 'auth' leads here; the real notification
+    // ordering (every unsub before auth-lost) is proven in rev15K2 T2 with
+    // macrotask delivery.
+    expect(mockCtl.order).toEqual(['auth']);
+    await p;
+    await flush();
     expect(firebaseSignOutMock).toHaveBeenCalledTimes(1);
-    expect(mockCtl.order).toEqual(['unsub', 'unsub', 'auth']);
+    expect(mockCtl.order).toEqual(['auth', 'unsub', 'unsub']);
     expect(listenerCount()).toBe(0);
   });
 
-  it('double-clear is a safe no-op', () => {
+  it('double-clear is a safe no-op', async () => {
     const unsubA = subscribeToCollection('test-noop', () => {}, [where('x', '==', 1)]);
     clearSubscriptionCache();
     clearSubscriptionCache();
+    await flush(); // REV1-5 (K2): scheduled teardown completes here.
+    expect(mockCtl.order.filter((m) => m === 'unsub').length).toBe(1);
     expect(listenerCount()).toBe(0);
     unsubA();
   });

@@ -41,59 +41,6 @@ const queriesMatch = (a: Query, b: Query): boolean => {
     }
 };
 
-/**
- * REQ-REV1-4b: tear the whole subscription cache down synchronously.
- * Every stored unsubscribe fires EXACTLY ONCE, each guarded so one
- * throwing listener cannot block the rest; every entry is then marked
- * dead (`listening = false` + `callbacks.clear()`) so a still-mounted
- * component's stale closure can never re-fire an SDK unsubscribe; then
- * all three maps are emptied. Synchronous (not microtask) teardown is
- * load-bearing for the logout ordering guarantee.
- */
-export const clearSubscriptionCache = (): void => {
-    for (const entries of collectionEntries.values()) {
-        for (const entry of entries) {
-            // Only live entries: an already-released entry fired its SDK
-            // unsubscribe through the normal release path — firing again
-            // would double-teardown.
-            if (entry.listening) {
-                try {
-                    entry.unsubscribe();
-                } catch {
-                    // Logout path: one bad listener must not block the rest.
-                }
-            }
-            entry.listening = false;
-            entry.callbacks.clear();
-        }
-    }
-    for (const [key, entry] of cache) {
-        // Same rule for documents: only keys still ref-counted are live
-        // (a released document drops its key from activeSubscriptions
-        // while its entry object lingers for F6 immediate-data behavior).
-        if (activeSubscriptions.has(key)) {
-            try {
-                entry.unsubscribe();
-            } catch {
-                // Same guard for document entries.
-            }
-        }
-    }
-    collectionEntries.clear();
-    cache.clear();
-    activeSubscriptions.clear();
-};
-
-/**
- * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
- * True on logout (uid → null), account switch and other-tab /
- * session-expiry transitions (uidA → uidB); silent on null → null.
- */
-export const didAuthIdentityChange = (
-    prevUid: string | null,
-    nextUid: string | null,
-): boolean => prevUid !== nextUid;
-
 type Unsubscribe = () => void;
 
 /**
@@ -112,6 +59,56 @@ const safeUnsubscribe = (unsub: () => void) => {
         }
     });
 };
+
+/**
+ * REQ-REV1-4b: tear the whole subscription cache down.
+ * REQ-REV1-5a (K2): every stored unsubscribe is SCHEDULED exactly once via
+ * `safeUnsubscribe` (microtask — the SDK 10.14.1 INTERNAL ASSERTION
+ * workaround) instead of firing synchronously; each live entry is still
+ * guarded (`entry.listening` / ref-counted key) so a second clear schedules
+ * nothing. Everything else stays synchronous and unchanged: entries are
+ * marked dead (`listening = false` + `callbacks.clear()`) on the spot so a
+ * still-mounted component's stale closure can never re-fire an SDK
+ * unsubscribe, then all three maps are emptied. Ordering invariant
+ * (AC-5a.4): microtask FIFO runs every scheduled unsubscribe BEFORE any
+ * auth-state-change notification that the auth SDK can deliver after
+ * `firebaseSignOut` (a macrotask).
+ */
+export const clearSubscriptionCache = (): void => {
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // Only live entries: an already-released entry fired its SDK
+            // unsubscribe through the normal release path — scheduling
+            // again would double-teardown.
+            if (entry.listening) {
+                safeUnsubscribe(entry.unsubscribe);
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // Same rule for documents: only keys still ref-counted are live
+        // (a released document drops its key from activeSubscriptions
+        // while its entry object lingers for F6 immediate-data behavior).
+        if (activeSubscriptions.has(key)) {
+            safeUnsubscribe(entry.unsubscribe);
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+export const didAuthIdentityChange = (
+    prevUid: string | null,
+    nextUid: string | null,
+ ): boolean => prevUid !== nextUid;
 
 /**
  * Subscribes to a Firestore collection with caching and automatic listener management.
