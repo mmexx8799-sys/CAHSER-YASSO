@@ -90,6 +90,8 @@
 
 ## مفتوحة (Open)
 
+K2 — تفكيك logout عبر safeUnsubscribe المؤجل (**fix applied 2026-10-12 — NOT closed/NOT verified — يتطلب اختبار جهاز حقيقي قبل أي نشر**): `clearSubscriptionCache()` صار يجدول كل unsubscribe عبر `safeUnsubscribe` (microtask — workaround خطأ SDK 10.14.1 `INTERNAL ASSERTION FAILED`) بدل الاستدعاء الخام المتزامن (commits fcc5cd9 + a7bdcad — REQ-REV1-5). المثبت: إثبات mock (T1/T2/T6 + mutation) + تشغيل T7 حي على المحاكي (8 مجموعات ×300 مستند، 8 مستمعين حقيقيين، clear عند 0/1/5/20/50ms) لم يعِد إنتاج الخطأ لا على القديم ولا الجديد — نافذة السباق ضيقة + المحاكي بـmemory-cache fallback في Node، فالـpass ليس proof of absence (مصرّح به في REPORT). غير المثبت: خروج حقيقي أثناء تدفق قوائم كبير على جهاز/متصفح حقيقي ببيانات حقيقية ومراقبة الـconsole لـ`INTERNAL ASSERTION FAILED` — مطلوب قبل أي نشر. K3 (epoch guard للمستندات) مغلق مع نفس الدفعة (تقوية دفاعية — لا أحد معرّض اليوم). Ref: specs/003-rev15-k2-teardown/REPORT.md.
+
 Console-TypeError-startTime (لقطة Smoke حي P0-4 — 2026-09-13): Uncaught TypeError: Cannot read properties of undefined (reading 'startTime') في reportAllChanges — غير مرتبط بـ BUG-P0-4 — Status: مفتوح (لم يُشخَّص بعد، يُحتمل DevTools/Extension لا كود التطبيق)
 
 UX-raw-auth-error (مراجعة BUG-P0-6 — 2026-09-14): أخطاء Firebase خارج الثلاثة المترجمة (مثل network-request-failed) تُعرض خامًا بالإنجليزية في SettingsPage — ليست ثغرة (لا تسريب)، فقط تجربة أقل احترافًا في حالات نادرة — Status: مفتوح (لا إصلاح بعد)

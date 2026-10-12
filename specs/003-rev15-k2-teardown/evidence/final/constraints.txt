@@ -1,0 +1,30 @@
+"=== 1. Cycle diff on hard-constraint paths (a15d8fe..HEAD) - must be EMPTY ==="  
+"=== 2. Cycle diff-stat (all files) ==="  
+ services/dataCache.ts                              |  96 +++--
+ .../evidence/REV1-5/green-k2-restored.txt          |  20 +
+ .../evidence/REV1-5/green-k2-stage1.txt            |  20 +
+ .../evidence/REV1-5/green-k2.txt                   |  20 +
+ .../evidence/REV1-5/mutation-5a1.txt               | 247 ++++++++++++
+ .../evidence/REV1-5/mutation-5b2.txt               |  39 ++
+ .../evidence/REV1-5/red-k2-emulator.txt            | 198 ++++++++++
+ .../evidence/REV1-5/red-k2.txt                     | 184 +++++++++
+ .../evidence/REV1-5/tsc-5a.txt                     |   0
+ specs/003-rev15-k2-teardown/plan.md                |  89 +++++
+ specs/003-rev15-k2-teardown/spec.md                | 105 ++++++
+ specs/003-rev15-k2-teardown/tasks.md               |  46 +++
+ tests/rev14CacheClear.test.ts                      |  32 +-
+ tests/rev15K2.test.ts                              | 417 +++++++++++++++++++++
+ 14 files changed, 1467 insertions(+), 46 deletions(-)
+"=== 3. Working tree status ==="  
+?? .opencode/skills/clean-code-guard/
+?? .opencode/skills/docs-guard/
+?? .opencode/skills/test-guard/
+?? specs/003-rev15-k2-teardown/evidence/final/
+?? "tatus --short"
+"=== 4. Log ==="  
+a7bdcad fix(cache): document epoch guard against stale release (REQ-REV1-5b)
+fcc5cd9 fix(cache): deferred-unsubscribe logout teardown (REQ-REV1-5a)
+a15d8fe docs: REV1-4 final evidence + REPORT (TF.2)
+15a8777 docs: REV1-4 changelog + backlog + tasks done
+58b32bc fix(guards): finite-amount guards + logout cache clear (REQ-REV1-4)
+cadf9f3 Merge pull request #26 from mmexx8799-sys/feat/audit-rev1

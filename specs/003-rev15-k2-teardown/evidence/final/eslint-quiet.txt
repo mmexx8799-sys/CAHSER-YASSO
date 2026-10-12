@@ -1,0 +1,131 @@
+
+E:\Nour-Elrahman\.scratch\verbatim-arch12.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  22:35  error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch13.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  29:3   error  'console' is not defined                 no-undef
+  30:3   error  'console' is not defined                 no-undef
+  33:35  error  'console' is not defined                 no-undef
+  34:3   error  'console' is not defined                 no-undef
+  36:1   error  'console' is not defined                 no-undef
+  41:1   error  'console' is not defined                 no-undef
+  42:26  error  'console' is not defined                 no-undef
+  44:1   error  'console' is not defined                 no-undef
+  45:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch14.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  29:3   error  'console' is not defined                 no-undef
+  30:3   error  'console' is not defined                 no-undef
+  33:35  error  'console' is not defined                 no-undef
+  34:3   error  'console' is not defined                 no-undef
+  36:1   error  'console' is not defined                 no-undef
+  37:1   error  'console' is not defined                 no-undef
+  42:1   error  'console' is not defined                 no-undef
+  43:26  error  'console' is not defined                 no-undef
+  45:1   error  'console' is not defined                 no-undef
+  46:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch15.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  21:1   error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+  24:3   error  'console' is not defined                 no-undef
+  27:35  error  'console' is not defined                 no-undef
+  28:3   error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  35:1   error  'console' is not defined                 no-undef
+  36:26  error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:24  error  'console' is not defined                 no-undef
+  40:1   error  'console' is not defined                 no-undef
+  43:1   error  'console' is not defined                 no-undef
+  44:29  error  'console' is not defined                 no-undef
+  47:1   error  'console' is not defined                 no-undef
+  48:28  error  'console' is not defined                 no-undef
+  50:1   error  'console' is not defined                 no-undef
+  51:29  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch16.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  15:1   error  'console' is not defined                 no-undef
+  16:1   error  'console' is not defined                 no-undef
+  17:1   error  'console' is not defined                 no-undef
+  20:33  error  'console' is not defined                 no-undef
+  21:8   error  'console' is not defined                 no-undef
+  22:1   error  'console' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  28:26  error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  31:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch17.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  15:1   error  'console' is not defined                 no-undef
+  16:1   error  'console' is not defined                 no-undef
+  17:1   error  'console' is not defined                 no-undef
+  20:33  error  'console' is not defined                 no-undef
+  21:8   error  'console' is not defined                 no-undef
+  22:1   error  'console' is not defined                 no-undef
+  27:1   error  'console' is not defined                 no-undef
+  28:26  error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  31:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch18.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  24:1   error  'console' is not defined                 no-undef
+  26:3   error  'console' is not defined                 no-undef
+  27:3   error  'console' is not defined                 no-undef
+  30:35  error  'console' is not defined                 no-undef
+  31:3   error  'console' is not defined                 no-undef
+  33:1   error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:26  error  'console' is not defined                 no-undef
+  41:1   error  'console' is not defined                 no-undef
+  42:24  error  'console' is not defined                 no-undef
+
+E:\Nour-Elrahman\.scratch\verbatim-arch19.cjs
+   2:22  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   2:22  error  'require' is not defined                 no-undef
+   3:12  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+   3:12  error  'require' is not defined                 no-undef
+  21:1   error  'console' is not defined                 no-undef
+  23:3   error  'console' is not defined                 no-undef
+  24:3   error  'console' is not defined                 no-undef
+  27:35  error  'console' is not defined                 no-undef
+  28:3   error  'console' is not defined                 no-undef
+  30:1   error  'console' is not defined                 no-undef
+  35:1   error  'console' is not defined                 no-undef
+  36:26  error  'console' is not defined                 no-undef
+  38:1   error  'console' is not defined                 no-undef
+  39:24  error  'console' is not defined                 no-undef
+
+✖ 112 problems (112 errors, 0 warnings)
+
