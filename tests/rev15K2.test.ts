@@ -169,6 +169,23 @@ describe('REV1-5 T3 — double clear schedules nothing extra', () => {
   });
 });
 
+describe('REV1-5 T4 — document epoch guard (5b)', () => {
+  it('A -> clear -> B (same key) -> release A keeps B; release B unsubs exactly once', async () => {
+    const releaseA = subscribeToDocument('k2-epoch', 'doc1', () => {});
+    clearSubscriptionCache();
+    await flush();
+    // The clear scheduled A's own unsubscribe exactly once.
+    expect(callsOf(mockCtl.created[0])).toBe(1);
+    const releaseB = subscribeToDocument('k2-epoch', 'doc1', () => {});
+    releaseA(); // pre-clear subscriber: must never touch post-clear state.
+    await flush();
+    expect(callsOf(mockCtl.created[1])).toBe(0);
+    releaseB();
+    await flush();
+    expect(callsOf(mockCtl.created[1])).toBe(1);
+  });
+});
+
 describe('REV1-5 T5 — collection stale-release regression (entry identity)', () => {
   it('clear -> resubscribe (same query) -> release stale A keeps B; release B unsubs once', async () => {
     const releaseA = subscribeToCollection('k2-stale', () => {}, [

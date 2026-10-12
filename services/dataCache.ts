@@ -31,6 +31,12 @@ interface CollectionEntry {
 
 const collectionEntries = new Map<string, CollectionEntry[]>();
 
+// REQ-REV1-5b (K3-variant): logout epoch. Bumped on every
+// `clearSubscriptionCache`; document release closures captured before the
+// bump refuse to touch post-clear counts/entries (they address entries by
+// key, not by instance — unlike the collection path).
+let cacheEpoch = 0;
+
 // Equivalence is true only if the public comparator says so.
 // Indeterminable equivalence (throw) never shares.
 const queriesMatch = (a: Query, b: Query): boolean => {
@@ -73,8 +79,12 @@ const safeUnsubscribe = (unsub: () => void) => {
  * (AC-5a.4): microtask FIFO runs every scheduled unsubscribe BEFORE any
  * auth-state-change notification that the auth SDK can deliver after
  * `firebaseSignOut` (a macrotask).
+ * REQ-REV1-5b: bumps `cacheEpoch` first, orphaning pre-clear document
+ * release closures (they return early instead of touching post-clear
+ * state).
  */
 export const clearSubscriptionCache = (): void => {
+    cacheEpoch += 1;
     for (const entries of collectionEntries.values()) {
         for (const entry of entries) {
             // Only live entries: an already-released entry fired its SDK
@@ -206,7 +216,11 @@ export const subscribeToDocument = <T extends DocumentData>(
     callback: (data: (T & { id: string }) | null) => void
 ): Unsubscribe => {
     const cacheKey = `${path}/${docId}`;
-    
+    // REQ-REV1-5b: pin the logout epoch. A release from before a clear
+    // must never touch post-clear counts or entries (same-key resubscribe
+    // would otherwise be unsubscribed through this stale closure).
+    const myEpoch = cacheEpoch;
+
     const currentSubCount = activeSubscriptions.get(cacheKey) || 0;
     activeSubscriptions.set(cacheKey, currentSubCount + 1);
 
@@ -234,6 +248,11 @@ export const subscribeToDocument = <T extends DocumentData>(
     }
 
     return () => {
+        if (myEpoch !== cacheEpoch) {
+            // Pre-clear subscriber: the clear already scheduled this
+            // generation's unsubscribe and wiped the counts — hands off.
+            return;
+        }
         const count = activeSubscriptions.get(cacheKey);
         if (count && count > 1) {
             activeSubscriptions.set(cacheKey, count - 1);
