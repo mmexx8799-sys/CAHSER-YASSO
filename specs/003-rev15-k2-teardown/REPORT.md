@@ -33,9 +33,13 @@ expected from code analysis), so this is hardening, not a bug fix.
   `entry.listening` / `activeSubscriptions.has(key)` guards, the
   synchronous dead-marking (`listening = false` + `callbacks.clear()`),
   and the three map clears exactly as-is. New ordering invariant
-  (AC-5a.4): scheduled unsubs run before any auth-state-change
-  notification deliverable after `firebaseSignOut` (microtask FIFO precedes
-  the macrotask). `services/auth.ts` NOT modified (already clear-first).
+  (AC-5a.4): every scheduled unsubscribe is queued before
+  `firebaseSignOut` is called (microtask FIFO), so any notification
+  queued at-or-after that call follows them. `services/auth.ts` NOT
+  modified (already clear-first). CORRECTION (follow-up): the earlier
+  "macrotask" phrasing for SDK delivery is withdrawn — SDK
+  notification-delivery timing was NOT verified against SDK code; the
+  same correction was applied to the dataCache.ts comment.
 - **RED→GREEN:** on unfixed code, `tests/rev15K2.test.ts` gives 4 failed /
   3 passed (T1 sync-0 fails, T2 sync-empty fails, T6 ×2 fail; T3/T5 pass
   already as regression locks; T7 `not feasible` without emulator) —
@@ -83,8 +87,9 @@ expected from code analysis), so this is hardening, not a bug fix.
   browser test also did not reproduce). NOT proof of absence — worded that
   way in the test log and here.
 - Against the NEW implementation (full `test:rules` suite): same live run,
-  no error signal. Without an emulator (plain `vitest run`): honest `not
-  feasible` (TCP probe, no Firebase call) and pass — nothing faked.
+  no error signal. Without an emulator (plain `vitest run`): T7 reports
+  SKIPPED via `ctx.skip()` with the reason on stdout (follow-up change —
+  the old silent `not feasible` pass is gone) — nothing faked.
 - Evidence: `evidence/REV1-5/red-k2-emulator.txt` (old impl, genuine live
   run), `evidence/final/test-rules.txt` line 614 (new impl, live run).
 
@@ -94,10 +99,16 @@ expected from code analysis), so this is hardening, not a bug fix.
 invariant: `await flush()` before unsub counts (tests 1, resubscribe,
 AC-4b.6, double-clear), and the signOut test now asserts the clear CALL
 precedes `firebaseSignOut` with deferred completion (`['auth']`
-synchronously — the mock's sync push models the CALL, not the macrotask
-notification — then `['auth','unsub','unsub']` after flush; the true
-notification ordering is proven by rev15K2 T2). Static wiring tests and
-all other files untouched. **Stop-gate: no other existing test needed to
+synchronously — the mock's sync push models the CALL, not a verified SDK
+notification — then `['auth','unsub','unsub']` after flush). Ordering
+against modeled async deliveries is proven by rev15K2 T2 (macrotask mode)
+and T2b-i (microtask mode); synchronous delivery is shown NOT to preserve
+it (T2b-ii observes `['auth-lost','unsub','unsub']`, pinned and reported,
+not silently weakened). Real-SDK delivery timing was not verified — see
+the T2b section below. Follow-up rename (title only): the signOut test is
+now 'signOut() calls clear before firebaseSignOut; SDK unsubscribes run
+after via microtask (ordering proven in rev15K2 T2)'. Static wiring tests
+and all other files untouched. **Stop-gate: no other existing test needed to
 change** — full suite 63 files / 681 tests green (62/673 at base, +8 new;
 zero regressions, no retry).
 
@@ -121,10 +132,72 @@ both mutations → restore GREEN → `npx tsc --noEmit` clean →
 to baseline (all 112 errors confined to pre-existing `.scratch/*.cjs`;
 touched files 0 errors) → `git diff --stat` + full diff + constraints.
 Raw outputs pasted in `evidence/REV1-5/` and `evidence/final/`.
+Follow-up runs (tests/docs/whitespace/comment only — zero runtime
+behavior change, so no full-suite re-run; the 63/681 green stands on
+semantically identical production code): targeted plain run → 29 passed /
+1 skipped (T7 SKIPPED, reason on stdout —
+`evidence/REV1-5/green-followup.txt`); same two files under
+emulators:exec → 30/30 with T7 live-clean including the new
+swallowed-warn assertion (`evidence/REV1-5/green-followup-emulator.txt`);
+`npx tsc --noEmit` re-run exit 0 (command + exit code in
+`evidence/final/typecheck.txt`).
 
 NOT run: no real cashier device, no production traffic, no real browser
 walkthrough, no logout-during-live-list test on a device (REQUIRED before
 deploy — K2 stays open). Nothing deployed. No recommendation to deploy.
+
+## T2b — delivery-mode boundary (follow-up, observed, not weakened)
+
+The mocked `firebase/auth` signOut gained a switchable `authDelivery`
+mode; each mode models a HYPOTHETICAL delivery — none is a verified SDK
+claim:
+- T2b-i (microtask: `await Promise.resolve()` then push): observed
+  `['unsub','unsub','auth-lost']`. Guaranteed by FIFO for anything queued
+  at-or-after the signOut call, in the mock.
+- T2b-ii (sync: push inside the call before any microtask drains):
+  observed `['auth-lost','unsub','unsub']`. Ordering is NOT guaranteed in
+  this mode; the order is pinned as observed and reported here — the
+  assertion was not silently weakened.
+- `ctx.skip()` note: the installed vitest 2.1.9 types
+  (`@vitest/runner`) and runtime define `skip: () => void` — no reason
+  argument. T7 logs its skip reason to stdout, then calls `ctx.skip()`.
+
+## Stale-closure coverage (follow-up, item 3)
+
+The stale COLLECTION closure after a same-key resubscribe is covered by
+T5 (entry identity: release A is a no-op, release B unsubs exactly
+once) — no duplicate test was added.
+
+## T7 hardening (follow-up)
+
+- (a) Any `console.warn` matching `/Firestore unsubscribe swallowed/` now
+  fails T7 (it is routed to `failures`, not `notes`). Verified live: the
+  follow-up emulator run shows only the benign IndexedDB-fallback warn —
+  no false positive.
+- (b) Without an emulator, T7 reports SKIPPED via `ctx.skip()` with the
+  reason on stdout (plain run: 29 passed / 1 skipped). The old silent
+  `not feasible` pass is gone.
+
+## Follow-up observed: vite `esbuild.drop` blinds manual browser logout tests
+
+- Observed (read verbatim): `vite.config.ts:39-41` sets an unconditional
+  `esbuild: { drop: ['console', 'debugger'] }`.
+- Observed (measured after `npm run build`): neither `Firestore
+  unsubscribe swallowed` (safeUnsubscribe's warn) nor `Error notifying
+  subscriber` (dataCache's error callbacks) appears anywhere in
+  `dist/assets/*.js` — the drop strips app `console.*` from the
+  production bundle.
+- Expected consequence (NOT run as a manual browser test in this cycle):
+  manual logout tests on preview/dev builds cannot display the app's own
+  console output — including the ONLY visible trace of a swallowed SDK
+  assertion error. A manual "logout during heavy list, watch console"
+  check therefore cannot confirm or refute K2; console silence there is
+  not evidence (a crash/hang would still show). Dev-mode stripping is
+  expected from config semantics (the drop sits in the shared `esbuild`
+  key, not under `build`, so it applies to dev transforms too) — stated
+  as expected, not re-verified with a dev-mode probe in this cycle.
+- Unaffected: automated T7/T7a capture (vitest runs unbundled code, which
+  is why the tests can assert on console output at all).
 
 ## Honest deviations from the plan
 
@@ -134,13 +207,31 @@ deploy — K2 stays open). Nothing deployed. No recommendation to deploy.
   with real ones (documented in the test + here; no spec change needed).
 - (b) T7's first probe revision (`__rev15probe__`) was rejected by the
   emulator (reserved name) and the unauthenticated write hung; fixed by
-  TCP pre-probe + authenticated tx2Sale-pattern flow. Both dead ends are
-  preserved in `red-k2-emulator.txt` history? No — overwritten; recorded
-  here instead (one file keeps the genuine live RED run).
+  TCP pre-probe + authenticated tx2Sale-pattern flow. The committed
+  `red-k2-emulator.txt` keeps the genuine live RED run.
 - (c) The 5a.1 mutation additionally fails 3 rev14 ordering assertions
   (they assert the new invariant) — beyond the required T1/T2/T6, and
   consistent with it.
-- (d) Pre-existing untracked clutter (`tatus --short` file,
-  `.opencode/skills/*/`) was already in the tree before this cycle
-  (visible in the first directory read) — left untouched, not committed.
+- (d) Untracked clutter at cycle time (`tatus --short`,
+  `.opencode/skills/*/`) was observed in the tree before any write in
+  this cycle (first read-only directory listing) and recorded as
+  untracked in committed `evidence/final/constraints.txt` §3 — left
+  untouched and uncommitted throughout. CORRECTION at follow-up:
+  `tatus --short` no longer exists in the working tree (verified:
+  `Get-Item -LiteralPath 'tatus --short'` fails with ItemNotFound, and
+  `git status --short` is clean of it), so no CreationTime can be
+  reported and no before/after comparison against the cycle's first
+  commit (`fcc5cd9`, 2026-10-12 13:31:22 +0300) is possible. The earlier
+  "pre-existing" wording is therefore downgraded from filesystem fact to
+  recollected observation. No delete command for it was issued in this
+  cycle (no `del`, no `git clean`, only scoped `git add <paths>`); it was
+  presumably removed outside the cycle, as the follow-up task anticipates
+  ("owner deletes"). The file was never read, executed, staged, or
+  deleted here — per instruction it stays unhandled. `.opencode/skills/*/`
+  remains untouched/unstaged.
+- (e) Line-ending note (follow-up): committed evidence text files
+  (`evidence/final/constraints.txt`, `test-rules.txt`, etc.) are
+  LF-normalized by git on commit, while the gitignored evidence zip
+  (`specs/REV1-5-evidence.zip`) holds the on-disk CRLF bytes; the hash in
+  `specs/REV1-5-evidence.sha256` pins the zip as stored.
 - No other deviation exists in specs/003 beyond what this list states.

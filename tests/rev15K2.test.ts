@@ -6,15 +6,19 @@
 // unchanged — regression lock). T5 passes already (collection entry
 // identity — regression lock under the deferred path). T4 (document epoch)
 // is added with the 5b commit. T7 needs the Firestore emulator; without one
-// it logs `not feasible` and passes without faking anything.
+// it reports SKIPPED via ctx.skip() with the reason on stdout — never a
+// silent pass, nothing faked. T2b pins the boundary of the ordering
+// guarantee across modeled auth-delivery modes (see its comments).
 //
 // Mock pattern follows tests/rev14CacheClear.test.ts: `onSnapshot` mocked
 // at the boundary (records `unsub` events + per-listener handles), with a
 // `useReal` delegation flag so T7 can open REAL listeners on the emulator
 // through the same `subscribeToCollection` code path. `firebase/auth`
-// signOut is mocked so its auth-state-lost notification is delivered via
-// `setTimeout(0)` (macrotask); the real `signOut()` from services/auth is
-// exercised for the ordering proof.
+// signOut is mocked with a switchable `authDelivery` mode (macrotask via
+// setTimeout(0) by default; microtask; sync); each mode models a
+// HYPOTHETICAL auth-state-loss delivery after signOut() — none is a
+// verified claim about the real SDK's timing (see REPORT). The real
+// `signOut()` from services/auth is exercised for the ordering proofs.
 
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
 import { where } from 'firebase/firestore';
@@ -32,6 +36,7 @@ const mockCtl = vi.hoisted(() => ({
   nextId: 0,
   order: [] as string[],
   useReal: false,
+  authDelivery: 'macrotask' as 'macrotask' | 'microtask' | 'sync',
 }));
 
 vi.mock('firebase/firestore', async (importOriginal) => {
@@ -62,10 +67,24 @@ vi.mock('firebase/auth', async (importOriginal) => {
   return {
     ...actual,
     signOut: vi.fn(async () => {
-      // Auth-state-loss notification arrives as a macrotask (auth SDK
-      // dispatches listeners asynchronously). Microtask-scheduled
-      // unsubscribes (K2) must all precede it — that is AC-5a.4.
-      await new Promise((r) => setTimeout(r, 0));
+      // Delivery-mode switch for the ordering proofs (T2/T2b). Each mode
+      // models a HYPOTHETICAL auth-state-loss delivery after signOut() is
+      // invoked — none is a verified claim about the real SDK's timing:
+      // - 'macrotask' (default, T2): notification via setTimeout(0).
+      // - 'microtask' (T2b-i): queued after invocation, so FIFO still puts
+      //   the already-queued unsubs first.
+      // - 'sync' (T2b-ii): runs inside the call before any microtask
+      //   drains — unsub-before-auth is NOT guaranteed (observed below).
+      const mode = mockCtl.authDelivery;
+      if (mode === 'sync') {
+        mockCtl.order.push('auth-lost');
+        return;
+      }
+      if (mode === 'microtask') {
+        await Promise.resolve();
+      } else {
+        await new Promise((r) => setTimeout(r, 0));
+      }
       mockCtl.order.push('auth-lost');
     }),
   };
@@ -111,6 +130,7 @@ beforeEach(async () => {
   mockCtl.nextId = 0;
   mockCtl.order = [];
   mockCtl.useReal = false;
+  mockCtl.authDelivery = 'macrotask';
   vi.clearAllMocks();
 });
 
@@ -151,6 +171,45 @@ describe('REV1-5 T2 — ordering: scheduled unsubs precede auth-state loss', () 
     await flush();
     expect(firebaseSignOutMock).toHaveBeenCalledTimes(1);
     expect(mockCtl.order).toEqual(['unsub', 'unsub', 'auth-lost']);
+    expect(listenerCount()).toBe(0);
+  });
+});
+
+describe('REV1-5 T2b — auth-delivery modes: what is (and is not) guaranteed', () => {
+  it("(i) microtask-delivered 'auth-lost' still follows both unsubs", async () => {
+    // Guarantee under test: clear() queues both unsub microtasks BEFORE
+    // firebaseSignOut is invoked, so any notification the mock queues
+    // at-or-after invocation (microtask here, macrotask in T2) runs after
+    // them by FIFO. Holds for the MOCK's delivery; real-SDK delivery
+    // timing was not verified (see REPORT).
+    mockCtl.authDelivery = 'microtask';
+    subscribeToCollection('k2-t2b-micro', () => {}, [where('x', '==', 1)]);
+    subscribeToDocument('k2-t2b-micro', 'doc1', () => {});
+    const p = signOut();
+    expect(mockCtl.order).toEqual([]);
+    await p;
+    await flush();
+    expect(firebaseSignOutMock).toHaveBeenCalledTimes(1);
+    expect(mockCtl.order).toEqual(['unsub', 'unsub', 'auth-lost']);
+    expect(listenerCount()).toBe(0);
+  });
+
+  it("(ii) synchronously-delivered 'auth-lost' does NOT follow the unsubs — observed order pinned", async () => {
+    // Boundary of the guarantee: a notification delivered SYNCHRONOUSLY
+    // inside the signOut call (before any microtask drains) necessarily
+    // precedes the queued unsubs — nothing about K2 can change that. This
+    // mode models the signOut CALL (like the rev14 mock), not a verified
+    // SDK behavior. The observed order below is the report, not a weakened
+    // assertion: see REPORT.
+    mockCtl.authDelivery = 'sync';
+    subscribeToCollection('k2-t2b-sync', () => {}, [where('x', '==', 1)]);
+    subscribeToDocument('k2-t2b-sync', 'doc1', () => {});
+    const p = signOut();
+    expect(mockCtl.order).toEqual(['auth-lost']);
+    await p;
+    await flush();
+    expect(firebaseSignOutMock).toHaveBeenCalledTimes(1);
+    expect(mockCtl.order).toEqual(['auth-lost', 'unsub', 'unsub']);
     expect(listenerCount()).toBe(0);
   });
 });
@@ -277,7 +336,7 @@ describe('REV1-5 T7 — best-effort real-SDK reproduction (emulator)', () => {
   it(
     'no INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms',
     { timeout: 180000 },
-    async () => {
+    async (ctx) => {
       const failures: string[] = [];
       const notes: string[] = [];
       const onRej = (e: unknown): void => {
@@ -302,17 +361,29 @@ describe('REV1-5 T7 — best-effort real-SDK reproduction (emulator)', () => {
       const warnSpy = vi
         .spyOn(console, 'warn')
         .mockImplementation((...a: unknown[]) => {
-          notes.push('console.warn: ' + a.map((x) => String(x)).join(' ').slice(0, 200));
+          const s = a.map((x) => String(x)).join(' ');
+          // A swallowed SDK unsubscribe error is the K2 failure signal
+          // itself (safeUnsubscribe logs exactly this) — it must fail T7,
+          // not sit in notes.
+          if (/Firestore unsubscribe swallowed/.test(s)) {
+            failures.push('console.warn(swallowed-unsub): ' + s.slice(0, 300));
+          } else {
+            notes.push('console.warn: ' + s.slice(0, 200));
+          }
         });
       const done = (msg: string): void => {
         notes.push(msg);
         console.log('T7: ' + notes.join(' | '));
       };
       try {
-        // Fast path: no emulator on 8080 (plain `vitest run`) => honest
-        // `not feasible`, no fake. No Firebase call is made before this.
+        // No emulator on 8080 (plain `vitest run`) => report SKIPPED with
+        // the reason on stdout — never a silent pass. No Firebase call is
+        // made before this probe. (ctx.skip() takes no reason argument in
+        // the installed vitest 2.1.9 — verified against @vitest/runner
+        // types + runtime — so the reason is logged, then skip() throws.)
         if (!(await tcpReachable('127.0.0.1', 8080, 2000))) {
-          done('not feasible: no emulator on 127.0.0.1:8080 (plain run?)');
+          console.log('T7: ' + notes.join(' | ') + ' | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)');
+          ctx.skip();
           return;
         }
         const { getDB, getAuthInstance } = await import('../services/firebase');
@@ -328,7 +399,8 @@ describe('REV1-5 T7 — best-effort real-SDK reproduction (emulator)', () => {
             },
           });
         } catch (e) {
-          done('not feasible: initializeTestEnvironment failed (' + String((e as Error)?.message ?? e) + ')');
+          console.log('T7: ' + notes.join(' | ') + ' | T7 SKIPPED: initializeTestEnvironment failed (' + String((e as Error)?.message ?? e) + ')');
+          ctx.skip();
           return;
         }
         // Sign in as cashier (tx2Sale pattern) so reads are allowed.

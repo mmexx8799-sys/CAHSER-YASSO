@@ -126,7 +126,7 @@ describe('REV1-4 T4.2 — clearSubscriptionCache', () => {
     expect(listenerCount()).toBe(0);
   });
 
-  it('signOut() tears the cache down strictly BEFORE the auth call', async () => {
+  it('signOut() calls clear before firebaseSignOut; SDK unsubscribes run after via microtask (ordering proven in rev15K2 T2)', async () => {
     subscribeToCollection('test-order', () => {}, [where('x', '==', 1)]);
     subscribeToDocument('test-order', 'doc1', () => {});
     const p = signOut();

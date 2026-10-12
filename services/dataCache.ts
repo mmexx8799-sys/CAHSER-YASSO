@@ -76,9 +76,9 @@ const safeUnsubscribe = (unsub: () => void) => {
  * marked dead (`listening = false` + `callbacks.clear()`) on the spot so a
  * still-mounted component's stale closure can never re-fire an SDK
  * unsubscribe, then all three maps are emptied. Ordering invariant
- * (AC-5a.4): microtask FIFO runs every scheduled unsubscribe BEFORE any
- * auth-state-change notification that the auth SDK can deliver after
- * `firebaseSignOut` (a macrotask).
+ * (AC-5a.4): every unsubscribe is queued before `firebaseSignOut` is
+ * called (microtask FIFO). SDK notification-delivery timing was not
+ * verified against SDK code.
  * REQ-REV1-5b: bumps `cacheEpoch` first, orphaning pre-clear document
  * release closures (they return early instead of touching post-clear
  * state).
@@ -118,7 +118,7 @@ export const clearSubscriptionCache = (): void => {
 export const didAuthIdentityChange = (
     prevUid: string | null,
     nextUid: string | null,
- ): boolean => prevUid !== nextUid;
+): boolean => prevUid !== nextUid;
 
 /**
  * Subscribes to a Firestore collection with caching and automatic listener management.
