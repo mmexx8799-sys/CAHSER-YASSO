@@ -1,0 +1,37 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts tests/rev14CacheClear.test.ts[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c observed orders: [unsub,unsub,r0:auth-null] [unsub,unsub,r1:auth-null] [unsub,unsub,r2:auth-null] [unsub,unsub,r3:auth-null] [unsub,unsub,r4:auth-null]
+T2c auth-null latency after signOut resolved (ms): [0,0,0,0,0]
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+[22m[39mT7: signed in as cashier rIwSbS0pFKVeFfmTh2B4sUW5Zuss | seeded 8x300 docs in 6 batches | console.warn: [2026-10-12T12:48:00.512Z]  @firebase/firestore: Firestore (10.14.1): Error using user provided cache. Falling back to memory cache: FirebaseError: [code=unimplemented]: IndexedDB persistence is only  | delay 0ms: torn down, no error signal | delay 1ms: torn down, no error signal | delay 5ms: torn down, no error signal | delay 20ms: torn down, no error signal | delay 50ms: torn down, no error signal | live run complete
+
+ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 6857[2mms[22m[39m
+   [33m[2m✓[22m[39m REV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms [33m6365[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m   Start at [22m 15:47:53
+[2m   Duration [22m 8.83s[2m (transform 358ms, setup 1.13s, collect 555ms, tests 6.88s, environment 1ms, prepare 343ms)[22m
+
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

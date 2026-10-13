@@ -1,0 +1,55 @@
+"=== 1. Cycle diff on hard-constraint paths (a15d8fe..worktree) - must be EMPTY ==="  
+"=== 2. Cycle diff-stat (all files, a15d8fe..worktree) ==="  
+warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/constraints.txt', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'specs/003-rev15-k2-teardown/evidence/final/typecheck.txt', CRLF will be replaced by LF the next time Git touches it
+ docs/backlog.md                                    |    3 +-
+ docs/changelog.md                                  |    2 +
+ docs/known-issues.md                               |    5 +
+ services/dataCache.ts                              |   94 +-
+ specs/003-rev15-k2-teardown/REPORT.md              |  293 +
+ .../evidence/REV1-5/green-followup-emulator.txt    |   33 +
+ .../evidence/REV1-5/green-followup.txt             |   20 +
+ .../evidence/REV1-5/green-k2-restored.txt          |   20 +
+ .../evidence/REV1-5/green-k2-stage1.txt            |   20 +
+ .../evidence/REV1-5/green-k2.txt                   |   20 +
+ .../evidence/REV1-5/mutation-5a1.txt               |  247 +
+ .../evidence/REV1-5/mutation-5b2.txt               |   39 +
+ .../evidence/REV1-5/red-k2-emulator.txt            |  198 +
+ .../evidence/REV1-5/red-k2.txt                     |  184 +
+ .../evidence/REV1-5/tsc-5a.txt                     |    0
+ .../003-rev15-k2-teardown/evidence/final/build.txt |   51 +
+ .../evidence/final/constraints.txt                 |    2 +
+ .../evidence/final/eslint-full.txt                 |  887 ++
+ .../evidence/final/eslint-quiet.txt                |  131 +
+ .../evidence/final/eslint-scope.txt                |    6 +
+ .../evidence/final/full-diff.txt                   | 8797 ++++++++++++++++++++
+ .../evidence/final/test-rules.txt                  | 3206 +++++++
+ .../evidence/final/typecheck.txt                   |    1 +
+ specs/003-rev15-k2-teardown/plan.md                |   89 +
+ specs/003-rev15-k2-teardown/spec.md                |  105 +
+ specs/003-rev15-k2-teardown/tasks.md               |   63 +
+ specs/REV1-5-evidence.sha256                       |    1 +
+ tests/rev14CacheClear.test.ts                      |   34 +-
+ tests/rev15K2.test.ts                              |  594 ++
+ 29 files changed, 15098 insertions(+), 47 deletions(-)
+"=== 3. Working tree status ==="  
+ M docs/known-issues.md
+ M specs/003-rev15-k2-teardown/REPORT.md
+ M specs/003-rev15-k2-teardown/evidence/final/constraints.txt
+ M tests/rev15K2.test.ts
+?? .opencode/skills/clean-code-guard/
+?? .opencode/skills/docs-guard/
+?? .opencode/skills/test-guard/
+?? specs/003-rev15-k2-teardown/evidence/REV1-5/eslint-smallprompt.txt
+?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt-emulator.txt
+?? specs/003-rev15-k2-teardown/evidence/REV1-5/green-smallprompt.txt
+?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-diag-slow-callback.txt
+?? specs/003-rev15-k2-teardown/evidence/REV1-5/t2c-v2-split-channel.txt
+?? vite.debug.config.ts
+"=== 4. Log ==="  
+3b4c52a test/docs: REV1-5 follow-up review fixes (T7 skip+warn-fail, T2b modes, wording)
+986a89b docs: REV1-5 final evidence + REPORT (K2-7)
+a7bdcad fix(cache): document epoch guard against stale release (REQ-REV1-5b)
+fcc5cd9 fix(cache): deferred-unsubscribe logout teardown (REQ-REV1-5a)
+a15d8fe docs: REV1-4 final evidence + REPORT (TF.2)
+15a8777 docs: REV1-4 changelog + backlog + tasks done

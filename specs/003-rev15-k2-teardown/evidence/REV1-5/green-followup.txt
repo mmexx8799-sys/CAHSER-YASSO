@@ -1,0 +1,20 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
+
+ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m10 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[90m 265[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m1 skipped[39m[90m (30)[39m
+[2m   Start at [22m 15:15:25
+[2m   Duration [22m 4.55s[2m (transform 355ms, setup 5.42s, collect 1.16s, tests 287ms, environment 3ms, prepare 678ms)[22m
+

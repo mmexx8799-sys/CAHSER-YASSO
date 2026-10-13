@@ -1,0 +1,2 @@
+15a8777 docs: REV1-4 changelog + backlog + tasks done
+58b32bc fix(guards): finite-amount guards + logout cache clear (REQ-REV1-4)

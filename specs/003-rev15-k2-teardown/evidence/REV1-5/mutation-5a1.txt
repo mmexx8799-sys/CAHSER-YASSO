@@ -1,0 +1,247 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [31m❯[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[90m 33[2mms[22m[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22minvokes every stored unsubscribe exactly once (collection + document)[90m 17[2mms[22m[31m[39m
+[31m     → expected 2 to be +0 // Object.is equality[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22mAC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)[90m 2[2mms[22m[31m[39m
+[31m     → expected 1 to be +0 // Object.is equality[39m
+[31m   [31m×[31m REV1-4 T4.2 — clearSubscriptionCache[2m > [22msignOut() tears the cache down strictly BEFORE the auth call[90m 4[2mms[22m[31m[39m
+[31m     → expected [ 'unsub', 'unsub', 'auth' ] to deeply equal [ 'auth' ][39m
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+[22m[39mT7: not feasible: no emulator on 127.0.0.1:8080 (plain run?)
+
+ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[90m 224[2mms[22m[39m
+[31m   [31m×[31m REV1-5 T1 — clearSubscriptionCache defers SDK unsubscribes[2m > [22mraw SDK unsubscribe mocks: 0 calls synchronously, exactly once each after flush[90m 28[2mms[22m[31m[39m
+[31m     → expected 2 to be +0 // Object.is equality[39m
+[31m   [31m×[31m REV1-5 T2 — ordering: scheduled unsubs precede auth-state loss[2m > [22mall 'unsub' events precede 'auth-lost' via real signOut()[90m 19[2mms[22m[31m[39m
+[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [][39m
+[31m   [31m×[31m REV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache references safeUnsubscribe[90m 17[2mms[22m[31m[39m
+[31m     → expected 'export const clearSubscriptionCache =…' to match /safeUnsubscribe\s*\(\s*entry\.unsubsc…/[39m
+[31m   [31m×[31m REV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache contains no direct entry.unsubscribe()[90m 16[2mms[22m[31m[39m
+[31m     → expected 'export const clearSubscriptionCache =…' not to match /\.unsubscribe\s*\(\s*\)/[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 7 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22minvokes every stored unsubscribe exactly once (collection + document)
+[31m[1mAssertionError[22m: expected 2 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m94:63[22m[39m
+    [90m 92| [39m    [90m// REV1-5 (K2): teardown is scheduled via safeUnsubscribe, not[39m
+    [90m 93| [39m    [90m// synchronous — nothing has fired yet at this point.[39m
+    [90m 94| [39m    [34mexpect[39m(mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m)[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                                                              [31m^[39m
+    [90m 95| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+    [90m 96| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([[32m'unsub'[39m[33m,[39m [32m'unsub'[39m])[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22mAC-4b.6: stale closure after a clear never re-fires the SDK unsubscribe (total exactly 1)
+[31m[1mAssertionError[22m: expected 1 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m119:63[22m[39m
+    [90m117| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m118| [39m    [90m// REV1-5 (K2): 0 synchronously; exactly 1 after the scheduled run.[39m
+    [90m119| [39m    [34mexpect[39m(mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m)[33m.[39mlength)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                                                              [31m^[39m
+    [90m120| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+    [90m121| [39m    [35mconst[39m unsubsAfterClear [33m=[39m mockCtl[33m.[39morder[33m.[39m[34mfilter[39m((m) [33m=>[39m m [33m===[39m [32m'unsub'[39m…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev14CacheClear.test.ts[2m > [22mREV1-4 T4.2 — clearSubscriptionCache[2m > [22msignOut() tears the cache down strictly BEFORE the auth call
+[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub', 'auth' ] to deeply equal [ 'auth' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[31m+   "unsub",[39m
+[31m+   "unsub",[39m
+[2m    "auth",[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/rev14CacheClear.test.ts:[2m140:27[22m[39m
+    [90m138| [39m    [90m// ordering (every unsub before auth-lost) is proven in rev15K2 T2[39m…
+    [90m139| [39m    [90m// macrotask delivery.[39m
+    [90m140| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([[32m'auth'[39m])[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m141| [39m    [35mawait[39m p[33m;[39m
+    [90m142| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T1 — clearSubscriptionCache defers SDK unsubscribes[2m > [22mraw SDK unsubscribe mocks: 0 calls synchronously, exactly once each after flush
+[31m[1mAssertionError[22m: expected 2 to be +0 // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 0[39m
+[31m+ 2[39m
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m135:26[22m[39m
+    [90m133| [39m    [34mclearSubscriptionCache[39m()[33m;[39m
+    [90m134| [39m    [90m// K2: teardown is scheduled, not synchronous.[39m
+    [90m135| [39m    [34mexpect[39m([34munsubCount[39m())[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m136| [39m    [34mexpect[39m([34mlistenerCount[39m())[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+    [90m137| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2 — ordering: scheduled unsubs precede auth-state loss[2m > [22mall 'unsub' events precede 'auth-lost' via real signOut()
+[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Array [][39m
+[31m+ Array [[39m
+[31m+   "unsub",[39m
+[31m+   "unsub",[39m
+[31m+ ][39m
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m149:27[22m[39m
+    [90m147| [39m    [35mconst[39m p [33m=[39m [34msignOut[39m()[33m;[39m
+    [90m148| [39m    [90m// Deferred, not sync: nothing has run before the first await.[39m
+    [90m149| [39m    [34mexpect[39m(mockCtl[33m.[39morder)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m150| [39m    [35mawait[39m p[33m;[39m
+    [90m151| [39m    [35mawait[39m [34mflush[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache references safeUnsubscribe
+[31m[1mAssertionError[22m: expected 'export const clearSubscriptionCache =…' to match /safeUnsubscribe\s*\(\s*entry\.unsubsc…/[39m
+
+[32m- Expected:[39m 
+/safeUnsubscribe\s*\(\s*entry\.unsubscribe\s*\)/
+
+[31m+ Received:[39m 
+"export const clearSubscriptionCache = (): void => {
+    cacheEpoch += 1;
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // MUTATION-5a1 (temporary): raw sync call restored.
+            if (entry.listening) {
+                try {
+                    entry.unsubscribe();
+                } catch {
+                    // Logout path: one bad listener must not block the rest.
+                }
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // MUTATION-5a1 (temporary): raw sync call restored.
+        if (activeSubscriptions.has(key)) {
+            try {
+                entry.unsubscribe();
+            } catch {
+                // Same guard for document entries.
+            }
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+"
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m223:26[22m[39m
+    [90m221| [39m
+    [90m222| [39m  [34mit[39m([32m'clearSubscriptionCache references safeUnsubscribe'[39m[33m,[39m () [33m=>[39m {
+    [90m223| [39m    [34mexpect[39m([34mclearSlice[39m())[33m.[39m[34mtoMatch[39m([36m/safeUnsubscribe\s*\(\s*entry\.unsubs[39m…
+    [90m   | [39m                         [31m^[39m
+    [90m224| [39m  })[33m;[39m
+    [90m225| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯[22m[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T6 — static wiring proofs (source text, whitespace-tolerant)[2m > [22mclearSubscriptionCache contains no direct entry.unsubscribe()
+[31m[1mAssertionError[22m: expected 'export const clearSubscriptionCache =…' not to match /\.unsubscribe\s*\(\s*\)/[39m
+
+[32m- Expected:[39m 
+/\.unsubscribe\s*\(\s*\)/
+
+[31m+ Received:[39m 
+"export const clearSubscriptionCache = (): void => {
+    cacheEpoch += 1;
+    for (const entries of collectionEntries.values()) {
+        for (const entry of entries) {
+            // MUTATION-5a1 (temporary): raw sync call restored.
+            if (entry.listening) {
+                try {
+                    entry.unsubscribe();
+                } catch {
+                    // Logout path: one bad listener must not block the rest.
+                }
+            }
+            entry.listening = false;
+            entry.callbacks.clear();
+        }
+    }
+    for (const [key, entry] of cache) {
+        // MUTATION-5a1 (temporary): raw sync call restored.
+        if (activeSubscriptions.has(key)) {
+            try {
+                entry.unsubscribe();
+            } catch {
+                // Same guard for document entries.
+            }
+        }
+    }
+    collectionEntries.clear();
+    cache.clear();
+    activeSubscriptions.clear();
+};
+
+/**
+ * REQ-REV1-4b: pure auth-transition predicate for the logout watcher.
+ * True on logout (uid → null), account switch and other-tab /
+ * session-expiry transitions (uidA → uidB); silent on null → null.
+ */
+"
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m231:26[22m[39m
+    [90m229| [39m      [32m''[39m[33m,[39m
+    [90m230| [39m    )[33m;[39m
+    [90m231| [39m    [34mexpect[39m(stripped)[33m.[39mnot[33m.[39m[34mtoMatch[39m([36m/\.unsubscribe\s*\(\s*\)/[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m232| [39m  })[33m;[39m
+    [90m233| [39m})[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m7 failed[39m[22m[2m | [22m[1m[32m21 passed[39m[22m[90m (28)[39m
+[2m   Start at [22m 13:33:12
+[2m   Duration [22m 1.53s[2m (transform 304ms, setup 932ms, collect 434ms, tests 258ms, environment 1ms, prepare 482ms)[22m
+

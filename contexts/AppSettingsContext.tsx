@@ -1,6 +1,7 @@
 
 import React, { useState, createContext, useContext, ReactNode, useEffect, useMemo } from 'react';
 import { subscribeToDocument } from '../services/dataCache';
+import { useAuth } from './AuthContext';
 import type { AppSettings } from '../types';
 
 interface AppSettingsContextType {
@@ -11,10 +12,23 @@ const AppSettingsContext = createContext<AppSettingsContextType>({ appName: 'ن�
 
 export const useAppSettings = () => useContext(AppSettingsContext);
 
+/**
+ * REQ-REV1-4b: subscribe to app settings only for a signed-in identity.
+ * A signed-out (or never-signed-in) shell must hold no listener, so a
+ * logout-time cache clear cannot orphan this provider: the effect below
+ * resubscribes on every uid transition.
+ */
+export const shouldSubscribeAppSettings = (
+    uid: string | null | undefined,
+): boolean => uid !== null && uid !== undefined && uid !== '';
+
 export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [appName, setAppName] = useState('نقطة بيع للملابس');
+    const { currentUser } = useAuth();
+    const uid = currentUser?.uid;
 
     useEffect(() => {
+        if (!shouldSubscribeAppSettings(uid)) return;
         let unsub: (() => void) | null = null;
         try {
             unsub = subscribeToDocument<AppSettings>('appSettings', 'main', (settings) => {
@@ -36,7 +50,7 @@ export const AppSettingsProvider: React.FC<{ children: ReactNode }> = ({ childre
                 }
             }
         };
-    }, []);
+    }, [uid]);
 
     const value = useMemo(() => ({ appName }), [appName]);
 

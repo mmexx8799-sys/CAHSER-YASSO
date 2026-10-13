@@ -1,0 +1,28 @@
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev14CacheClear.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+ [32m✓[39m tests/rev14CacheClear.test.ts [2m([22m[2m20 tests[22m[2m)[22m[90m 25[2mms[22m[39m
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c SKIPPED: emulator (8080/9099) unreachable (plain run?)
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T7 — best-effort real-SDK reproduction (emulator)[2m > [22m[2mno INTERNAL ASSERTION across 8 live listeners x clear delays 0/1/5/20/50ms
+[22m[39mT7:  | T7 SKIPPED: no emulator on 127.0.0.1:8080 (plain run?)
+
+ [32m✓[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[33m2 skipped[39m[2m)[22m[90m 292[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m29 passed[39m[22m[2m | [22m[33m2 skipped[39m[90m (31)[39m
+[2m   Start at [22m 15:40:15
+[2m   Duration [22m 4.80s[2m (transform 354ms, setup 5.58s, collect 1.25s, tests 317ms, environment 1ms, prepare 743ms)[22m
+
+npm notice
+npm notice New major version of npm available! 10.9.2 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

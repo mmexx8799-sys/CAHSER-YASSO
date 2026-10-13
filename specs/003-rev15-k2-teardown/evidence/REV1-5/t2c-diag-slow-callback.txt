@@ -1,0 +1,90 @@
+[36m[1mi  emulators:[22m[39m Starting emulators: auth, firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m
+
+[1m[7m[36m RUN [39m[27m[22m [36mv2.1.9 [39m[90mE:/Nour-Elrahman[39m
+
+[90mstdout[2m | tests/rev15K2.test.ts
+[22m[39mWARNING: You are using the Auth Emulator, which is intended for local testing only.  Do not use with production credentials.
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r0: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r0: after signOut currentUser=null
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r1: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r1: after signOut currentUser=null
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r2: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r2: after signOut currentUser=null
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r3: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r3: after signOut currentUser=null
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r4: after signIn currentUser=Zia6VomT9hxGR3hHu8pTqxaJ2otB
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag r4: after signOut currentUser=null
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c observed orders: [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub] [unsub,unsub]
+
+[90mstdout[2m | tests/rev15K2.test.ts[2m > [22m[2mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22m[2mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[22m[39mT2c-diag seen[] after +2s: [r0:auth-user,r0:auth-null,r1:auth-user,r1:auth-null,r2:auth-user,r2:auth-null,r3:auth-user,r3:auth-null,r4:auth-user,r4:auth-null]
+
+ [31m❯[39m tests/rev15K2.test.ts [2m([22m[2m11 tests[22m[2m | [22m[31m1 failed[39m[2m | [22m[33m10 skipped[39m[2m)[22m[33m 3869[2mms[22m[39m
+[31m   [31m×[31m REV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles[33m 3867[2mms[22m[31m[39m
+[31m     → expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[1m[7m Failed Tests 1 [27m[22m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[31m[1m[7m FAIL [27m[22m[39m tests/rev15K2.test.ts[2m > [22mREV1-5 T2c — real auth-emulator order measurement (recorded, not pinned)[2m > [22mmeasures real-SDK order: auth-null callback vs executed unsubs over 5 logout cycles
+[31m[1mAssertionError[22m: expected [ 'unsub', 'unsub' ] to deeply equal [ 'r0:auth-null', 'unsub', 'unsub' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  Array [[22m
+[32m-   "r0:auth-null",[39m
+[2m    "unsub",[22m
+[2m    "unsub",[22m
+[2m  ][22m
+
+[36m [2m❯[22m tests/rev15K2.test.ts:[2m317:31[22m[39m
+    [90m315| [39m      [34mexpect[39m(orders)[33m.[39m[34mtoHaveLength[39m([33mROUNDS[39m)[33m;[39m
+    [90m316| [39m      orders[33m.[39m[34mforEach[39m((o[33m,[39m i) [33m=>[39m {
+    [90m317| [39m        [34mexpect[39m([[33m...[39mo][33m.[39m[34msort[39m())[33m.[39m[34mtoEqual[39m([[32m`r[39m[36m${[39mi[36m}[39m[32m:auth-null`[39m[33m,[39m [32m'unsub'[39m[33m,[39m [32m'un[39m…
+    [90m   | [39m                              [31m^[39m
+    [90m318| [39m      })[33m;[39m
+    [90m319| [39m    }[33m,[39m
+[90m [2m❯[22m tests/rev15K2.test.ts:[2m316:14[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[33m10 skipped[39m[90m (11)[39m
+[2m   Start at [22m 15:43:19
+[2m   Duration [22m 5.74s[2m (transform 208ms, setup 489ms, collect 253ms, tests 3.87s, environment 0ms, prepare 177ms)[22m
+
+[33m[1m! [22m[39m Script exited unsuccessfully (code 1)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  auth:[22m[39m Stopping Authentication Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+
+[1m[31mError:[39m[22m Script "[1mnpx vitest run tests/rev15K2.test.ts -t T2c[22m" exited with code 1
