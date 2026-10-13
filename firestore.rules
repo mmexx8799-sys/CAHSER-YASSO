@@ -84,6 +84,13 @@ service cloud.firestore {
             && request.resource.data.permsUpdatedAt == request.time);
     }
 
+    // P0-HARDENING: single money guard — binds EVERY role incl. owner.
+    // NaN fails comparisons; Infinity fails the cap.
+    // No scientific notation: literal cap 1000000000000.
+    function moneyOk(v, allowZero) {
+      return v is number && (allowZero ? v >= 0 : v > 0) && v < 1000000000000;
+    }
+
     match /users/{userId} {
       // R5 (BR-09/D-3): users exclusive to owner. Read: owner + self only.
       allow read: if isOwner() || (isAuthenticated() && request.auth.uid == userId);
@@ -169,7 +176,9 @@ service cloud.firestore {
     match /invoices/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('sell', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true)
+        && (!('subtotal' in request.resource.data) || moneyOk(request.resource.data.subtotal, true))
+        && (!('discount' in request.resource.data) || moneyOk(request.resource.data.discount, true));
       allow update: if isAdmin()
         && request.resource.data.total >= 0
         // TECH-P0-1b: كتابة staff الوحيدة المسموحة على الفواتير — حقل عدّاد
@@ -184,7 +193,7 @@ service cloud.firestore {
     match /returns/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('return', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true);
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
@@ -193,7 +202,7 @@ service cloud.firestore {
     match /customerPayments/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('customer.payment', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.amount > 0;
+        && moneyOk(request.resource.data.amount, false);
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
@@ -214,7 +223,7 @@ service cloud.firestore {
     match /supplierPayments/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.amount > 0;
+        && moneyOk(request.resource.data.amount, false);
       allow update: if isAdmin()
         && request.resource.data.amount > 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
@@ -223,7 +232,8 @@ service cloud.firestore {
     match /purchaseInvoices/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true)
+        && (!('subtotal' in request.resource.data) || moneyOk(request.resource.data.subtotal, true));
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
@@ -232,7 +242,7 @@ service cloud.firestore {
     match /supplierReturns/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true);
       allow update: if isAdmin()
         && request.resource.data.total >= 0;
       allow delete: if isOwner(); // R5: ledger delete owner-only
