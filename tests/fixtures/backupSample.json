@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "appVersion": "1.0.0",
+  "createdAt": "2026-10-12T00:00:00.000Z",
+  "products": [
+    { "id": "p-healthy", "name": "سليم", "quantity": 10, "price": 100, "retailCashPrice": 100, "retailCreditPrice": 100, "wholesaleCashPrice": 100, "wholesaleCreditPrice": 100 },
+    { "id": "p-allzero", "name": "أصفار", "quantity": 5, "price": 0, "retailCashPrice": 0, "retailCreditPrice": 0, "wholesaleCashPrice": 0, "wholesaleCreditPrice": 0 },
+    { "id": "p-partial", "name": "جزئي", "quantity": 7, "price": 100, "wholesaleCashPrice": 0 }
+  ],
+  "invoices": [
+    { "id": "inv-full", "items": [], "subtotal": 100, "discount": 0, "total": 100, "paymentMethod": "نقدا", "dailyArchiveId": "2026-10-12", "invoiceNumber": "INV-000001", "createdAt": 1728691200000 },
+    { "id": "inv-v1", "total": 50, "subtotal": 50, "items": [], "createdAt": 1728691200000 },
+    { "id": "inv-evil", "total": 20, "subtotal": 20, "items": [], "dailyArchiveId": "2026-10-12", "hacked": 1, "createdAt": 1728691200000 }
+  ],
+  "returns": [
+    { "id": "ret-ok", "items": [], "total": 30, "dailyArchiveId": "2026-10-12", "returnNumber": "RET-000001", "createdAt": 1728691200000 }
+  ],
+  "customerPayments": [
+    { "id": "pay-ok", "customerId": "c1", "amount": 40, "date": 1728691200000 }
+  ],
+  "supplierPayments": [],
+  "purchaseInvoices": [
+    { "id": "pur-ok", "invoiceNumber": "PUR-000001", "items": [], "subtotal": 200, "total": 200, "supplierId": "s1", "createdAt": 1728691200000 }
+  ],
+  "supplierReturns": [],
+  "counters": [],
+  "customers": [],
+  "suppliers": [],
+  "categories": [],
+  "dailyArchives": []
+}
