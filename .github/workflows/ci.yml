@@ -59,14 +59,43 @@ jobs:
       # بيانات اعتماد أو اتصال بالإنتاج.
       - run: npm run test:rules
 
+  changes:
+    name: detect rules changes
+    # يعمل فقط على دفع master — على الـ PR يظهر Skipped بلا أي عمل.
+    # بلا environment هنا عمدًا: لا موافقة تُطلب لهذه الوظيفة أبدًا.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    outputs:
+      rules: ${{ steps.detect.outputs.rules }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # سجل كامل حتى يكون commit الدفع السابق (before) موجودًا محليًا للمقارنة.
+          fetch-depth: 0
+      - id: detect
+        name: git diff — did firestore.rules or firestore.indexes.json change?
+        run: |
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          ZERO="0000000000000000000000000000000000000000"
+          if [ "$BEFORE" = "$ZERO" ]; then
+            echo "rules=true" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only "$BEFORE" "$AFTER" -- firestore.rules firestore.indexes.json | grep -q .; then
+            echo "rules=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rules=false" >> "$GITHUB_OUTPUT"
+          fi
+
   deploy-rules:
     name: deploy firestore.rules (production, approval-gated)
-    needs: [checks, tests]
-    # يعمل فقط على دفع master. ملاحظة: سياق secrets ممنوع في
+    needs: [checks, tests, changes]
+    # يعمل فقط على دفع master AND عند تغير ملفات القواعد فقط — وإلا يظهر
+    # Skipped بلا طلب موافقة (بوابة الـ environment لا تُقيَّم أصلًا لوظيفة لم تبدأ).
+    # ملاحظة: سياق secrets ممنوع في
     # شرط الـ job نفسه (يفسد ملف الـ workflow كله — راجع
     # fix: move secrets check from job-level if to step-level)،
     # لذلك توفر السر يُفحص في أول step بالداخل.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && needs.changes.outputs.rules == 'true'
     runs-on: ubuntu-latest
     environment: production
     steps:
