@@ -91,6 +91,13 @@ service cloud.firestore {
       return v is number && (allowZero ? v >= 0 : v > 0) && v < 1000000000000;
     }
 
+    // REQ-RULES-2 V3: balance range guard — accepts negative (REQ-NEG-1 D1:
+    // overpay/returns drive balances below zero), rejects non-number and
+    // out-of-range values. Literal cap, no scientific notation.
+    function balanceOk(v) {
+      return v is number && v > -1000000000000 && v < 1000000000000;
+    }
+
     match /users/{userId} {
       // R5 (BR-09/D-3): users exclusive to owner. Read: owner + self only.
       allow read: if isOwner() || (isAuthenticated() && request.auth.uid == userId);
@@ -127,6 +134,9 @@ service cloud.firestore {
     match /products/{docId} {
       allow read: if isActiveUser();
       allow create: if hasCap('product.create', ['owner', 'admin', 'supervisor', 'cashier'])
+        // REQ-RULES-2 V1: explicit type guard (bare >= errors fail-closed,
+        // but intent must be explicit and future-proof).
+        && request.resource.data.quantity is number
         && request.resource.data.quantity >= 0
         // PPRICE-CREATE (backlog:31 — متمم BUG-P0-3 على create): من لا يملك
         // product.price (owner/admin) لا يحدد سعرًا تعسفيًا عند الإنشاء —
@@ -144,8 +154,17 @@ service cloud.firestore {
             && request.resource.data.get('wholesaleCashPrice', 0) == 0
             && request.resource.data.get('wholesaleCreditPrice', 0) == 0
           )
-        );
+        )
+        // REQ-RULES-2 V2: every present price field must satisfy moneyOk
+        // (is number && >= 0 && < 1e12). Zero stays allowed (PPRICE gate).
+        && (!('price' in request.resource.data) || moneyOk(request.resource.data.price, true))
+        && (!('retailCashPrice' in request.resource.data) || moneyOk(request.resource.data.retailCashPrice, true))
+        && (!('retailCreditPrice' in request.resource.data) || moneyOk(request.resource.data.retailCreditPrice, true))
+        && (!('wholesaleCashPrice' in request.resource.data) || moneyOk(request.resource.data.wholesaleCashPrice, true))
+        && (!('wholesaleCreditPrice' in request.resource.data) || moneyOk(request.resource.data.wholesaleCreditPrice, true));
       allow update: if isStaff()
+        // REQ-RULES-2 V1: explicit type guard (see create).
+        && request.resource.data.quantity is number
         && request.resource.data.quantity >= 0
         && (
           hasCap('product.price', ['owner', 'admin'])
@@ -155,7 +174,13 @@ service cloud.firestore {
             && !('retailCreditPrice' in request.resource.data.diff(resource.data).affectedKeys())
             && !('wholesaleCashPrice' in request.resource.data.diff(resource.data).affectedKeys())
             && !('wholesaleCreditPrice' in request.resource.data.diff(resource.data).affectedKeys()))
-        );
+        )
+        // REQ-RULES-2 V2: post-image price range (binds holders too).
+        && (!('price' in request.resource.data) || moneyOk(request.resource.data.price, true))
+        && (!('retailCashPrice' in request.resource.data) || moneyOk(request.resource.data.retailCashPrice, true))
+        && (!('retailCreditPrice' in request.resource.data) || moneyOk(request.resource.data.retailCreditPrice, true))
+        && (!('wholesaleCashPrice' in request.resource.data) || moneyOk(request.resource.data.wholesaleCashPrice, true))
+        && (!('wholesaleCreditPrice' in request.resource.data) || moneyOk(request.resource.data.wholesaleCreditPrice, true));
       allow delete: if hasCap('product.delete', ['owner', 'admin']);
     }
 
@@ -166,10 +191,13 @@ service cloud.firestore {
       allow read: if isActiveUser();
       allow create: if hasCap('customer.write', ['owner', 'admin', 'supervisor', 'cashier']);
       allow update: if (isStaff()
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance'])
+                      && balanceOk(request.resource.data.balance))
                   || (hasCap('customer.write', ['owner', 'admin', 'supervisor', 'cashier'])
                       && (isAdmin()
-                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys())));
+                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()))
+                      && (!('balance' in request.resource.data.diff(resource.data).affectedKeys())
+                          || balanceOk(request.resource.data.balance)));
       allow delete: if isAdmin();
     }
 
@@ -180,7 +208,7 @@ service cloud.firestore {
         && (!('subtotal' in request.resource.data) || moneyOk(request.resource.data.subtotal, true))
         && (!('discount' in request.resource.data) || moneyOk(request.resource.data.discount, true));
       allow update: if isAdmin()
-        && request.resource.data.total >= 0
+        && moneyOk(request.resource.data.total, true)
         // TECH-P0-1b: كتابة staff الوحيدة المسموحة على الفواتير — حقل عدّاد
         // المرتجعات الذي تكتبه processReturn داخل نفس transaction الفحص
         // (التضارب على المستند يُسلسل الفحص). hasOnly يغطي حتى تحديث no-op.
@@ -195,7 +223,7 @@ service cloud.firestore {
       allow create: if hasCap('return', ['owner', 'admin', 'supervisor', 'cashier'])
         && moneyOk(request.resource.data.total, true);
       allow update: if isAdmin()
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
@@ -204,7 +232,7 @@ service cloud.firestore {
       allow create: if hasCap('customer.payment', ['owner', 'admin', 'supervisor', 'cashier'])
         && moneyOk(request.resource.data.amount, false);
       allow update: if isAdmin()
-        && request.resource.data.amount > 0;
+        && moneyOk(request.resource.data.amount, false);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
@@ -213,10 +241,13 @@ service cloud.firestore {
       allow read: if isActiveUser();
       allow create: if hasCap('supplier.write', ['owner', 'admin', 'supervisor', 'cashier']);
       allow update: if (isStaff()
-                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance']))
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['balance'])
+                      && balanceOk(request.resource.data.balance))
                   || (hasCap('supplier.write', ['owner', 'admin', 'supervisor', 'cashier'])
                       && (isAdmin()
-                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys())));
+                          || !('openingBalance' in request.resource.data.diff(resource.data).affectedKeys()))
+                      && (!('balance' in request.resource.data.diff(resource.data).affectedKeys())
+                          || balanceOk(request.resource.data.balance)));
       allow delete: if isAdmin();
     }
 
@@ -225,7 +256,7 @@ service cloud.firestore {
       allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
         && moneyOk(request.resource.data.amount, false);
       allow update: if isAdmin()
-        && request.resource.data.amount > 0;
+        && moneyOk(request.resource.data.amount, false);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
@@ -235,7 +266,7 @@ service cloud.firestore {
         && moneyOk(request.resource.data.total, true)
         && (!('subtotal' in request.resource.data) || moneyOk(request.resource.data.subtotal, true));
       allow update: if isAdmin()
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
@@ -244,7 +275,7 @@ service cloud.firestore {
       allow create: if hasCap('supplier.ops', ['owner', 'admin', 'supervisor', 'cashier'])
         && moneyOk(request.resource.data.total, true);
       allow update: if isAdmin()
-        && request.resource.data.total >= 0;
+        && moneyOk(request.resource.data.total, true);
       allow delete: if isOwner(); // R5: ledger delete owner-only
     }
 
@@ -287,7 +318,9 @@ service cloud.firestore {
         && (!('url' in request.resource.data) || (request.resource.data.url is string
           && request.resource.data.url.size() <= 500))
         && (!('uid' in request.resource.data) || (request.resource.data.uid is string
-          && request.resource.data.uid.size() <= 128));
+          && request.resource.data.uid.size() <= 128))
+        // REQ-RULES-2 V5: uid, when present, must be the caller's own (no log spoofing).
+        && (!('uid' in request.resource.data) || request.resource.data.uid == request.auth.uid);
       allow read, delete: if isAdmin();
     }
 
