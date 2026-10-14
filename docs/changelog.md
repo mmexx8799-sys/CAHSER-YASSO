@@ -121,3 +121,4 @@ E2E-PILOT-1 ✅ — PR #23 مدموج على b97e767 (اختبارات emulator 
 ### Security
 - تقييد إعادة فتح يومية مقفولة على الأدمن فقط (P0-9، firestore.rules)
 ### Verification — 2026-09-17: testing production approval gate after bypass removal
+2026-10-14: REQ-RULES-2 منشور (PR #28، commit 3ed5c89)، النشر الآلي نجح (Run #67)، smoke test ناجح. متبقي: REQ-RULES-3، REQ-SEC-1.
