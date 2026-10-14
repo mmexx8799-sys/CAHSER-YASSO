@@ -182,6 +182,7 @@ Decision Rationale:
 Follow-up: يبقى موثّقًا للمستقبل — إعادة التقييم عند الترقية لـ Blaze أو عند إضافة أدوار/مستخدمين خارجيين.
 Ref: docs/REQ-P0-2-baseline.md — تقرير الخطوات 0-2
 Update REQ-SEC1-8 — إغلاق نهائي (2026-09-16): Phase 0 حية ومثبتة (تجميد openingBalance + حواجز amount/total — Ref: tests/balanceOpeningFreeze.test.ts 9/9 + live smoke: DENIED على الإنتاج). Phase 1/2 (Cloud Functions/Blaze): **Declined — Owner Decision (Ahmed, 2026-09-16)** — لا Visa/فوترة على مشروع Spark مجاني، وكل المستخدمين (بمن فيهم الأدمن) بلا خلفية تقنية تمكّنهم من استغلال Dev Console/SDK عمليًا. **كتابة balance المنفردة عبر SDK تبقى مفتوحة لغير الأدمن إلى أجل غير مسمى — هذا وضع مقصود وموثق، وليس إغفالًا يحتاج إصلاحًا لاحقًا.**
+Update REQ-RULES-2 (2026-10-14، بقرار مالك جديد — ينسخ جزئياً ما فوق): مسارات update في customers/suppliers/products/الليدجر صارت مقيدة نوعاً ومدى (balanceOk/moneyOk/quantity is number/uid-binding — Ref: خمسة ملفات tests/*Rules بعدد 41 اختباراً، test:rules 827/827 على chore/rules-harden)؛ بقي مفتوحاً: create/openingBalance (REQ-RULES-3)؛ Functions/Blaze ما زالت Declined — النشر معلق على survey الإنتاج واختبار الاستعادة.
 
 ## مُغلَقة (Closed)
 
