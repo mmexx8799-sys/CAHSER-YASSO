@@ -83,8 +83,9 @@ try {
   {
     const b = bucket();
     const scanned = await scanAll(db, 'products', (id, d) => {
-      if (!('quantity' in d)) { b.missing++; return; }
-      if (!quantityOk(d.quantity)) { flag(b, id, 'quantity', d.quantity); return; }
+      // Missing quantity is itself a violation (update fails closed without
+      // it); no early return — the five prices are still checked below.
+      if (!('quantity' in d) || !quantityOk(d.quantity)) flag(b, id, 'quantity', d.quantity);
       for (const f of PRICE_FIELDS) {
         if ((f in d) && !moneyOkAllowZero(d[f])) flag(b, id, f, d[f]);
       }
@@ -108,8 +109,8 @@ try {
   for (const col of ['invoices', 'returns', 'purchaseInvoices', 'supplierReturns']) {
     const b = bucket();
     const scanned = await scanAll(db, col, (id, d) => {
-      if (!('total' in d)) { b.missing++; return; }
-      if (!moneyOkAllowZero(d.total)) flag(b, id, 'total', d.total);
+      // Missing total is itself a violation (update fails closed without it).
+      if (!('total' in d) || !moneyOkAllowZero(d.total)) flag(b, id, 'total', d.total);
     });
     rep[col] = { scanned, ...b };
     totalViolations += b.violations;
@@ -119,8 +120,8 @@ try {
   for (const col of ['customerPayments', 'supplierPayments']) {
     const b = bucket();
     const scanned = await scanAll(db, col, (id, d) => {
-      if (!('amount' in d)) { b.missing++; return; }
-      if (!moneyOkPositive(d.amount)) flag(b, id, 'amount', d.amount);
+      // Missing amount is itself a violation (update fails closed without it).
+      if (!('amount' in d) || !moneyOkPositive(d.amount)) flag(b, id, 'amount', d.amount);
     });
     rep[col] = { scanned, ...b };
     totalViolations += b.violations;
