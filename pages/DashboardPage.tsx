@@ -11,6 +11,7 @@ import {
   compareRanges,
   topSellingDays,
   topSellingProducts,
+  resolveEmptyState,
   type RangePreset,
 } from '../utils/dashboardAggregation';
 import { orderBy, limit, where, query, collection, getDocs, Timestamp } from 'firebase/firestore';
@@ -96,6 +97,11 @@ export default function DashboardPage() {
   const topDays = useMemo(() => topSellingDays(currentArchives, 5), [currentArchives]);
 
   const hasClosedArchive = useMemo(() => archives.some((a) => a.status === 'closed'), [archives]);
+  const hasOpenArchive = useMemo(() => archives.some((a) => a.status === 'open'), [archives]);
+  const emptyState = useMemo(
+    () => resolveEmptyState(hasClosedArchive, hasOpenArchive),
+    [hasClosedArchive, hasOpenArchive],
+  );
 
   // Lazy load top products — only when user requests
   const handleLoadTopProducts = async () => {
@@ -170,8 +176,8 @@ export default function DashboardPage() {
       <div className="p-4 lg:p-6">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-gray-900 dark:text-gray-100">لوحة التحكّم</h1>
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow text-center">
-          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">لا توجد بيانات كافية بعد</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">لم يتم إغلاق أي يومية حتى الآن</p>
+          <p className="text-lg font-semibold text-gray-700 dark:text-gray-300">{emptyState!.title}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{emptyState!.hint}</p>
         </div>
         {/* Stock alerts still shown below even when no closed archive */}
         {alerts.length === 0 ? (

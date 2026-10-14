@@ -176,3 +176,25 @@ export function topSellingProducts(invoices: Invoice[], returns: Return[], limit
   });
   return arr.slice(0, limit);
 }
+
+export interface DashboardEmptyState {
+  title: string;
+  hint: string;
+}
+
+// REQ-UX-DASH-1 (أ): pure empty-state message selector. Closed → null (full
+// page renders). Open-only → open-day hint. Nothing → legacy message.
+// No aggregation logic touched.
+export function resolveEmptyState(hasClosedArchive: boolean, hasOpenArchive: boolean): DashboardEmptyState | null {
+  if (hasClosedArchive) return null;
+  if (hasOpenArchive) {
+    return {
+      title: 'لا توجد بيانات كافية بعد',
+      hint: 'اليومية الحالية لسه مفتوحة. اقفلها من الأرشيف لتظهر الإحصائيات.',
+    };
+  }
+  return {
+    title: 'لا توجد بيانات كافية بعد',
+    hint: 'لم يتم إغلاق أي يومية حتى الآن',
+  };
+}
