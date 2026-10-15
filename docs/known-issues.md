@@ -156,6 +156,7 @@ Re-audit 2026-09-16 (المرحلة 1 — بند 1.2 — إغلاق نهائي،
 - العالية (5): undici عبر firebase 10.14.1 (يتطلب firebase 11 major — مرفوض؛ التطبيق لا يخاطب undici مباشرة بل عبر Firestore SDK، ولا مسار تسريب أسرار)، sharp عبر @capacitor/assets (توليد أيقونات فقط — لا كود إنتاج)، vite server.fs.deny bypass (dev server فقط — الإنتاج static على Firebase Hosting)، والباقي تبعي لنفس السلاسل.
 - exceljs 4.4.0 (uuid GHSA-w5hq): "No fix available" — load-bearing لتصدير M10، والاستغلال يتطلب تمرير buf يدويًا وهو ما لا يفعله التطبيق — يبقى كما هو.
 - القرار: لا --force، لا major bumps، لا downgrades — الوضع الحالي هو الحد الأقصى الآمن على هذا الـ stack، ويُعاد التقييم فقط عند ترقية major مخططة.
+- Update REQ-SEC-1 (2026-10-15): M1 رقّع @capacitor/android إلى 6.2.2 — عدّ `--omit=dev` الجديد 16 (0 critical, 6 high, 10 moderate) مقابل 17 (1/6/10) قبلها؛ وبحسب بحث الأسماء في dist بعد build:android: undici=0 وarchiver=0 و@grpc/grpc-js=0 وbrace-expansion=0 وminimatch=0 وrequire("glob")=0، و"grpc" مرة واحدة كنص خطأ داخل firebase chunk — بلا حكم reachability.
 
 BUG-P1-2
 Problem: importmap يشير لـ aistudiocdn.com موجود في ملف الإنتاج المبني فعليًا

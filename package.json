@@ -17,7 +17,7 @@
     "android:build": "npm run build:android && npx cap sync && cd android && gradlew assembleRelease"
   },
   "dependencies": {
-    "@capacitor/android": "^6.0.0",
+    "@capacitor/android": "^6.2.2",
     "@capacitor/app": "^6.0.0",
     "@capacitor/core": "^6.0.0",
     "@capacitor/filesystem": "^6.0.0",

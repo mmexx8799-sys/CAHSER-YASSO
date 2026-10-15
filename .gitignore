@@ -28,9 +28,11 @@ dist-ssr
 
 # Android signing keystore (NEVER commit - contains signing credentials)
 *.keystore
+*.jks
 keystore.properties
 android/app/release.keystore
 android/casher-yasoo-release.keystore
+google-services.json
 
 # Firebase Admin service account key (NEVER commit - full project admin access)
 *serviceAccountKey*.json
