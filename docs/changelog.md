@@ -123,3 +123,5 @@ E2E-PILOT-1 ✅ — PR #23 مدموج على b97e767 (اختبارات emulator 
 ### Verification — 2026-09-17: testing production approval gate after bypass removal
 2026-10-14: REQ-RULES-2 منشور (PR #28، commit 3ed5c89)، النشر الآلي نجح (Run #67)، smoke test ناجح. متبقي: REQ-RULES-3، REQ-SEC-1.
 2026-10-19: إصدار 1.0.1 (versionCode 2) — APK موقّع للاستخدام المباشر، android 6.2.2، allowBackup=false، حذف external-path من FileProvider، .gitignore يغطي *.jks و google-services.json، signingConfig يقرأ keystore خارجي.
+- شهادة التوقيع SHA-256: b0f485905eb3920829c7bcd534646c522b0fa680c4648a7bbd6e9749928a1d00
+- ملف APK SHA-256: 6B8A63572D0D209FCF13D4138946CAA81EE6A226180303FD722976174D0D32E5
