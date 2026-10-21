@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { reportError } from '../services/monitoring';
+import { isChunkLoadError, clearChunkReloadGuard } from '../utils/chunkLoader';
 
 interface Props {
   children?: ReactNode;
@@ -30,8 +31,40 @@ class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
+  // REQ-UX-CHUNK-RETRY: chunk fallback — clear the session reload guard, then reload.
+  private handleChunkRetry = () => {
+    clearChunkReloadGuard();
+    window.location.reload();
+  };
+
   public render() {
     if (this.state.hasError) {
+      if (isChunkLoadError(this.state.error)) {
+        return (
+          <div className="flex flex-col justify-center items-center h-screen bg-gray-100 text-center p-6">
+              <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full flex flex-col items-center">
+                  <AlertTriangle size={64} className="text-red-500 mb-4" />
+                  <h1 className="text-2xl font-bold mb-2 text-gray-800">تعذّر تحميل أحد أجزاء التطبيق</h1>
+                  <p className="text-gray-600 mb-6 text-base">
+                      حدثت مشكلة أثناء تنزيل أحد أجزاء التطبيق، ولم تُفل المحاولة التلقائية. اضغط «تحديث» للمحاولة من جديد.
+                  </p>
+                  <button
+                      onClick={this.handleChunkRetry}
+                      className="flex items-center justify-center space-x-2 space-x-reverse bg-primary-600 text-white py-3 px-6 rounded-lg shadow-md hover:bg-primary-700 transition-colors w-full text-lg font-semibold"
+                  >
+                      <RefreshCw size={20} />
+                      <span>تحديث</span>
+                  </button>
+                  {this.state.error && (
+                      <details className="mt-4 text-left w-full bg-gray-50 p-2 rounded text-xs text-red-600 overflow-auto max-h-40" open>
+                          <summary>تفاصيل الخطأ (للتشخيص)</summary>
+                          <pre className="whitespace-pre-wrap break-words">{this.state.error.toString()}{this.state.error.stack ? '\n\n' + this.state.error.stack : ''}</pre>
+                      </details>
+                  )}
+              </div>
+          </div>
+        );
+      }
       return (
         <div className="flex flex-col justify-center items-center h-screen bg-gray-100 text-center p-6">
             <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full flex flex-col items-center">

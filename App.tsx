@@ -18,21 +18,22 @@ import { usePermissions } from './hooks/usePermissions';
 import type { Capability } from './utils/permissions';
 import { buildNavItems, resolveLanding } from './utils/nav';
 import { useOfflineLogger } from './hooks/useOfflineLogger';
+import { lazyChunk } from './utils/chunkLoader';
 
-// Lazy load pages
-const POSPage = React.lazy(() => import('./pages/POSPage'));
-const ProductsPage = React.lazy(() => import('./pages/ProductsPage'));
-const CustomersPage = React.lazy(() => import('./pages/CustomersPage'));
-const CustomerAccountPage = React.lazy(() => import('./pages/CustomerAccountPage'));
-const SuppliersPage = React.lazy(() => import('./pages/SuppliersPage'));
-const SupplierAccountPage = React.lazy(() => import('./pages/SupplierAccountPage'));
-const ReportsPage = React.lazy(() => import('./pages/ReportsPage'));
-const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
-const ArchivePage = React.lazy(() => import('./pages/ArchivePage'));
-const ReturnsPage = React.lazy(() => import('./pages/ReturnsPage'));
-const LoginPage = React.lazy(() => import('./pages/LoginPage'));
-const UsersPage = React.lazy(() => import('./pages/UsersPage'));
-const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+// Lazy load pages — REQ-UX-CHUNK-RETRY: retry + session reload guard per chunk
+const POSPage = lazyChunk('POSPage', () => import('./pages/POSPage'));
+const ProductsPage = lazyChunk('ProductsPage', () => import('./pages/ProductsPage'));
+const CustomersPage = lazyChunk('CustomersPage', () => import('./pages/CustomersPage'));
+const CustomerAccountPage = lazyChunk('CustomerAccountPage', () => import('./pages/CustomerAccountPage'));
+const SuppliersPage = lazyChunk('SuppliersPage', () => import('./pages/SuppliersPage'));
+const SupplierAccountPage = lazyChunk('SupplierAccountPage', () => import('./pages/SupplierAccountPage'));
+const ReportsPage = lazyChunk('ReportsPage', () => import('./pages/ReportsPage'));
+const SettingsPage = lazyChunk('SettingsPage', () => import('./pages/SettingsPage'));
+const ArchivePage = lazyChunk('ArchivePage', () => import('./pages/ArchivePage'));
+const ReturnsPage = lazyChunk('ReturnsPage', () => import('./pages/ReturnsPage'));
+const LoginPage = lazyChunk('LoginPage', () => import('./pages/LoginPage'));
+const UsersPage = lazyChunk('UsersPage', () => import('./pages/UsersPage'));
+const DashboardPage = lazyChunk('DashboardPage', () => import('./pages/DashboardPage'));
 
 const Header = React.memo(() => {
     const { currentUser } = useAuth();
