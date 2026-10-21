@@ -63,7 +63,7 @@ describe('REQ-RULES-5 (أ): حساب بلا role لا يقرأ أي collection',
     await seedOneDocPerCollection();
     const db = testEnv.authenticatedContext('nrole').firestore();
     for (const col of ACTIVE_READ_COLLECTIONS) {
-      await assertFails(getDoc(doc(db, col, 'doc1')), `${col} must be denied for role-less user`);
+      await assertFails(getDoc(doc(db, col, 'doc1')));
     }
   });
 });
@@ -75,7 +75,7 @@ describe('REQ-RULES-5 (ب): دور غير معروف مرفوض', () => {
     await seedOneDocPerCollection();
     const db = testEnv.authenticatedContext('badrole').firestore();
     for (const col of ACTIVE_READ_COLLECTIONS) {
-      await assertFails(getDoc(doc(db, col, 'doc1')), `${col} must be denied for unknown role`);
+      await assertFails(getDoc(doc(db, col, 'doc1')));
     }
   });
 });
@@ -88,7 +88,7 @@ describe('REQ-RULES-5 (ج): الأدوار الخمسة تقرأ ما كانت �
       await seedUser('u-' + role, { role });
       const db = testEnv.authenticatedContext('u-' + role).firestore();
       for (const col of ACTIVE_READ_COLLECTIONS) {
-        await assertSucceeds(getDoc(doc(db, col, 'doc1')), `${col} must remain readable for ${role}`);
+        await assertSucceeds(getDoc(doc(db, col, 'doc1')));
       }
     }
   });
@@ -98,7 +98,7 @@ describe('REQ-RULES-5 (ج): الأدوار الخمسة تقرأ ما كانت �
     await seedOneDocPerCollection();
     const db = testEnv.authenticatedContext('acc').firestore();
     for (const col of ACTIVE_READ_COLLECTIONS) {
-      await assertSucceeds(getDoc(doc(db, col, 'doc1')), `${col} must remain readable for accountant`);
+      await assertSucceeds(getDoc(doc(db, col, 'doc1')));
     }
   });
 });
