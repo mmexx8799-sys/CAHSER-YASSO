@@ -57,7 +57,7 @@ const V1_BUSINESS_DATA_COLLECTIONS = [
 ] as const;
 
 export const BACKUP_SCHEMA_VERSION = 2;
-export const APP_VERSION = '1.0.0';
+export const APP_VERSION = '1.0.2';
 
 function validateBackupStructure(data: any): void {
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
