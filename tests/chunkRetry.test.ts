@@ -86,9 +86,3 @@ describe('REQ-UX-CHUNK-RETRY: isChunkLoadError detection', () => {
     expect(isChunkLoadError(null)).toBe(false);
   });
 });
-
-function setGuardForTest(key: string, deps: Parameters<typeof setGuard>[1]) {
-  setGuard(key, deps);
-}
-
-import { setChunkReloadGuard as setGuard } from '../utils/chunkLoader';
