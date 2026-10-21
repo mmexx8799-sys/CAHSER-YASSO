@@ -11,8 +11,13 @@ service cloud.firestore {
     }
 
     // Legacy read helper — kept for isActiveUser() reads (no change in read paths)
+    // REQ-RULES-5: a role must be one of the five known roles (mirror of ALL_ROLES
+    // in utils/permissions.ts:146-151) — a user doc without a known role reads nothing.
     function isActiveUser() {
-      return isAuthenticated() && (!('disabled' in getUserData()) || getUserData().disabled != true);
+      let u = getUserData();
+      return isAuthenticated()
+        && (!('disabled' in u) || u.disabled != true)
+        && u.role in ['owner', 'admin', 'supervisor', 'cashier', 'accountant'];
     }
 
     // RBAC-2026-09 R1: single-get helpers (SR-09: one get() per helper via let)
@@ -116,7 +121,9 @@ service cloud.firestore {
                     || request.resource.data.get('role', '') == 'owner')
                 && capListsValid(request.resource.data)
                 && capsStampOk();
-      allow delete: if isOwner() && resource.data.role != 'owner';
+      // REQ-RULES-5: delete stays owner-only; docs without a role field are deletable
+      // by the owner (resource.data.role would throw on missing field — .get() with default).
+      allow delete: if isOwner() && resource.data.get('role', '') != 'owner';
     }
 
     match /appSettings/{settingsId} {
