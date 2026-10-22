@@ -16,6 +16,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 export default tseslint.config(
   {
     ignores: [
+      '.scratch/**',
       'dist/**',
       'dist-ssr/**',
       'android/**',

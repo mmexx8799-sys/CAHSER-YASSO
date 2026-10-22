@@ -1,6 +1,7 @@
 import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { HashRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Package, Users, BarChart2, Settings, Archive, Undo2, LogOut, Moon, Sun, Truck, LayoutDashboard } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { App as CapacitorApp } from '@capacitor/app';
 
@@ -72,8 +73,8 @@ const Header = React.memo(() => {
 const useNavItems = () => {
     const { currentUser } = useAuth();
     return useMemo(() => {
-        return buildNavItems((currentUser as any)?.role as any, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true }).map(it => {
-            const iconMap: any = { '/': ShoppingCart, '/customers': Users, '/suppliers': Truck, '/returns': Undo2, '/products': Package, '/reports': BarChart2, '/archive': Archive, '/dashboard': LayoutDashboard, '/settings': Settings, '/users': Users };
+        return buildNavItems(currentUser?.role, { grants: currentUser?.capGrants, denies: currentUser?.capDenies }, { disabled: currentUser?.disabled === true }).map(it => {
+            const iconMap: Record<string, LucideIcon> = { '/': ShoppingCart, '/customers': Users, '/suppliers': Truck, '/returns': Undo2, '/products': Package, '/reports': BarChart2, '/archive': Archive, '/dashboard': LayoutDashboard, '/settings': Settings, '/users': Users };
             return { to: it.to, icon: iconMap[it.to], label: it.label };
         });
     }, [currentUser]);
@@ -138,13 +139,13 @@ const PageLoader: React.FC = () => (
 );
 
 const RequireCapability: React.FC<{ capability: Capability; children: React.ReactNode }> = ({ capability, children }) => {
-    const { can: canCap, role } = usePermissions() as any;
-    const { currentUser } = useAuth() as any;
+    const { can: canCap, role } = usePermissions();
+    const { currentUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     useEffect(() => {
         if (!canCap(capability)) {
-            const landing = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+            const landing = resolveLanding(role, { grants: currentUser?.capGrants, denies: currentUser?.capDenies }, { disabled: currentUser?.disabled === true });
             if (location.pathname !== landing) {
                 const silent = location.pathname === '/' || location.pathname === '/returns';
                 if (!silent) toast.error("ليس لديك صلاحية الوصول لهذه الصفحة.", { id: 'no-permission' });
@@ -208,14 +209,14 @@ const AndroidBackHandler = () => {
 };
 
 const LandingRedirect: React.FC = () => {
-    const { role } = usePermissions() as any;
-    const { currentUser } = useAuth() as any;
-    const to = resolveLanding(role, { grants: (currentUser as any)?.capGrants, denies: (currentUser as any)?.capDenies } as any, { disabled: currentUser?.disabled === true });
+    const { role } = usePermissions();
+    const { currentUser } = useAuth();
+    const to = resolveLanding(role, { grants: currentUser?.capGrants, denies: currentUser?.capDenies }, { disabled: currentUser?.disabled === true });
     return <Navigate to={to} replace />;
 };
 
 const AppRoutes: React.FC = () => {
-    const { currentUser, isLoading, isUnresolved, retry } = useAuth() as any;
+    const { currentUser, isLoading, isUnresolved, retry } = useAuth();
 
     // BUG-P0-5: side effects (signOut + toast) must not run in the render
     // body — they fired on every render. Guard is keyed on uid (not a plain
