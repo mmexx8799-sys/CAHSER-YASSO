@@ -89,6 +89,13 @@ service cloud.firestore {
             && request.resource.data.permsUpdatedAt == request.time);
     }
 
+    // REQ-USERROLE: كل كتابة users (create/update) يجب أن يكون الدور النهائي (بعد الدمج)
+    // ضمن الأدوار الخمسة بالضبط — مطابق للقائمة في isActiveUser(). get('role','') يتعامل
+    // مع الوثائق بلا role (الغائب => '') بدل رمي خطأ تقييم.
+    function isKnownRole(d) {
+      return d.get('role', '') in ['owner', 'admin', 'supervisor', 'cashier', 'accountant'];
+    }
+
     // P0-HARDENING: single money guard — binds EVERY role incl. owner.
     // NaN fails comparisons; Infinity fails the cap.
     // No scientific notation: literal cap 1000000000000.
@@ -109,16 +116,22 @@ service cloud.firestore {
       // create/update/delete: isOwner() only — with R1 owner-doc protection kept:
       // an owner doc can never be disabled or deleted via rules (Break-glass via Console only — BR-06).
       // PERM-2: + capListsValid on post-image; + stamp when overrides are introduced/changed.
+      // REQ-USERROLE: (1) حماية وثيقة owner من التعطيل تقرأ النص عبر get('role','') —
+      // وثيقة بلا role لا ترمي خطأ تقييم (كانت resource.data.role تفعل عند غياب الحقل).
+      // (2) الصورة بعد الدمج (request.resource.data) يجب أن تحمل دورًا معروفًا:
+      // update جزئي بلا role يحمل دور الوثيقة القديم تلقائيًا (حالة merge في tests/usersRoleValidation.test.ts).
       allow create: if isOwner()
+                && isKnownRole(request.resource.data)
                 && capListsValid(request.resource.data)
                 && ((!('capGrants' in request.resource.data) && !('capDenies' in request.resource.data))
                     || (request.resource.data.permsUpdatedBy == request.auth.uid
                         && request.resource.data.permsUpdatedAt == request.time));
       allow update: if isOwner()
-                && !(resource.data.role == 'owner'
+                && !(resource.data.get('role', '') == 'owner'
                      && request.resource.data.get('disabled', false) == true)
                 && (resource.data.get('role', '') != 'owner'
                     || request.resource.data.get('role', '') == 'owner')
+                && isKnownRole(request.resource.data)
                 && capListsValid(request.resource.data)
                 && capsStampOk();
       // REQ-RULES-5: delete stays owner-only; docs without a role field are deletable
