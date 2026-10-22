@@ -1,5 +1,14 @@
 # Changelog — Nour-Elrahman
 
+## 2026-10-22 — إصدار 1.0.2 (versionCode 3)
+- **Hosting:** نُشر من commit `3992a0f` (master بعد دمج PR #36) عبر `npm run build && firebase deploy --only hosting` — **القواعد والفهارس لم تُلمس**. الموقع الحي: https://casher-yasoo.web.app — PWA precache 42 (v1.3.0)، `dist` = 41 ملفًا.
+- **APK موقّع للاستخدام المباشر** (بناء `npm run android:build` = `--mode capacitor` بلا PWA/SW + `cap sync` + `gradlew assembleRelease`):
+  - شهادة التوقيع SHA-256: `b0f485905eb3920829c7bcd534646c522b0fa680c4648a7bbd6e9749928a1d00` — مطابقة لشهادة 1.0.1 حرفيًا (التحديث فوق 1.0.1 ممكن).
+  - ملف APK SHA-256: `4efa0de85c165bcc90634421b8e3bc5c53b5c5d6b2fa7fe12f33dbe5226522a4` — الحجم 4,357,947 بايت.
+- **تجربة owner وكاشير على جهاز حقيقي:** دخول، بيع، مرتجع، `/users`، الأيقونة — ناجحة ✓.
+- **فحص الأسرار:** `findstr` على `dist` وعلى أصول المبني (`android/app/src/main/assets/public`) بحثًا عن `GEMINI` وكلمات `keystore/كلمات السر` و`localhost:8080/9099` و`VITE_USE_EMULATORS` — صفر نتائج ✓. `.env.local` غير مُتتبَّع ولا يُضخ في البناء.
+- **مشكلة معروفة غير مانعة:** toast «حدث خطأ أثناء تحميل المنتجات.» بعد الخروج فقط (Ref: `POST-LOGOUT-PRODUCTS-FETCH` في known-issues) — الإصلاح مخطط في 1.0.3.
+
 ## Unreleased — AUDIT-TX-3 (2026-10-03)
 - **REQ-TX3-SALE — مفتاح ثابت للبيع (sales.ts + opKey.ts):** `opts.opKey` اختياري (تحقق UUID-v4 أول سطر قبل أي اتصال) + `doc(db,'invoices',opKey)` الحتمي + مقارنة البصمة (دمج/فرز/تقريب منزلتين/تطبيع null + paymentMethod) قبل قراءة العدّاد + `OpKeyMismatchError` برسالتها العربية مرة واحدة — التحقق: RED أولًا (7/12 على القديم) ثم GREEN (14/14 بعد حالتي الحدّ) · `tsc` نظيف · `test:rules` **424/424** (410 قديم بلا رجوع + 14 جديد `tx3Sale`: وحدة 4 + 8 محاكي + 2 حدّية) · صفر لمس لغير `sales.ts` + الجديدين — **Done 2026-10-03**
 - **REQ-TX3-PURCHASE — مفتاح ثابت للشراء (purchases.ts, processPurchase فقط):** نفس الشكل (`opts.opKey` اختياري + تحقق أول سطر + `doc(db,'purchaseInvoices',opKey)` الحتمي + مقارنة `docFingerprint` بالمورّد قبل العدّاد + `OpKeyMismatchError` برسالتها مرة واحدة؛ بلا paymentMethod في مستندات الشراء) + استخراج `docFingerprint(docLike,partyField)` المشترك وإعادة `sales.ts` عليه (سلوك مطابق، أعاد `tx3Sale` أخضر 14/14) — التحقق: RED أولًا (7/9 على القديم: تكرار/غياب-تحقق) ثم GREEN (11/11 بعد حالتي الحدّ) · `tsc`/`typecheck`/`build` نظيفة · `test:rules` **435/435** (424 قديم بلا رجوع + 11 جديد `tx3Purchase`: وحدة 1 + 8 محاكي + 2 حدّية) · `processSupplierReturn` لم يُمس · ملاحظة تشغيل: ملفا tx3 يُشغَّلان تسلسليًا (`--fileParallelism=false`) لتشاركهما namespaces المحاكي — **Done 2026-10-03**
