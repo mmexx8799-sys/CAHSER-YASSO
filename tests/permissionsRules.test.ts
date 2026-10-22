@@ -68,19 +68,15 @@ async function seedFor(cap: string) {
   if (cap === 'archive.close') await seedDoc('dailyArchives', 'p2-close', { ...ARCH_SEED });
 }
 
-describe('PERM-2 characterization — owner updating role-less user doc (pre-rules-change)', () => {
-  it('owner updates a role-less doc (sehelly2018-like) — record current behavior', async () => {
+describe('PERM-2 characterization — owner updating role-less user doc (REQ-USERROLE flip)', () => {
+  // REQ-USERROLE: سابًا كان assertSucceeds على القواعد القديمة (تحديث وثيقة بلا role يُسمح).
+  // تصلب REQ-USERROLE يرفض عمدًا الصورة بعد الدمج بلا دور معروف — القلب مقصود (Master approval 2026-10-22).
+  it('owner updates a role-less doc (sehelly2018-like) — DENIED after REQ-USERROLE', async () => {
     await testEnv.clearFirestore();
     await seedRaw('owner-char', { email: 'owner@t.local', role: UserRole.Owner });
     await seedRaw('norole-char', { email: 'norole@t.local' });
     const db = testEnv.authenticatedContext('owner-char').firestore();
-    await assertSucceeds(updateDoc(doc(db, 'users', 'norole-char'), { disabled: false } as any));
-    let exists = false;
-    await testEnv.withSecurityRulesDisabled(async (ctx) => {
-      const s = await getDoc(doc(ctx.firestore(), 'users', 'norole-char'));
-      exists = s.exists();
-    });
-    expect(exists).toBe(true);
+    await assertFails(updateDoc(doc(db, 'users', 'norole-char'), { disabled: false } as any));
   });
 });
 
